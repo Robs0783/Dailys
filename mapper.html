@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0F6CBD">
+<title>Task Workflow Mapper</title>
+<style>
+  :root{
+    --win-bg:#F3F3F3; --win-surface:#FFFFFF; --win-sidebar:#FAFAFA;
+    --win-border:#E1DFDD; --win-border-strong:#D2D0CE;
+    --win-text:#1B1A19; --win-text-secondary:#605E5C;
+    --win-accent:#0F6CBD; --win-accent-light:#E9F1FB;
+    --c-complete:#107C10; --c-risk:#BA7517; --c-off:#C42B1C; --c-none:#8A8886;
+    --radius:8px;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.08), 0 0.5px 1.5px rgba(0,0,0,0.06);
+    --shadow-2: 0 4px 8px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--win-bg); color:var(--win-text); -webkit-font-smoothing:antialiased; }
+  .app-window{ display:flex; flex-direction:column; height:100vh; min-height:640px;
+    border:1px solid var(--win-border-strong); border-radius:10px; overflow:hidden;
+    box-shadow:var(--shadow-2); background:var(--win-bg); }
+  .titlebar{ display:flex; align-items:center; justify-content:space-between; background:var(--win-surface);
+    border-bottom:1px solid var(--win-border); padding:0 8px 0 14px; height:40px; flex-shrink:0; user-select:none; }
+  .titlebar-left{ display:flex; align-items:center; gap:10px; }
+  .app-icon{ width:18px;height:18px;border-radius:4px; background:linear-gradient(135deg,var(--win-accent),#59B0F5);
+    display:flex;align-items:center;justify-content:center; color:white;font-size:11px;font-weight:700; }
+  .titlebar-title{ font-size:13px; font-weight:600; }
+  .loc-switch{ display:flex; gap:2px; background:var(--win-bg); border-radius:6px; padding:2px; margin-left:16px; }
+  .loc-btn{ border:none; background:transparent; padding:5px 14px; font-size:12.5px; font-weight:600;
+    border-radius:5px; cursor:pointer; color:var(--win-text-secondary); }
+  .loc-btn.active{ background:var(--win-accent); color:#fff; }
+  .titlebar-controls{ display:flex; }
+  .tc-btn{ width:44px;height:40px;border:none;background:transparent; display:flex;align-items:center;justify-content:center;
+    cursor:default; color:#444; font-size:10px; }
+  .tc-btn:hover{ background:rgba(0,0,0,0.05); }
+  .tc-btn.close:hover{ background:#E81123; color:white; }
+
+  .app-body{ flex:1; display:flex; min-height:0; }
+  .sidebar{ width:210px; flex-shrink:0; background:var(--win-sidebar); border-right:1px solid var(--win-border);
+    padding:14px 8px; overflow-y:auto; }
+  .sidebar-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--win-text-secondary); padding:4px 10px 8px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; margin:2px 0; border-radius:6px;
+    cursor:pointer; font-size:13px; position:relative; }
+  .nav-item:hover{ background:rgba(0,0,0,0.04); }
+  .nav-item.active{ background:var(--win-accent-light); font-weight:600; }
+  .nav-avatar{ width:24px;height:24px;border-radius:50%; background:#EDEBE9; color:#3B3A39;
+    display:flex;align-items:center;justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+  .nav-item.active .nav-avatar{ background:var(--win-accent); color:#fff; }
+  .nav-progress{ margin-left:auto; font-size:10px; color:var(--win-text-secondary); }
+
+  .tasklist{ width:250px; flex-shrink:0; background:var(--win-surface); border-right:1px solid var(--win-border);
+    overflow-y:auto; padding:10px 6px; }
+  .task-item{ display:flex; align-items:flex-start; gap:8px; padding:8px 8px; border-radius:6px; cursor:pointer; font-size:12.5px; }
+  .task-item:hover{ background:rgba(0,0,0,.04); }
+  .task-item.active{ background:var(--win-accent-light); font-weight:600; }
+  .task-dot{ width:8px;height:8px;border-radius:50%; background:var(--win-border-strong); margin-top:4px; flex-shrink:0; }
+  .task-dot.mapped{ background:var(--c-complete); }
+  .task-cadence-hdr{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--win-text-secondary); padding:10px 8px 4px; }
+
+  .main{ flex:1; overflow-y:auto; padding:0; display:flex; flex-direction:column; min-width:0; }
+  .task-banner{ background:var(--win-surface); border-bottom:1px solid var(--win-border); padding:16px 24px; flex-shrink:0; }
+  .breadcrumb{ font-size:11.5px; color:var(--win-text-secondary); margin-bottom:4px; }
+  .breadcrumb b{ color:var(--win-accent); }
+  .task-title{ font-size:19px; font-weight:600; line-height:1.3; margin:0; }
+  .banner-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px; }
+  .cadence-badge{ display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    background:var(--win-bg); color:var(--win-text-secondary); padding:3px 9px; border-radius:10px; }
+  .step-nav{ display:flex; align-items:center; gap:8px; }
+  .step-nav button{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:6px 14px;
+    font-size:12.5px; font-weight:600; cursor:pointer; }
+  .step-nav button:hover{ background:var(--win-accent-light); }
+  .step-nav button:disabled{ opacity:.4; cursor:default; }
+  .step-nav .progress-txt{ font-size:12px; color:var(--win-text-secondary); }
+
+  .form-wrap{ padding:20px 24px 60px; max-width:760px; }
+  .field{ margin-bottom:20px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--win-text-secondary); margin-bottom:6px; }
+  .field textarea, .field input[type=text]{ width:100%; border:1px solid var(--win-border-strong); border-radius:6px;
+    padding:9px 11px; font-size:13.5px; font-family:inherit; resize:vertical; }
+  .field textarea{ min-height:56px; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ border:1px solid var(--win-border-strong); background:#fff; border-radius:16px; padding:6px 14px;
+    font-size:12.5px; cursor:pointer; color:var(--win-text-secondary); }
+  .chip.sel{ background:var(--win-accent); border-color:var(--win-accent); color:#fff; font-weight:600; }
+
+  .steps-map{ border:1px solid var(--win-border); border-radius:8px; padding:14px 16px; background:var(--win-surface); }
+  .step-row{ display:flex; align-items:flex-start; gap:10px; position:relative; padding-bottom:14px; }
+  .step-row:last-child{ padding-bottom:0; }
+  .step-row:not(:last-child)::before{ content:''; position:absolute; left:11px; top:26px; bottom:-4px; width:2px; background:var(--win-border-strong); }
+  .step-num{ width:23px;height:23px;border-radius:50%; background:var(--win-accent); color:#fff; font-size:11px; font-weight:700;
+    display:flex;align-items:center;justify-content:center; flex-shrink:0; z-index:1; }
+  .step-row input{ flex:1; border:1px solid var(--win-border-strong); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; }
+  .step-remove{ border:none; background:transparent; color:var(--win-text-secondary); cursor:pointer; font-size:16px; padding:2px 6px; flex-shrink:0; }
+  .step-remove:hover{ color:var(--c-off); }
+  .add-step-btn{ margin-top:4px; border:1px dashed var(--win-border-strong); background:transparent; border-radius:6px;
+    padding:7px 14px; font-size:12.5px; color:var(--win-accent); cursor:pointer; width:100%; text-align:left; }
+  .add-step-btn:hover{ background:var(--win-accent-light); }
+
+  .segmented{ display:flex; border:1px solid var(--win-border-strong); border-radius:6px; overflow:hidden; width:fit-content; }
+  .seg-opt{ border:none; background:#fff; padding:8px 16px; font-size:12.5px; font-weight:600; cursor:pointer;
+    color:var(--win-text-secondary); border-right:1px solid var(--win-border-strong); }
+  .seg-opt:last-child{ border-right:none; }
+  .seg-opt.sel-good{ background:var(--c-complete); color:#fff; }
+  .seg-opt.sel-risk{ background:var(--c-risk); color:#fff; }
+  .seg-opt.sel-bad{ background:var(--c-off); color:#fff; }
+  .seg-opt.sel-none{ background:var(--c-none); color:#fff; }
+  .seg-opt.sel-yes{ background:var(--c-complete); color:#fff; }
+  .seg-opt.sel-partial{ background:var(--c-risk); color:#fff; }
+  .seg-opt.sel-no{ background:var(--c-off); color:#fff; }
+
+  .metric-note{ font-size:11.5px; color:var(--win-text-secondary); margin-top:6px; }
+  .trained-row{ display:flex; align-items:center; gap:14px; }
+  .trained-row input[type=text]{ width:140px; }
+
+  .status-toast{ position:fixed; bottom:18px; right:18px; background:#1B1A19; color:#fff; padding:8px 14px;
+    border-radius:6px; font-size:12.5px; opacity:0; transform:translateY(6px); transition:opacity .2s ease, transform .2s ease;
+    pointer-events:none; box-shadow:var(--shadow-2); z-index:50; }
+  .status-toast.show{ opacity:1; transform:translateY(0); }
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb{ background:#C8C6C4; border-radius:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  @media (max-width: 860px){
+    .app-body{ flex-direction:column; }
+    .sidebar{ width:100%; display:flex; overflow-x:auto; white-space:nowrap; padding:8px; }
+    .sidebar-label{ display:none; }
+    .nav-progress{ display:none; }
+    .tasklist{ width:100%; max-height:160px; }
+    .two-col{ grid-template-columns:1fr; }
+  }
+
+  .spec-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:6px 14px;
+    font-size:12.5px; font-weight:600; cursor:pointer; margin-left:auto; margin-right:8px; color:var(--win-text-secondary); }
+  .spec-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); color:var(--win-accent); }
+  .spec-btn.active{ background:var(--win-accent); border-color:var(--win-accent); color:#fff; }
+  .toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; margin-right:8px; }
+  .toolbar-actions .spec-btn{ margin-left:0; margin-right:0; }
+
+  .spec-view{ flex:1; overflow-y:auto; padding:24px 32px 60px; display:none; }
+  .spec-view.show{ display:block; }
+  .spec-header{ margin-bottom:22px; }
+  .spec-header h1{ font-size:20px; margin:0 0 6px; font-weight:600; }
+  .spec-header p{ font-size:13px; color:var(--win-text-secondary); margin:0 0 14px; max-width:700px; }
+  .spec-stats{ display:flex; gap:24px; flex-wrap:wrap; margin-bottom:6px; }
+  .spec-stat{ background:var(--win-surface); border:1px solid var(--win-border); border-radius:var(--radius);
+    padding:10px 16px; box-shadow:var(--shadow-1); }
+  .spec-stat .num{ font-size:20px; font-weight:700; color:var(--win-accent); }
+  .spec-stat .lbl{ font-size:11px; color:var(--win-text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+  .spec-actions{ margin:14px 0 24px; display:flex; gap:10px; }
+  .spec-actions button{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:8px 16px;
+    font-size:12.5px; font-weight:600; cursor:pointer; }
+  .spec-actions button:hover{ background:var(--win-accent-light); }
+  .platform-group{ margin-bottom:28px; }
+  .platform-title{ display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700; margin-bottom:10px;
+    padding-bottom:8px; border-bottom:2px solid var(--win-accent); }
+  .platform-count{ font-size:11.5px; font-weight:600; color:var(--win-text-secondary); background:var(--win-bg);
+    padding:2px 9px; border-radius:10px; }
+  .spec-card{ background:var(--win-surface); border:1px solid var(--win-border); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow-1); }
+  .spec-card-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .spec-task-title{ font-size:13.5px; font-weight:600; }
+  .spec-role{ font-size:11.5px; color:var(--win-accent); font-weight:600; }
+  .spec-row{ font-size:12.5px; color:var(--win-text-secondary); margin-top:6px; }
+  .spec-row b{ color:var(--win-text); font-weight:600; }
+  .spec-steps{ margin:6px 0 0; padding-left:18px; font-size:12.5px; }
+  .spec-steps li{ margin-bottom:2px; }
+  .auto-badge{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; text-transform:uppercase; }
+  .auto-badge.Yes{ background:#DFF6DD; color:#107C10; }
+  .auto-badge.Partial{ background:#FAEEDA; color:#854F0B; }
+  .empty-spec{ font-size:13px; color:var(--win-text-secondary); padding:30px 0; }
+
+  @media print{
+    body{ background:#fff; }
+    .app-window{ border:none; border-radius:0; box-shadow:none; height:auto; }
+    .titlebar, .sidebar, .tasklist, .app-body > .main{ display:none !important; }
+    .spec-view{ display:block !important; padding:0; overflow:visible; }
+    .spec-actions{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-window">
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="app-icon" id="appIcon">B</div>
+      <div class="titlebar-title">Task Workflow Mapper</div><span style="font-size:10.5px;font-weight:700;color:var(--win-accent);background:var(--win-accent-light);padding:2px 8px;border-radius:10px;margin-left:4px;">Live &middot; shared</span><a href="/" style="font-size:11.5px;color:var(--win-text-secondary);text-decoration:none;margin-left:10px;border:1px solid var(--win-border-strong);border-radius:6px;padding:3px 9px;">Open Daily Ops &rarr;</a>
+      <div class="loc-switch" id="locSwitch"></div>
+    </div>
+    <div class="toolbar-actions">
+      <button class="spec-btn" id="exportBtn">Export Data</button>
+      <button class="spec-btn" id="importBtn">Import Data</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="spec-btn" id="specToggleBtn">Build Spec</button>
+    </div>
+    <div class="titlebar-controls">
+      <button class="tc-btn">&#8211;</button>
+      <button class="tc-btn">&#9633;</button>
+      <button class="tc-btn close">&#10005;</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="sidebar">
+      <div class="sidebar-label">Team</div>
+      <div id="navList"></div>
+    </div>
+
+    <div class="tasklist" id="taskList"></div>
+
+    <div class="main">
+      <div class="task-banner">
+        <div class="breadcrumb"><b id="bcRole">-</b> &middot; <span id="bcLoc">-</span></div>
+        <h1 class="task-title" id="taskTitle">Loading...</h1>
+        <div class="banner-row">
+          <span class="cadence-badge" id="cadenceBadge">Daily</span>
+          <div class="step-nav">
+            <span class="progress-txt" id="progressTxt"></span>
+            <button id="prevTaskBtn">&#8592; Prev</button>
+            <button id="nextTaskBtn">Next &#8594;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-wrap">
+        <div class="field">
+          <label>Purpose &mdash; why does this matter? what breaks if it's skipped?</label>
+          <textarea id="fPurpose" placeholder="e.g. Aging ROs hide comeback risk and delay parts billing..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Platform(s) involved</label>
+          <div class="chip-row" id="fPlatforms"></div>
+        </div>
+
+        <div class="field">
+          <label>Where to find it &mdash; map the steps together</label>
+          <div class="steps-map" id="stepsMap"></div>
+          <button class="add-step-btn" id="addStepBtn">+ Add step</button>
+        </div>
+
+        <div class="field">
+          <label>Related metric</label>
+          <input type="text" id="fMetric" placeholder="e.g. % of ROs open under 5 days">
+        </div>
+
+        <div class="field two-col">
+          <div>
+            <label>Current value</label>
+            <input type="text" id="fCurrent" placeholder="e.g. 78%">
+          </div>
+          <div>
+            <label>Target value</label>
+            <input type="text" id="fTarget" placeholder="e.g. 95%">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>On track?</label>
+          <div class="segmented" id="fOnTrack">
+            <button class="seg-opt" data-val="On track">On track</button>
+            <button class="seg-opt" data-val="At risk">At risk</button>
+            <button class="seg-opt" data-val="Off track">Off track</button>
+            <button class="seg-opt" data-val="No metric yet">No metric yet</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Automation potential</label>
+          <div class="segmented" id="fAutomation">
+            <button class="seg-opt" data-val="Yes">Yes</button>
+            <button class="seg-opt" data-val="Partial">Partial</button>
+            <button class="seg-opt" data-val="No">No</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Automation notes &mdash; what should be pre-served instead of hunted for?</label>
+          <textarea id="fAutoNotes" placeholder="e.g. Pull the report automatically each morning and send..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Trained</label>
+          <div class="trained-row">
+            <div class="segmented" id="fTrained">
+              <button class="seg-opt" data-val="Y">Yes</button>
+              <button class="seg-opt" data-val="N">Not yet</button>
+            </div>
+            <input type="text" id="fTrainedDate" placeholder="Date (e.g. 8/4/2026)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec-view" id="specView"></div>
+  </div>
+</div>
+
+<div class="status-toast" id="toast">Saved</div>
+
+<script>
+const DEFAULT_LOCATIONS = {
+  bridgeland: { name: 'Bridgeland', short: 'B', data: [{"label": "Bridgeland Service Mgr.", "tasks": [{"text": "AM: Ck phones for Blinking VM -pw 2019   Writer", "cadence": "Daily"}, {"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Daily"}, {"text": "Audit reviews and verify they were sent to the customer follow up with Advisor", "cadence": "Daily"}, {"text": "Audit Customer pay RO'S and Labor Profit Analysis for both BL/CC", "cadence": "Daily"}, {"text": "Audit ASR reports for Required KPI Tracking", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "all special ordered parts are contacted", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: Comment on Date in this row", "cadence": "Daily"}, {"text": "Metal Bin is Locked", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building and Vehicles are parked correctly", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "EOD: Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "Shop walk : clean/ paint needs etc communicated", "cadence": "Daily"}, {"text": "Policy: collect all from Kristen - TUE", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking", "cadence": "Weekly"}, {"text": "1160 Schedule", "cadence": "Weekly"}, {"text": "Rapid Recon  Sublets", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}]}, {"label": "Bridgeland Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "We Owes", "cadence": "Weekly"}, {"text": "We Owes RR", "cadence": "Weekly"}, {"text": "BL Parts Suite", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Clean your Space", "cadence": "Weekly"}]}, {"label": "Bridgeland Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}, {"text": "Quarterly Audit", "cadence": "Monthly"}, {"text": "Audit BL", "cadence": "Monthly"}, {"text": "Audit CC", "cadence": "Monthly"}, {"text": "THURSDAY", "cadence": "Monthly"}, {"text": "FRIDAY / SAT", "cadence": "Monthly"}]}, {"label": "Bridgeland Recon Manager", "tasks": [{"text": "Vehicle Check-Ins (Check Drop Box, Stage Vehicle, Move In RR)", "cadence": "Daily"}, {"text": "UVI first day photos completed", "cadence": "Daily"}, {"text": "Key In All Vehicles And Barcode Every Vehicle", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "Set Detailers Up For The Day", "cadence": "Daily"}, {"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Recon Side of Lot", "cadence": "Daily"}, {"text": "(Titles) Make Sure In Correct Area/Step In Rapid With Notes", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 10 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Photo Vehicles", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "UVeye Report - Email list of UVEye vehicles that are needed for next day", "cadence": "Daily"}, {"text": "Weekly Garrett", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Daily"}, {"text": "BL Gather Supply List (Monday - Bob)", "cadence": "Daily"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Daily"}, {"text": "Lot Audit", "cadence": "Daily"}]}, {"label": "Bridgeland Sales Manager #2", "tasks": [{"text": "Review Photos of Inventory/ Confirm QUALITY/ MINIMUM Photos per unit met.", "cadence": "Daily"}, {"text": "social media posting Confirm/ Sales associates posting", "cadence": "Daily"}, {"text": "Review Prev Day appraisals for accuracy/ drive notes (Both locations).", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Review Pricing in ProfitTime/ Make adjustment for Alignment", "cadence": "Daily"}, {"text": "VAUTO Check missing CG Tags (Needs Attention) Mon/Wed/Fri", "cadence": "Daily"}, {"text": "VAUTO: vehicle descriptions generated.", "cadence": "Daily"}, {"text": "Review vehicles in Sold Status", "cadence": "Weekly"}, {"text": "Friday! Merchandising/ ws suite/ vauto/ 3rd party matching", "cadence": "Weekly"}, {"text": "FRIDAY! Update Metrics SPRDSHT for Monday meeting.", "cadence": "Weekly"}]}, {"label": "Bridgeland Finance / Tom", "tasks": [{"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Delivered Deals Statused", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Dead Deals Filed -MON", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Task", "cadence": "Monthly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}, {"text": "One Time (Not counted in %)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales GM", "tasks": [{"text": "Verify MPG log (Match to DMS)", "cadence": "Daily"}, {"text": "Verify managers/ Reps complete CRM tasks", "cadence": "Daily"}, {"text": "Policy log updated to the Day", "cadence": "Daily"}, {"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Birdeye: Address negative reviews", "cadence": "Daily"}, {"text": "No photo list reviewed", "cadence": "Daily"}, {"text": "RR: Review Color Trigger Report", "cadence": "Daily"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "UVI first day completed", "cadence": "Daily"}, {"text": "Pay Sheets Gone over with sales reps Before final", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Birdseye Reviewed . Negative reviews/ Tracking", "cadence": "Weekly"}, {"text": "Policy tied out to GL", "cadence": "Weekly"}, {"text": "Social media Vehicles chosen . payments Ran", "cadence": "Weekly"}, {"text": "Lot Re-merchandised", "cadence": "Weekly"}, {"text": "Desk compliance inspection/ food/Clutter (Enter in AE48)", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E. (Enter in AE49)", "cadence": "Monthly"}, {"text": "Review deal audit (Enter in AE50)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales  Kyle", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "EOD Digital Delivery Board /", "cadence": "Daily"}, {"text": "Facebook Posting verify previous day done", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Key report : 4 day max rule /", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}]}] },
+  candycars:  { name: 'Candy Cars', short: 'C', data: [{"label": "Service Manager", "tasks": [{"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: input to metrics dashboard", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building", "cadence": "Daily"}, {"text": "Metal Bin is locked", "cadence": "Daily"}, {"text": "Shop walk : clean", "cadence": "Daily"}, {"text": "all special ordered parts are contacted  (Dave Green)", "cadence": "Daily"}, {"text": "Policy: collect all from Cashier - Mon", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking (Wednesday Metrics)", "cadence": "Weekly"}, {"text": "Verify loaners are clean and mechanically on point/ ready for next customer (Dave Green)", "cadence": "Weekly"}, {"text": "Saturday Dispatch (Dave Green)", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}, {"text": "Awareness", "cadence": "Monthly"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Monthly"}]}, {"label": "CC Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Parts Suite - Parts being returned here", "cadence": "Weekly"}, {"text": "BL&CC 15 DAY OLD RO'S STATUS", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Policy - Sales / Service (Monday's)", "cadence": "Weekly"}, {"text": "We Owe make contact to schedule appt in RR", "cadence": "Weekly"}]}, {"label": "Candy Cars Sales GM/MGR", "tasks": [{"text": "Desk compliance inspection/ food/Clutter", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E.", "cadence": "Monthly"}, {"text": "Review deal audit", "cadence": "Monthly"}]}, {"label": "Corey T", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "Review unanswered comm's and AI recommendations.", "cadence": "Daily"}, {"text": "EOD Confirm via phone call or text nnext day appt's", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "EOD; UPDATE deal tracker", "cadence": "Daily"}, {"text": "SOCIAL MEDIA LOG", "cadence": "Daily"}, {"text": "NO PHOTO", "cadence": "Daily"}, {"text": "Daily metrics delivered", "cadence": "Daily"}, {"text": "Finalize appraisals", "cadence": "Daily"}, {"text": "Review dead/ lost request in drivecentric/ Notifications", "cadence": "Daily"}, {"text": "Key Reprt", "cadence": "Weekly"}]}, {"label": "Lou", "tasks": [{"text": "PRICING", "cadence": "Daily"}, {"text": "missed Trades Tab under Aquire Vauto scrubbed/Noted", "cadence": "Daily"}, {"text": "No photo list reviewed / T2L monitored for target", "cadence": "Daily"}, {"text": "Color trigger report : address yellow/red", "cadence": "Daily"}, {"text": "SERVICE AM MEETING ON DELIVERIES", "cadence": "Daily"}, {"text": "CIT", "cadence": "Daily"}, {"text": "EOD: Confirm MPG Updated", "cadence": "Daily"}, {"text": "CRM MORNING METRICS", "cadence": "Daily"}, {"text": "FINALIZE APPRAISALS", "cadence": "Daily"}, {"text": "T2L DAYS IS STEP", "cadence": "Daily"}, {"text": "DAILY METRICS", "cadence": "Daily"}, {"text": "REVIEWS", "cadence": "Daily"}, {"text": "SALES TRACKER", "cadence": "Daily"}, {"text": "SCAN DAILYS", "cadence": "Daily"}, {"text": "REVIEW APPTS/SHOW", "cadence": "Daily"}, {"text": "MISSED APPRAISALS", "cadence": "Daily"}, {"text": "REVIEW UNSOLD VISITS FRON PREVIOUS DAY", "cadence": "Daily"}, {"text": "WEEKLY METRICS", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Weekly"}, {"text": "7 Day Trade Report (Monday task ) insert to report", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Review CIT (over 4 days)", "cadence": "Weekly"}, {"text": "MPG log review", "cadence": "Weekly"}, {"text": "FORECASTER", "cadence": "Weekly"}]}, {"label": "Finnegan", "tasks": [{"text": "Confirm Sales reps posting on social media  (Enter each page - Deliveries included )", "cadence": "Daily"}, {"text": "Employee Sites (Indeed)", "cadence": "Daily"}, {"text": "Go over trade appraisals Vauto .. Completed / Notes etc Look2Book", "cadence": "Daily"}, {"text": "MPG Log : Does this match the DMS ?  ()", "cadence": "Daily"}, {"text": "ICO : Look over communication : ARE WE TRACKING? ARE BUYERS Appraising?", "cadence": "Daily"}, {"text": "Scan Daily's : Who is not completing ?", "cadence": "Daily"}, {"text": "Confirm Policy matches GL & all items filled out", "cadence": "Weekly"}, {"text": "ICO Monthly Campaign launched", "cadence": "Weekly"}, {"text": "7 Day trade Reports collected with notes", "cadence": "Weekly"}, {"text": "Overtime Collected from Nina : All addressed ? Turn into Rob", "cadence": "Weekly"}, {"text": "Metrics Log : Confirm ALL metrics reported", "cadence": "Weekly"}, {"text": "Review LocalShift Dashboard for proper communication", "cadence": "Weekly"}, {"text": "CG Digital Deal : Review Dealer portal . Inspect Leads", "cadence": "Weekly"}, {"text": "Claims Pending Cleared up and turned in By 7th of following month", "cadence": "Monthly"}, {"text": "Claims Register Google sheet matches Autoshield Register", "cadence": "Monthly"}, {"text": "Deal audit completed : 10 Random pulled per MGR: turn in checklists to Rob", "cadence": "Monthly"}]}, {"label": "CANDY CARS FINANCE", "tasks": [{"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Capital one portal scrub for applications", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Digital Delivery Board", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "Warranty cancellations", "cadence": "Daily"}, {"text": "Delivery checklist/Service Drive", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Poly/Paint Fab     Dakota", "cadence": "Weekly"}, {"text": "Ally deal Count / Ally tracking -TUE", "cadence": "Weekly"}, {"text": "Dead Deals filed", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Missing title list - Drop in reports sheet", "cadence": "Weekly"}, {"text": "Econtracting %/ Spot%/ tracking #", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in report sheet -MON", "cadence": "Weekly"}, {"text": "VSC Cancellations/ Alpha Log", "cadence": "Weekly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}]}, {"label": "Candy Cars Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES (fri/sat)", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}]}, {"label": "RECON", "tasks": [{"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Hotel & Pen Side of Lot", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 5 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "go throught second lot for cars being moved", "cadence": "Daily"}, {"text": "go through approvals", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Weekly"}, {"text": "CC Gather Supply List", "cadence": "Weekly"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Weekly"}, {"text": "Lot Audit", "cadence": "Weekly"}, {"text": "check title report and xtime", "cadence": "Weekly"}]}] },
+  maintenance:{ name: 'Maintenance', short: 'M', data: [{"label": "Bridgeland Facility", "tasks": [{"text": "Off Day prep ( main store and wholesale offices)", "cadence": "Daily"}, {"text": "Check metal bin & empty if full", "cadence": "Daily"}, {"text": "Empty Shop trash", "cadence": "Daily"}, {"text": "Walk grounds for any debris, trash, cigs", "cadence": "Daily"}, {"text": "Water inside plants", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Showroom Paint Touch-ups", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Friday clean", "cadence": "Weekly"}, {"text": "Clean tech sink area thoroughly", "cadence": "Weekly"}, {"text": "Bottom of chairs & baseboards within showroom and offices", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub", "cadence": "Weekly"}, {"text": "Clean Tire Machine/ Wheel balancer / Alignment ctr", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Clean compressor room , Oil tanks, Mop etc", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Inside/ Outside store glass and doors", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}, {"label": "Candy Cars Facility", "tasks": [{"text": "Empty Trash  (Shop, Parts, Break Rm, Detail)", "cadence": "Daily"}, {"text": "Check Metal Bin Empty if full", "cadence": "Daily"}, {"text": "Walk around Building for debris, Trash, Butts", "cadence": "Daily"}, {"text": "Clean stair treads ( both shop stairways )", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360 (Whole interior)", "cadence": "Weekly"}, {"text": "Clean Marks on baseboards", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Clean all bottoms of chairs", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Friday Clean", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub (Fri)", "cadence": "Weekly"}, {"text": "Clean shop sink / detail sink", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Scrub tire room , Machines , oil tanks , Compressor", "cadence": "Weekly"}, {"text": "clean bottom of all chairs", "cadence": "Monthly"}, {"text": "Check furnace filters / replace where needed", "cadence": "Monthly"}, {"text": "Clean all glass inside/out including overhead doors", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Change Karcher pressure washer oil", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}] }
+};
+
+let LOCATIONS = DEFAULT_LOCATIONS;
+
+// Same id scheme as the Dealership Daily Ops app - this reads the SAME shared roster
+// (falling back to seeding it if nothing has been saved server-side yet), so a role added
+// or a task reassigned in that app's Setup tab shows up here automatically too.
+function assignTaskIds(locs){
+  let n = 0;
+  Object.entries(locs).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => {
+      emp.tasks.forEach((t) => {
+        if(!t.id){ t.id = `seed-${locKey}-${empIdx}-${n++}`; }
+        if(t.howTo === undefined) t.howTo = '';
+        if(t.videoUrl === undefined) t.videoUrl = '';
+      });
+    });
+  });
+  return locs;
+}
+
+let currentLoc = 'bridgeland';
+let currentEmployee = 0;
+let currentTaskIdx = 0;
+let mapCache = {};
+let currentForm = emptyForm();
+
+function emptyForm(){
+  return { purpose:'', platforms:[], steps:[''], metric:'', current:'', target:'', onTrack:'', automation:'', autoNotes:'', trained:'', trainedDate:'' };
+}
+
+const PLATFORMS = ['DealerTrack','ProfitTime','DriveCentric CRM','Xtime','Google Sheets','Other','N/A'];
+
+function mapKey(loc, empIdx, taskIdx){ return `map:${loc}:${empIdx}:${taskIdx}`; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> t.classList.remove('show'), 1200);
+}
+
+// ---- Shared server-backed store (same backend the Dealership Daily Ops app uses,
+// so a mapped metric shows up there immediately - no export/import needed) ----
+let SERVER_STATE = {};
+async function refreshServerState(){
+  try{
+    const res = await fetch('/api/state');
+    SERVER_STATE = await res.json();
+    if(SERVER_STATE['roster']){
+      try{ LOCATIONS = JSON.parse(SERVER_STATE['roster']); }
+      catch(e){ console.error('Bad roster data, falling back to default', e); LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); }
+    } else {
+      LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS);
+      await storSet('roster', JSON.stringify(LOCATIONS));
+    }
+    return true;
+  }catch(e){
+    console.error('Failed to load shared state', e);
+    showToast('Could not reach server \u2014 showing last known data');
+    return false;
+  }
+}
+async function storGet(key){
+  return Object.prototype.hasOwnProperty.call(SERVER_STATE, key) ? SERVER_STATE[key] : null;
+}
+async function storSet(key, value){
+  SERVER_STATE[key] = value;
+  try{
+    const res = await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    });
+    return res.ok;
+  }catch(e){ console.error('save failed', e); return false; }
+}
+
+async function loadMap(loc, empIdx, taskIdx){
+  const key = mapKey(loc, empIdx, taskIdx);
+  if(mapCache[key]) return mapCache[key];
+  const raw = await storGet(key);
+  const val = raw ? JSON.parse(raw) : emptyForm();
+  if(!val.steps || val.steps.length === 0) val.steps = [''];
+  mapCache[key] = val;
+  return val;
+}
+async function saveMap(loc, empIdx, taskIdx, form){
+  const key = mapKey(loc, empIdx, taskIdx);
+  mapCache[key] = form;
+  const ok = await storSet(key, JSON.stringify(form));
+  showToast(ok ? 'Saved' : 'Save failed');
+}
+function isMapped(form){
+  return !!(form.purpose || form.metric || form.platforms.length || (form.steps && form.steps.some(s=>s)));
+}
+
+function initials(label){
+  const clean = label.replace(/Bridgeland|Candy ?Cars|CC\b/gi,'').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if(parts.length === 0) return label.slice(0,2).toUpperCase();
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function renderLocSwitch(){
+  const el = document.getElementById('locSwitch');
+  el.innerHTML = '';
+  Object.entries(LOCATIONS).forEach(([key, loc]) => {
+    const btn = document.createElement('button');
+    btn.className = 'loc-btn' + (key === currentLoc ? ' active' : '');
+    btn.textContent = loc.name;
+    btn.onclick = () => { currentLoc = key; currentEmployee = 0; currentTaskIdx = 0; renderAll(); };
+    el.appendChild(btn);
+  });
+  document.getElementById('appIcon').textContent = LOCATIONS[currentLoc].short;
+}
+
+function renderNav(){
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  LOCATIONS[currentLoc].data.forEach((emp, idx) => {
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (idx === currentEmployee ? ' active' : '');
+    item.innerHTML = `<div class="nav-avatar">${initials(emp.label)}</div><div>${emp.label}</div>`;
+    item.onclick = () => { currentEmployee = idx; currentTaskIdx = 0; renderAll(); };
+    nav.appendChild(item);
+  });
+}
+
+async function renderTaskList(){
+  await refreshServerState();
+  const emp = LOCATIONS[currentLoc].data[currentEmployee];
+  const listEl = document.getElementById('taskList');
+  listEl.innerHTML = '';
+  let lastCadence = null;
+  for(let i=0;i<emp.tasks.length;i++){
+    const t = emp.tasks[i];
+    if(t.cadence !== lastCadence){
+      const hdr = document.createElement('div');
+      hdr.className = 'task-cadence-hdr';
+      hdr.textContent = t.cadence;
+      listEl.appendChild(hdr);
+      lastCadence = t.cadence;
+    }
+    const form = await loadMap(currentLoc, currentEmployee, t.id);
+    const item = document.createElement('div');
+    item.className = 'task-item' + (i === currentTaskIdx ? ' active' : '');
+    item.innerHTML = `<div class="task-dot ${isMapped(form) ? 'mapped' : ''}"></div><div>${t.text}</div>`;
+    item.onclick = () => { currentTaskIdx = i; renderTask(); renderTaskList(); };
+    listEl.appendChild(item);
+  }
+}
+
+function renderChips(){
+  const wrap = document.getElementById('fPlatforms');
+  wrap.innerHTML = '';
+  PLATFORMS.forEach(p => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip' + (currentForm.platforms.includes(p) ? ' sel' : '');
+    chip.textContent = p;
+    chip.onclick = () => {
+      const i = currentForm.platforms.indexOf(p);
+      if(i === -1) currentForm.platforms.push(p); else currentForm.platforms.splice(i,1);
+      renderChips();
+      persist();
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderSteps(){
+  const wrap = document.getElementById('stepsMap');
+  wrap.innerHTML = '';
+  currentForm.steps.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.innerHTML = `<div class="step-num">${i+1}</div>`;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = s;
+    input.placeholder = i === 0 ? 'e.g. Open Xtime' : 'Next step...';
+    input.oninput = () => { currentForm.steps[i] = input.value; persist(); };
+    row.appendChild(input);
+    if(currentForm.steps.length > 1){
+      const rm = document.createElement('button');
+      rm.className = 'step-remove';
+      rm.textContent = '\u00d7';
+      rm.onclick = () => { currentForm.steps.splice(i,1); renderSteps(); persist(); };
+      row.appendChild(rm);
+    }
+    wrap.appendChild(row);
+  });
+}
+
+function renderSegmented(elId, value, classPrefix){
+  const wrap = document.getElementById(elId);
+  wrap.querySelectorAll('.seg-opt').forEach(btn => {
+    const cls = {
+      'On track':'sel-good','At risk':'sel-risk','Off track':'sel-bad','No metric yet':'sel-none',
+      'Yes':'sel-yes','Partial':'sel-partial','No':'sel-no','Y':'sel-yes','N':'sel-none'
+    }[btn.dataset.val];
+    btn.className = 'seg-opt' + (btn.dataset.val === value ? ' ' + cls : '');
+  });
+}
+
+async function renderTask(){
+  await refreshServerState();
+  const emp = LOCATIONS[currentLoc].data[currentEmployee];
+  const t = emp.tasks[currentTaskIdx];
+
+  document.getElementById('bcRole').textContent = emp.label;
+  document.getElementById('bcLoc').textContent = LOCATIONS[currentLoc].name;
+  document.getElementById('taskTitle').textContent = t.text;
+  document.getElementById('cadenceBadge').textContent = t.cadence;
+  document.getElementById('progressTxt').textContent = `Task ${currentTaskIdx+1} of ${emp.tasks.length}`;
+  document.getElementById('prevTaskBtn').disabled = currentTaskIdx === 0;
+  document.getElementById('nextTaskBtn').disabled = currentTaskIdx === emp.tasks.length - 1;
+
+  currentForm = await loadMap(currentLoc, currentEmployee, t.id);
+
+  document.getElementById('fPurpose').value = currentForm.purpose;
+  document.getElementById('fMetric').value = currentForm.metric;
+  document.getElementById('fCurrent').value = currentForm.current;
+  document.getElementById('fTarget').value = currentForm.target;
+  document.getElementById('fAutoNotes').value = currentForm.autoNotes;
+  document.getElementById('fTrainedDate').value = currentForm.trainedDate;
+
+  renderChips();
+  renderSteps();
+  renderSegmented('fOnTrack', currentForm.onTrack);
+  renderSegmented('fAutomation', currentForm.automation);
+  renderSegmented('fTrained', currentForm.trained);
+}
+
+let persistTimer = null;
+function persist(){
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(async () => {
+    const t = LOCATIONS[currentLoc].data[currentEmployee].tasks[currentTaskIdx];
+    if(!t) return;
+    await saveMap(currentLoc, currentEmployee, t.id, currentForm);
+    renderTaskList();
+  }, 400);
+}
+
+document.getElementById('fPurpose').oninput = (e) => { currentForm.purpose = e.target.value; persist(); };
+document.getElementById('fMetric').oninput = (e) => { currentForm.metric = e.target.value; persist(); };
+document.getElementById('fCurrent').oninput = (e) => { currentForm.current = e.target.value; persist(); };
+document.getElementById('fTarget').oninput = (e) => { currentForm.target = e.target.value; persist(); };
+document.getElementById('fAutoNotes').oninput = (e) => { currentForm.autoNotes = e.target.value; persist(); };
+document.getElementById('fTrainedDate').oninput = (e) => { currentForm.trainedDate = e.target.value; persist(); };
+
+document.getElementById('addStepBtn').onclick = () => {
+  currentForm.steps.push('');
+  renderSteps();
+  persist();
+};
+
+document.getElementById('fOnTrack').querySelectorAll('.seg-opt').forEach(btn => {
+  btn.onclick = () => { currentForm.onTrack = currentForm.onTrack === btn.dataset.val ? '' : btn.dataset.val; renderSegmented('fOnTrack', currentForm.onTrack); persist(); };
+});
+document.getElementById('fAutomation').querySelectorAll('.seg-opt').forEach(btn => {
+  btn.onclick = () => { currentForm.automation = currentForm.automation === btn.dataset.val ? '' : btn.dataset.val; renderSegmented('fAutomation', currentForm.automation); persist(); };
+});
+document.getElementById('fTrained').querySelectorAll('.seg-opt').forEach(btn => {
+  btn.onclick = () => { currentForm.trained = currentForm.trained === btn.dataset.val ? '' : btn.dataset.val; renderSegmented('fTrained', currentForm.trained); persist(); };
+});
+
+document.getElementById('prevTaskBtn').onclick = () => { if(currentTaskIdx > 0){ currentTaskIdx--; renderTask(); renderTaskList(); } };
+document.getElementById('nextTaskBtn').onclick = () => {
+  const emp = LOCATIONS[currentLoc].data[currentEmployee];
+  if(currentTaskIdx < emp.tasks.length - 1){ currentTaskIdx++; renderTask(); renderTaskList(); }
+};
+
+async function renderAll(){
+  renderLocSwitch();
+  renderNav();
+  await renderTaskList();
+  await renderTask();
+}
+
+// ---- Build Spec view ----
+let specShown = false;
+const PLATFORM_LIST = ['DealerTrack','ProfitTime','DriveCentric CRM','Xtime','Google Sheets','Other','N/A'];
+
+async function collectAllMapped(){
+  const entries = [];
+  const jobs = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => {
+      emp.tasks.forEach((t) => {
+        jobs.push((async () => {
+          const form = await loadMap(locKey, empIdx, t.id);
+          if(form.platforms && form.platforms.length){
+            entries.push({ locName: loc.name, role: emp.label, task: t.text, cadence: t.cadence, form });
+          }
+        })());
+      });
+    });
+  });
+  await Promise.all(jobs);
+  return entries;
+}
+
+function autoRank(a){ return a === 'Yes' ? 0 : a === 'Partial' ? 1 : 2; }
+
+async function renderSpec(){
+  const view = document.getElementById('specView');
+  view.innerHTML = '<div class="empty-spec">Gathering everything that\'s been mapped so far...</div>';
+  const entries = await collectAllMapped();
+
+  if(entries.length === 0){
+    view.innerHTML = `
+      <div class="spec-header">
+        <h1>Build Spec</h1>
+        <p>Nothing's been mapped yet. Tag at least one platform on a task and it'll show up here, grouped by platform, ready to hand off.</p>
+      </div>`;
+    return;
+  }
+
+  const platformGroups = {};
+  PLATFORM_LIST.forEach(p => platformGroups[p] = []);
+  entries.forEach(e => {
+    e.form.platforms.forEach(p => {
+      if(!platformGroups[p]) platformGroups[p] = [];
+      platformGroups[p].push(e);
+    });
+  });
+
+  const automatable = entries.filter(e => e.form.automation === 'Yes' || e.form.automation === 'Partial').length;
+  const rolesCovered = new Set(entries.map(e => e.locName + '::' + e.role)).size;
+  const platformsUsed = Object.keys(platformGroups).filter(p => platformGroups[p].length).length;
+
+  let html = `
+    <div class="spec-header">
+      <h1>Build Spec \u2014 by platform</h1>
+      <p>Everything mapped so far, organized by the platform it lives on. Hand this to Corey or the technology company as-is \u2014 each card is the task, why it matters, the exact steps, and what should be automated.</p>
+      <div class="spec-stats">
+        <div class="spec-stat"><div class="num">${entries.length}</div><div class="lbl">Tasks mapped</div></div>
+        <div class="spec-stat"><div class="num">${automatable}</div><div class="lbl">Automation candidates</div></div>
+        <div class="spec-stat"><div class="num">${platformsUsed}</div><div class="lbl">Platforms involved</div></div>
+        <div class="spec-stat"><div class="num">${rolesCovered}</div><div class="lbl">Roles covered</div></div>
+      </div>
+      <div class="spec-actions">
+        <button id="copySpecBtn">Copy as text</button>
+        <button id="printSpecBtn">Print / Save as PDF</button>
+      </div>
+    </div>
+  `;
+
+  PLATFORM_LIST.forEach(p => {
+    const items = platformGroups[p];
+    if(!items || items.length === 0) return;
+    items.sort((a,b) => autoRank(a.form.automation) - autoRank(b.form.automation));
+    html += `<div class="platform-group"><div class="platform-title">${p} <span class="platform-count">${items.length}</span></div>`;
+    items.forEach(e => {
+      const f = e.form;
+      const steps = (f.steps || []).filter(s => s && s.trim());
+      html += `<div class="spec-card">
+        <div class="spec-card-top">
+          <span class="spec-task-title">${e.task}</span>
+          ${f.automation === 'Yes' || f.automation === 'Partial' ? `<span class="auto-badge ${f.automation}">${f.automation === 'Yes' ? 'Automate' : 'Partial automate'}</span>` : ''}
+        </div>
+        <div class="spec-role">${e.role} \u00b7 ${e.locName} \u00b7 ${e.cadence}</div>
+        ${f.purpose ? `<div class="spec-row"><b>Why it matters:</b> ${f.purpose}</div>` : ''}
+        ${steps.length ? `<ol class="spec-steps">${steps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
+        ${f.metric ? `<div class="spec-row"><b>Metric:</b> ${f.metric}${f.current ? ` \u2014 currently ${f.current}` : ''}${f.target ? `, target ${f.target}` : ''}</div>` : ''}
+        ${f.autoNotes ? `<div class="spec-row"><b>What should be automated:</b> ${f.autoNotes}</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  view.innerHTML = html;
+
+  document.getElementById('copySpecBtn').onclick = () => copySpecAsText(platformGroups);
+  document.getElementById('printSpecBtn').onclick = () => window.print();
+}
+
+function copySpecAsText(platformGroups){
+  let text = 'BUILD SPEC \u2014 organized by platform\n\n';
+  PLATFORM_LIST.forEach(p => {
+    const items = platformGroups[p];
+    if(!items || items.length === 0) return;
+    text += `=== ${p} (${items.length}) ===\n\n`;
+    items.forEach(e => {
+      const f = e.form;
+      text += `Task: ${e.task}\n`;
+      text += `Role: ${e.role} (${e.locName}) \u2014 ${e.cadence}\n`;
+      if(f.automation) text += `Automation: ${f.automation}\n`;
+      if(f.purpose) text += `Why it matters: ${f.purpose}\n`;
+      const steps = (f.steps || []).filter(s => s && s.trim());
+      if(steps.length) text += `Steps:\n` + steps.map((s,i) => `  ${i+1}. ${s}`).join('\n') + '\n';
+      if(f.metric) text += `Metric: ${f.metric}${f.current ? ` (currently ${f.current})` : ''}${f.target ? `, target ${f.target}` : ''}\n`;
+      if(f.autoNotes) text += `Automate by: ${f.autoNotes}\n`;
+      text += '\n';
+    });
+  });
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => showToast('Copy failed'));
+}
+
+document.getElementById('specToggleBtn').onclick = async () => {
+  specShown = !specShown;
+  document.getElementById('specToggleBtn').classList.toggle('active', specShown);
+  document.getElementById('specView').classList.toggle('show', specShown);
+  document.querySelector('.sidebar').style.display = specShown ? 'none' : '';
+  document.querySelector('.tasklist').style.display = specShown ? 'none' : '';
+  document.querySelector('.main').style.display = specShown ? 'none' : '';
+  if(specShown) await renderSpec();
+};
+
+// ---- Export / Import (for sharing between people/devices) ----
+async function exportData(){
+  await refreshServerState();
+  const data = {};
+  Object.entries(SERVER_STATE).forEach(([k,v]) => { if(k.startsWith('map:')) data[k] = v; });
+  if(Object.keys(data).length === 0){ showToast('Nothing to export yet'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `task-workflow-mapper-data-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exported (this is a backup - the live data already lives on the server)');
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      const filtered = {};
+      Object.entries(data).forEach(([k,v]) => { if(k.startsWith('map:')) filtered[k] = v; });
+      const res = await fetch('/api/state/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filtered)
+      });
+      const result = await res.json();
+      mapCache = {};
+      await renderTaskList();
+      await renderTask();
+      showToast(`Imported ${result.count || 0} entries into the shared store`);
+    }catch(err){
+      console.error(err);
+      showToast('Import failed - invalid file');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('exportBtn').onclick = exportData;
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if(file) importData(file);
+  e.target.value = '';
+};
+
+renderAll();
+</script>
+</body>
+</html>

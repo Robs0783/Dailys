@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dealership Daily Ops</title>
+<style>
+  :root{
+    --win-bg:#F3F3F3;
+    --win-surface:#FFFFFF;
+    --win-sidebar:#FAFAFA;
+    --win-border:#E1DFDD;
+    --win-border-strong:#D2D0CE;
+    --win-text:#1B1A19;
+    --win-text-secondary:#605E5C;
+    --win-accent:#0F6CBD;
+    --win-accent-light:#E9F1FB;
+    --c-complete:#107C10;
+    --c-incomplete:#C42B1C;
+    --c-off:#605E5C;
+    --kpi-good:#107C10;
+    --kpi-risk:#BA7517;
+    --kpi-bad:#C42B1C;
+    --kpi-none:#8A8886;
+    --radius:8px;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.08), 0 0.5px 1.5px rgba(0,0,0,0.06);
+    --shadow-2: 0 4px 8px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; font-family:'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--win-bg); color:var(--win-text); -webkit-font-smoothing:antialiased;
+  }
+  .app-window{
+    display:flex; flex-direction:column; height:100vh; min-height:640px;
+    border:1px solid var(--win-border-strong); border-radius:10px; overflow:hidden;
+    box-shadow:var(--shadow-2); background:var(--win-bg);
+  }
+  .titlebar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--win-surface); border-bottom:1px solid var(--win-border);
+    padding:0 8px 0 14px; height:40px; flex-shrink:0; user-select:none;
+  }
+  .titlebar-left{ display:flex; align-items:center; gap:10px; }
+  .app-icon{ width:18px;height:18px;border-radius:4px; background:linear-gradient(135deg,var(--win-accent),#59B0F5);
+    display:flex;align-items:center;justify-content:center; color:white;font-size:11px;font-weight:700; }
+  .titlebar-title{ font-size:13px; font-weight:600; }
+  .loc-switch{ display:flex; gap:2px; background:var(--win-bg); border-radius:6px; padding:2px; margin-left:16px; }
+  .loc-btn{ border:none; background:transparent; padding:5px 14px; font-size:12.5px; font-weight:600;
+    border-radius:5px; cursor:pointer; color:var(--win-text-secondary); }
+  .loc-btn.active{ background:var(--win-accent); color:#fff; }
+  .titlebar-controls{ display:flex; }
+  .tc-btn{ width:44px;height:40px;border:none;background:transparent; display:flex;align-items:center;justify-content:center;
+    cursor:default; color:#444; font-size:10px; }
+  .tc-btn:hover{ background:rgba(0,0,0,0.05); }
+  .tc-btn.close:hover{ background:#E81123; color:white; }
+
+  .app-body{ flex:1; display:flex; min-height:0; }
+  .sidebar{ width:230px; flex-shrink:0; background:var(--win-sidebar); border-right:1px solid var(--win-border);
+    padding:14px 8px; overflow-y:auto; }
+  .sidebar-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--win-text-secondary); padding:4px 10px 8px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; margin:2px 0; border-radius:6px;
+    cursor:pointer; font-size:13px; position:relative; transition:background .12s ease; }
+  .nav-item:hover{ background:rgba(0,0,0,0.04); }
+  .nav-item.active{ background:var(--win-accent-light); font-weight:600; }
+  .nav-item.active::before{ content:''; position:absolute; left:-8px; top:8px; bottom:8px; width:3px;
+    border-radius:2px; background:var(--win-accent); }
+  .nav-avatar{ width:26px;height:26px;border-radius:50%; background:#EDEBE9; color:#3B3A39;
+    display:flex;align-items:center;justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+  .nav-item.active .nav-avatar{ background:var(--win-accent); color:#fff; }
+  .nav-progress{ margin-left:auto; font-size:10.5px; color:var(--win-text-secondary); font-variant-numeric:tabular-nums; }
+  .nav-item.active .nav-progress{ color:var(--win-accent); font-weight:600; }
+
+  .main{ flex:1; overflow-y:auto; overflow-x:auto; padding:20px 26px 40px; }
+  .content-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+  .employee-title{ display:flex; align-items:center; gap:12px; }
+  .employee-avatar-lg{ width:40px;height:40px;border-radius:50%; background:var(--win-accent); color:#fff;
+    display:flex;align-items:center;justify-content:center; font-size:14px; font-weight:700; }
+  .employee-title h1{ font-size:18px; margin:0; font-weight:600; }
+  .employee-title .sub{ font-size:12px; color:var(--win-text-secondary); }
+
+  .week-nav{ display:flex; align-items:center; gap:6px; background:var(--win-surface); border:1px solid var(--win-border);
+    border-radius:6px; padding:4px 6px; box-shadow:var(--shadow-1); }
+  .week-nav button{ border:none; background:transparent; width:26px;height:26px; border-radius:4px; cursor:pointer;
+    font-size:13px; display:flex;align-items:center;justify-content:center; }
+  .week-nav button:hover{ background:rgba(0,0,0,.05); }
+  .week-label{ font-size:12.5px; font-weight:600; padding:0 6px; white-space:nowrap; }
+  .today-pill{ font-size:11.5px; padding:4px 10px; border-radius:12px; background:var(--win-accent-light);
+    color:var(--win-accent); font-weight:600; cursor:pointer; border:1px solid transparent; }
+  .today-pill:hover{ border-color:var(--win-accent); }
+
+  .summary-bar{ display:flex; align-items:center; gap:16px; background:var(--win-surface); border:1px solid var(--win-border);
+    border-radius:var(--radius); padding:12px 18px; margin-bottom:16px; box-shadow:var(--shadow-1); flex-wrap:wrap; }
+  .legend{ display:flex; gap:14px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--win-text-secondary); }
+  .legend-dot{ width:10px;height:10px;border-radius:3px; }
+  .legend-item.camera::before{ content:'\\1F4F7'; font-size:12px; }
+  .summary-stat{ margin-left:auto; font-size:12px; color:var(--win-text-secondary); }
+  .summary-stat b{ color:var(--win-text); }
+
+  table.week-table{ border-collapse:collapse; width:100%; background:var(--win-surface); border:1px solid var(--win-border);
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-1); }
+  table.week-table th, table.week-table td{ border-bottom:1px solid var(--win-border); padding:0; }
+  table.week-table thead th{ background:#FAFAFA; font-size:10.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.03em; color:var(--win-text-secondary); padding:8px 6px; text-align:center; border-bottom:1px solid var(--win-border-strong); }
+  table.week-table thead th.task-col{ text-align:left; padding-left:16px; }
+  table.week-table thead th .dow-date{ display:block; font-weight:400; font-size:9.5px; color:#A19F9D; margin-top:1px; }
+  .cadence-row td{ background:#F7F7F7; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--win-text-secondary); padding:6px 16px; border-bottom:1px solid var(--win-border); }
+  .task-cell{ padding:8px 14px; font-size:13px; line-height:1.3; display:flex; align-items:center; gap:8px; min-width:220px; flex-wrap:wrap; }
+  .toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; margin-right:4px; }
+  .tb-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:6px 14px;
+    font-size:12.5px; font-weight:600; cursor:pointer; color:var(--win-text-secondary); }
+  .tb-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); color:var(--win-accent); }
+  .kpi-badge{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; color:#fff; white-space:nowrap; flex-shrink:0; cursor:default; }
+  .kpi-badge.kpi-good{ background:var(--kpi-good); }
+  .kpi-badge.kpi-risk{ background:var(--kpi-risk); }
+  .kpi-badge.kpi-bad{ background:var(--kpi-bad); }
+  .kpi-badge.kpi-none{ background:var(--kpi-none); }
+  .spec-stats{ display:flex; gap:24px; flex-wrap:wrap; margin-bottom:6px; }
+  .spec-stat{ background:var(--win-surface); border:1px solid var(--win-border); border-radius:var(--radius);
+    padding:10px 16px; box-shadow:var(--shadow-1); }
+  .spec-stat .num{ font-size:20px; font-weight:700; color:var(--win-accent); }
+  .spec-stat .lbl{ font-size:11px; color:var(--win-text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+  .cadence-row.awareness-row{ background:#F0EFED !important; color:#8A8886 !important; }
+  tr.awareness-task{ opacity:.72; }
+  tr.awareness-task .task-cell{ font-style:italic; }
+  .tb-btn.active{ background:var(--win-accent); border-color:var(--win-accent); color:#fff; }
+  .monthly-view{ flex:1; overflow-y:auto; padding:24px 32px 60px; display:none; }
+  .monthly-view.show{ display:block; }
+  .monthly-header{ margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .monthly-header h1{ font-size:20px; margin:0; font-weight:600; }
+  .month-nav{ display:flex; align-items:center; gap:6px; background:var(--win-surface); border:1px solid var(--win-border);
+    border-radius:6px; padding:4px 6px; box-shadow:var(--shadow-1); }
+  .month-nav button{ border:none; background:transparent; width:26px;height:26px; border-radius:4px; cursor:pointer;
+    font-size:13px; display:flex;align-items:center;justify-content:center; }
+  .month-nav button:hover{ background:rgba(0,0,0,.05); }
+  .month-label{ font-size:12.5px; font-weight:600; padding:0 6px; white-space:nowrap; }
+  .month-today-pill{ font-size:11.5px; padding:4px 10px; border-radius:12px; background:var(--win-accent-light);
+    color:var(--win-accent); font-weight:600; cursor:pointer; border:1px solid transparent; }
+  .month-today-pill:hover{ border-color:var(--win-accent); }
+  .monthly-actions{ display:flex; gap:10px; margin:14px 0 20px; }
+  .monthly-actions button{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:8px 16px;
+    font-size:12.5px; font-weight:600; cursor:pointer; }
+  .monthly-actions button:hover{ background:var(--win-accent-light); }
+  .monthly-loc-group{ margin-bottom:26px; }
+  .monthly-loc-title{ font-size:15px; font-weight:700; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--win-accent); }
+  table.monthly-table{ border-collapse:collapse; width:100%; background:var(--win-surface); border:1px solid var(--win-border);
+    border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-1); }
+  table.monthly-table th, table.monthly-table td{ border-bottom:1px solid var(--win-border); padding:10px 14px; font-size:12.5px; text-align:left; }
+  table.monthly-table thead th{ background:#FAFAFA; font-size:10.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.03em; color:var(--win-text-secondary); border-bottom:1px solid var(--win-border-strong); }
+  table.monthly-table td.num, table.monthly-table th.num{ text-align:center; font-variant-numeric:tabular-nums; }
+  .rate-pill{ display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:10px; color:#fff; }
+  .rate-pill.rate-good{ background:var(--kpi-good); }
+  .rate-pill.rate-risk{ background:var(--kpi-risk); }
+  .rate-pill.rate-bad{ background:var(--kpi-bad); }
+  .rate-pill.rate-none{ background:var(--kpi-none); }
+  @media print{
+    body{ background:#fff; }
+    .app-window{ border:none; border-radius:0; box-shadow:none; height:auto; }
+    .titlebar, .sidebar, .app-body > .main{ display:none !important; }
+    .monthly-view{ display:block !important; padding:0; overflow:visible; }
+    .monthly-actions{ display:none; }
+  }
+  .photo-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:5px; width:24px;height:24px;
+    flex-shrink:0; cursor:pointer; font-size:12px; display:flex;align-items:center;justify-content:center; padding:0; }
+  .photo-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); }
+  .photo-btn.has-photo{ border-color:var(--c-complete); background:#DFF6DD; }
+  .photo-thumb{ width:24px;height:24px;border-radius:4px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--win-border-strong); }
+  .onetime-chip{ font-size:9.5px; font-weight:700; color:#fff; background:#8764B8; border-radius:4px; padding:2px 5px; flex-shrink:0; }
+  .day-cell{ text-align:center; padding:0; }
+  .seg{ display:flex; justify-content:center; gap:3px; padding:8px 4px; }
+  .seg-btn{ width:22px;height:22px; border-radius:5px; border:1px solid var(--win-border-strong); background:#fff;
+    font-size:10.5px; font-weight:700; cursor:pointer; color:var(--win-text-secondary); padding:0; }
+  .seg-btn:hover{ background:rgba(0,0,0,.04); }
+  .seg-btn.sel-C{ background:var(--c-complete); color:#fff; border-color:var(--c-complete); }
+  .seg-btn.sel-I{ background:var(--c-incomplete); color:#fff; border-color:var(--c-incomplete); }
+  .seg-btn.sel-O{ background:var(--c-off); color:#fff; border-color:var(--c-off); }
+  .completion-cell{ text-align:center; padding:6px; }
+
+  .status-toast{ position:fixed; bottom:18px; right:18px; background:#1B1A19; color:#fff; padding:8px 14px;
+    border-radius:6px; font-size:12.5px; opacity:0; transform:translateY(6px); transition:opacity .2s ease, transform .2s ease;
+    pointer-events:none; box-shadow:var(--shadow-2); z-index:50; }
+  .status-toast.show{ opacity:1; transform:translateY(0); }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal-backdrop.show{ display:flex; }
+  .modal{ background:#fff; border-radius:10px; padding:18px; max-width:520px; width:90%; box-shadow:var(--shadow-2); }
+  .modal h3{ margin:0 0 10px; font-size:14px; }
+  .modal img{ max-width:100%; border-radius:6px; display:block; margin-bottom:10px; }
+  .modal-actions{ display:flex; gap:8px; justify-content:flex-end; }
+  .modal-actions button{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:6px 14px;
+    font-size:12.5px; cursor:pointer; }
+  .modal-actions button.primary{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
+  .modal-actions button.danger{ color:var(--c-incomplete); }
+  .file-input{ display:none; }
+  .empty-note{ font-size:12px; color:var(--win-text-secondary); padding:14px 16px; }
+
+  .onetime-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-bottom:1px solid var(--win-border); }
+  .onetime-row:last-child{ border-bottom:none; }
+  .onetime-row.done{ opacity:.6; }
+  .onetime-row.done .onetime-text{ text-decoration:line-through; }
+  .onetime-thumb-wrap{ flex-shrink:0; }
+  .onetime-text{ flex:1; font-size:13px; }
+  .mini-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:5px; padding:5px 10px;
+    font-size:11.5px; font-weight:600; cursor:pointer; color:var(--win-text-secondary); white-space:nowrap; }
+  .mini-btn:hover{ background:rgba(0,0,0,.04); }
+  .mini-btn.sel-C{ background:var(--c-complete); color:#fff; border-color:var(--c-complete); }
+  .mini-btn.primary-mini{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
+  .mini-btn.danger-mini{ color:var(--c-incomplete); }
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb{ background:#C8C6C4; border-radius:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+
+<div class="app-window">
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="app-icon" id="appIcon">B</div>
+      <div class="titlebar-title">Dealership Daily Ops</div><span style="font-size:10.5px;font-weight:700;color:var(--win-accent);background:var(--win-accent-light);padding:2px 8px;border-radius:10px;margin-left:4px;">Live &middot; shared</span><a href="/mapper" style="font-size:11.5px;color:var(--win-text-secondary);text-decoration:none;margin-left:10px;border:1px solid var(--win-border-strong);border-radius:6px;padding:3px 9px;">Open Task Workflow Mapper &rarr;</a>
+      <div class="loc-switch" id="locSwitch"></div>
+    </div>
+    <div class="toolbar-actions">
+      <button class="tb-btn" id="setupToggleBtn">Setup</button>
+      <button class="tb-btn" id="onetimeToggleBtn">One-Time Tasks</button>
+      <button class="tb-btn" id="meetingsToggleBtn">Meetings</button>
+      <button class="tb-btn" id="monthlyToggleBtn">Monthly Overview</button>
+      <button class="tb-btn" id="exportBtn">Export Data</button>
+      <button class="tb-btn" id="importBtn">Import Data</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+    <div class="titlebar-controls">
+      <button class="tc-btn">&#8211;</button>
+      <button class="tc-btn">&#9633;</button>
+      <button class="tc-btn close">&#10005;</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="sidebar">
+      <div class="sidebar-label">Team</div>
+      <div id="navList"></div>
+    </div>
+
+    <div class="main">
+      <div class="content-header">
+        <div class="employee-title">
+          <div class="employee-avatar-lg" id="empAvatar">?</div>
+          <div>
+            <h1 id="empName">Loading…</h1>
+            <div class="sub" id="empSub"></div>
+          </div>
+        </div>
+        <div class="week-nav">
+          <button id="prevWeek" title="Previous week">&#8592;</button>
+          <span class="week-label" id="weekLabel">Week</span>
+          <button id="nextWeek" title="Next week">&#8594;</button>
+          <span class="today-pill" id="todayBtn">This week</span>
+        </div>
+      </div>
+
+      <div class="summary-bar">
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c-complete)"></div>Complete</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c-incomplete)"></div>Incomplete</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--c-off)"></div>Off</div>
+          <div class="legend-item camera">Reference / completion photo attached</div>
+        </div>
+        <div class="summary-stat" id="summaryStat"></div>
+      </div>
+
+      <div id="tableWrap"></div>
+
+      <div id="meetingsPanelWrap" style="margin-top:22px;"></div>
+
+      <div id="onetimeWrap" style="display:none; margin-top:22px;">
+        <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">One-Time Tasks</div>
+        <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
+          <input type="text" id="addOnetimeInput" placeholder="Describe the one-time task…" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;">
+          <button id="addOnetimeBtn" class="mini-btn primary-mini">+ Add task</button>
+        </div>
+        <div class="task-card" id="onetimeList" style="padding:4px;"></div>
+      </div>
+    </div>
+
+    <div class="monthly-view" id="monthlyView"></div>
+    <div class="monthly-view" id="setupView"></div>
+    <div class="monthly-view" id="onetimeReviewView"></div>
+    <div class="monthly-view" id="meetingsView"></div>
+  </div>
+</div>
+
+<div class="status-toast" id="toast">Saved</div>
+
+<div class="modal-backdrop" id="photoModal">
+  <div class="modal">
+    <h3 id="photoModalTitle">Task photo</h3>
+    <div id="photoModalBody"></div>
+    <div class="modal-actions" id="photoModalActions"></div>
+  </div>
+</div>
+<input type="file" accept="image/*" class="file-input" id="fileInput">
+
+<script>
+const DEFAULT_LOCATIONS = {
+  bridgeland: { name: 'Bridgeland', short: 'B', data: [{"label": "Bridgeland Service Mgr.", "tasks": [{"text": "AM: Ck phones for Blinking VM -pw 2019   Writer", "cadence": "Daily"}, {"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Daily"}, {"text": "Audit reviews and verify they were sent to the customer follow up with Advisor", "cadence": "Daily"}, {"text": "Audit Customer pay RO'S and Labor Profit Analysis for both BL/CC", "cadence": "Daily"}, {"text": "Audit ASR reports for Required KPI Tracking", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "all special ordered parts are contacted", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: Comment on Date in this row", "cadence": "Daily"}, {"text": "Metal Bin is Locked", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building and Vehicles are parked correctly", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "EOD: Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "Shop walk : clean/ paint needs etc communicated", "cadence": "Daily"}, {"text": "Policy: collect all from Kristen - TUE", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking", "cadence": "Weekly"}, {"text": "1160 Schedule", "cadence": "Weekly"}, {"text": "Rapid Recon  Sublets", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}]}, {"label": "Bridgeland Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "We Owes", "cadence": "Weekly"}, {"text": "We Owes RR", "cadence": "Weekly"}, {"text": "BL Parts Suite", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Clean your Space", "cadence": "Weekly"}]}, {"label": "Bridgeland Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}, {"text": "Quarterly Audit", "cadence": "Monthly"}, {"text": "Audit BL", "cadence": "Monthly"}, {"text": "Audit CC", "cadence": "Monthly"}, {"text": "THURSDAY", "cadence": "Monthly"}, {"text": "FRIDAY / SAT", "cadence": "Monthly"}]}, {"label": "Bridgeland Recon Manager", "tasks": [{"text": "Vehicle Check-Ins (Check Drop Box, Stage Vehicle, Move In RR)", "cadence": "Daily"}, {"text": "UVI first day photos completed", "cadence": "Daily"}, {"text": "Key In All Vehicles And Barcode Every Vehicle", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "Set Detailers Up For The Day", "cadence": "Daily"}, {"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Recon Side of Lot", "cadence": "Daily"}, {"text": "(Titles) Make Sure In Correct Area/Step In Rapid With Notes", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 10 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Photo Vehicles", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "UVeye Report - Email list of UVEye vehicles that are needed for next day", "cadence": "Daily"}, {"text": "Weekly Garrett", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Daily"}, {"text": "BL Gather Supply List (Monday - Bob)", "cadence": "Daily"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Daily"}, {"text": "Lot Audit", "cadence": "Daily"}]}, {"label": "Bridgeland Sales Manager #2", "tasks": [{"text": "Review Photos of Inventory/ Confirm QUALITY/ MINIMUM Photos per unit met.", "cadence": "Daily"}, {"text": "social media posting Confirm/ Sales associates posting", "cadence": "Daily"}, {"text": "Review Prev Day appraisals for accuracy/ drive notes (Both locations).", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Review Pricing in ProfitTime/ Make adjustment for Alignment", "cadence": "Daily"}, {"text": "VAUTO Check missing CG Tags (Needs Attention) Mon/Wed/Fri", "cadence": "Daily"}, {"text": "VAUTO: vehicle descriptions generated.", "cadence": "Daily"}, {"text": "Review vehicles in Sold Status", "cadence": "Weekly"}, {"text": "Friday! Merchandising/ ws suite/ vauto/ 3rd party matching", "cadence": "Weekly"}, {"text": "FRIDAY! Update Metrics SPRDSHT for Monday meeting.", "cadence": "Weekly"}]}, {"label": "Bridgeland Finance / Tom", "tasks": [{"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Delivered Deals Statused", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Dead Deals Filed -MON", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Task", "cadence": "Monthly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}, {"text": "One Time (Not counted in %)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales GM", "tasks": [{"text": "Verify MPG log (Match to DMS)", "cadence": "Daily"}, {"text": "Verify managers/ Reps complete CRM tasks", "cadence": "Daily"}, {"text": "Policy log updated to the Day", "cadence": "Daily"}, {"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Birdeye: Address negative reviews", "cadence": "Daily"}, {"text": "No photo list reviewed", "cadence": "Daily"}, {"text": "RR: Review Color Trigger Report", "cadence": "Daily"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "UVI first day completed", "cadence": "Daily"}, {"text": "Pay Sheets Gone over with sales reps Before final", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Birdseye Reviewed . Negative reviews/ Tracking", "cadence": "Weekly"}, {"text": "Policy tied out to GL", "cadence": "Weekly"}, {"text": "Social media Vehicles chosen . payments Ran", "cadence": "Weekly"}, {"text": "Lot Re-merchandised", "cadence": "Weekly"}, {"text": "Desk compliance inspection/ food/Clutter (Enter in AE48)", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E. (Enter in AE49)", "cadence": "Monthly"}, {"text": "Review deal audit (Enter in AE50)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales  Kyle", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "EOD Digital Delivery Board /", "cadence": "Daily"}, {"text": "Facebook Posting verify previous day done", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Key report : 4 day max rule /", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}]}] },
+  candycars:  { name: 'Candy Cars', short: 'C', data: [{"label": "Service Manager", "tasks": [{"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: input to metrics dashboard", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building", "cadence": "Daily"}, {"text": "Metal Bin is locked", "cadence": "Daily"}, {"text": "Shop walk : clean", "cadence": "Daily"}, {"text": "all special ordered parts are contacted  (Dave Green)", "cadence": "Daily"}, {"text": "Policy: collect all from Cashier - Mon", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking (Wednesday Metrics)", "cadence": "Weekly"}, {"text": "Verify loaners are clean and mechanically on point/ ready for next customer (Dave Green)", "cadence": "Weekly"}, {"text": "Saturday Dispatch (Dave Green)", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}, {"text": "Awareness", "cadence": "Monthly"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Monthly"}]}, {"label": "CC Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Parts Suite - Parts being returned here", "cadence": "Weekly"}, {"text": "BL&CC 15 DAY OLD RO'S STATUS", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Policy - Sales / Service (Monday's)", "cadence": "Weekly"}, {"text": "We Owe make contact to schedule appt in RR", "cadence": "Weekly"}]}, {"label": "Candy Cars Sales GM/MGR", "tasks": [{"text": "Desk compliance inspection/ food/Clutter", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E.", "cadence": "Monthly"}, {"text": "Review deal audit", "cadence": "Monthly"}]}, {"label": "Corey T", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "Review unanswered comm's and AI recommendations.", "cadence": "Daily"}, {"text": "EOD Confirm via phone call or text nnext day appt's", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "EOD; UPDATE deal tracker", "cadence": "Daily"}, {"text": "SOCIAL MEDIA LOG", "cadence": "Daily"}, {"text": "NO PHOTO", "cadence": "Daily"}, {"text": "Daily metrics delivered", "cadence": "Daily"}, {"text": "Finalize appraisals", "cadence": "Daily"}, {"text": "Review dead/ lost request in drivecentric/ Notifications", "cadence": "Daily"}, {"text": "Key Reprt", "cadence": "Weekly"}]}, {"label": "Lou", "tasks": [{"text": "PRICING", "cadence": "Daily"}, {"text": "missed Trades Tab under Aquire Vauto scrubbed/Noted", "cadence": "Daily"}, {"text": "No photo list reviewed / T2L monitored for target", "cadence": "Daily"}, {"text": "Color trigger report : address yellow/red", "cadence": "Daily"}, {"text": "SERVICE AM MEETING ON DELIVERIES", "cadence": "Daily"}, {"text": "CIT", "cadence": "Daily"}, {"text": "EOD: Confirm MPG Updated", "cadence": "Daily"}, {"text": "CRM MORNING METRICS", "cadence": "Daily"}, {"text": "FINALIZE APPRAISALS", "cadence": "Daily"}, {"text": "T2L DAYS IS STEP", "cadence": "Daily"}, {"text": "DAILY METRICS", "cadence": "Daily"}, {"text": "REVIEWS", "cadence": "Daily"}, {"text": "SALES TRACKER", "cadence": "Daily"}, {"text": "SCAN DAILYS", "cadence": "Daily"}, {"text": "REVIEW APPTS/SHOW", "cadence": "Daily"}, {"text": "MISSED APPRAISALS", "cadence": "Daily"}, {"text": "REVIEW UNSOLD VISITS FRON PREVIOUS DAY", "cadence": "Daily"}, {"text": "WEEKLY METRICS", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Weekly"}, {"text": "7 Day Trade Report (Monday task ) insert to report", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Review CIT (over 4 days)", "cadence": "Weekly"}, {"text": "MPG log review", "cadence": "Weekly"}, {"text": "FORECASTER", "cadence": "Weekly"}]}, {"label": "Finnegan", "tasks": [{"text": "Confirm Sales reps posting on social media  (Enter each page - Deliveries included )", "cadence": "Daily"}, {"text": "Employee Sites (Indeed)", "cadence": "Daily"}, {"text": "Go over trade appraisals Vauto .. Completed / Notes etc Look2Book", "cadence": "Daily"}, {"text": "MPG Log : Does this match the DMS ?  ()", "cadence": "Daily"}, {"text": "ICO : Look over communication : ARE WE TRACKING? ARE BUYERS Appraising?", "cadence": "Daily"}, {"text": "Scan Daily's : Who is not completing ?", "cadence": "Daily"}, {"text": "Confirm Policy matches GL & all items filled out", "cadence": "Weekly"}, {"text": "ICO Monthly Campaign launched", "cadence": "Weekly"}, {"text": "7 Day trade Reports collected with notes", "cadence": "Weekly"}, {"text": "Overtime Collected from Nina : All addressed ? Turn into Rob", "cadence": "Weekly"}, {"text": "Metrics Log : Confirm ALL metrics reported", "cadence": "Weekly"}, {"text": "Review LocalShift Dashboard for proper communication", "cadence": "Weekly"}, {"text": "CG Digital Deal : Review Dealer portal . Inspect Leads", "cadence": "Weekly"}, {"text": "Claims Pending Cleared up and turned in By 7th of following month", "cadence": "Monthly"}, {"text": "Claims Register Google sheet matches Autoshield Register", "cadence": "Monthly"}, {"text": "Deal audit completed : 10 Random pulled per MGR: turn in checklists to Rob", "cadence": "Monthly"}]}, {"label": "CANDY CARS FINANCE", "tasks": [{"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Capital one portal scrub for applications", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Digital Delivery Board", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "Warranty cancellations", "cadence": "Daily"}, {"text": "Delivery checklist/Service Drive", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Poly/Paint Fab     Dakota", "cadence": "Weekly"}, {"text": "Ally deal Count / Ally tracking -TUE", "cadence": "Weekly"}, {"text": "Dead Deals filed", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Missing title list - Drop in reports sheet", "cadence": "Weekly"}, {"text": "Econtracting %/ Spot%/ tracking #", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in report sheet -MON", "cadence": "Weekly"}, {"text": "VSC Cancellations/ Alpha Log", "cadence": "Weekly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}]}, {"label": "Candy Cars Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES (fri/sat)", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}]}, {"label": "RECON", "tasks": [{"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Hotel & Pen Side of Lot", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 5 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "go throught second lot for cars being moved", "cadence": "Daily"}, {"text": "go through approvals", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Weekly"}, {"text": "CC Gather Supply List", "cadence": "Weekly"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Weekly"}, {"text": "Lot Audit", "cadence": "Weekly"}, {"text": "check title report and xtime", "cadence": "Weekly"}]}] },
+  maintenance:{ name: 'Maintenance', short: 'M', isMaintenance: true, data: [{"label": "Bridgeland Facility", "tasks": [{"text": "Off Day prep ( main store and wholesale offices)", "cadence": "Daily"}, {"text": "Check metal bin & empty if full", "cadence": "Daily"}, {"text": "Empty Shop trash", "cadence": "Daily"}, {"text": "Walk grounds for any debris, trash, cigs", "cadence": "Daily"}, {"text": "Water inside plants", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Showroom Paint Touch-ups", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Friday clean", "cadence": "Weekly"}, {"text": "Clean tech sink area thoroughly", "cadence": "Weekly"}, {"text": "Bottom of chairs & baseboards within showroom and offices", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub", "cadence": "Weekly"}, {"text": "Clean Tire Machine/ Wheel balancer / Alignment ctr", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Clean compressor room , Oil tanks, Mop etc", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Inside/ Outside store glass and doors", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}, {"label": "Candy Cars Facility", "tasks": [{"text": "Empty Trash  (Shop, Parts, Break Rm, Detail)", "cadence": "Daily"}, {"text": "Check Metal Bin Empty if full", "cadence": "Daily"}, {"text": "Walk around Building for debris, Trash, Butts", "cadence": "Daily"}, {"text": "Clean stair treads ( both shop stairways )", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360 (Whole interior)", "cadence": "Weekly"}, {"text": "Clean Marks on baseboards", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Clean all bottoms of chairs", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Friday Clean", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub (Fri)", "cadence": "Weekly"}, {"text": "Clean shop sink / detail sink", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Scrub tire room , Machines , oil tanks , Compressor", "cadence": "Weekly"}, {"text": "clean bottom of all chairs", "cadence": "Monthly"}, {"text": "Check furnace filters / replace where needed", "cadence": "Monthly"}, {"text": "Clean all glass inside/out including overhead doors", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Change Karcher pressure washer oil", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}] }
+};
+
+let LOCATIONS = DEFAULT_LOCATIONS;
+
+// Give every task a permanent id so it can be reassigned between roles/locations without
+// scrambling historical check-ins or KPI mappings (which are also keyed by this id).
+function assignTaskIds(locs){
+  let n = 0;
+  Object.entries(locs).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => {
+      emp.tasks.forEach((t) => {
+        if(!t.id){ t.id = `seed-${locKey}-${empIdx}-${n++}`; }
+        if(t.howTo === undefined) t.howTo = '';
+        if(t.videoUrl === undefined) t.videoUrl = '';
+      });
+    });
+  });
+  return locs;
+}
+function newTaskId(){
+  return 'tsk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+async function saveRoster(){
+  await storSet('roster', JSON.stringify(LOCATIONS));
+}
+
+let currentLoc = 'bridgeland';
+let currentEmployee = 0;
+let weekStart = mondayOf(new Date());
+let statusCache = {};   // dayKey -> array of statuses
+let onetimeListCache = {}; // "loc:facilityIdx" -> array of one-time task objects
+
+function mondayOf(d){
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function weekDates(monday){
+  const out = [];
+  for(let i=0;i<7;i++){ const d = new Date(monday); d.setDate(d.getDate()+i); out.push(d); }
+  return out;
+}
+
+function statusKey(loc, empIdx, dateStr){ return `${loc}:${dateStr}:${empIdx}`; }
+function onetimeListKey(loc, empIdx){ return `onetime-tasks:${loc}:${empIdx}`; }
+
+function initials(label){
+  const clean = label.replace(/Bridgeland|Candy ?Cars|CC\\b/gi,'').trim();
+  const parts = clean.split(/\\s+/).filter(Boolean);
+  if(parts.length === 0) return label.slice(0,2).toUpperCase();
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> t.classList.remove('show'), 1300);
+}
+
+// ---- Shared server-backed store (every employee/device reads and writes the SAME
+// data through this API - this is what makes it live/shared instead of per-device) ----
+let SERVER_STATE = {};
+let MEETINGS = [];
+async function refreshServerState(){
+  try{
+    const res = await fetch('/api/state');
+    SERVER_STATE = await res.json();
+    if(SERVER_STATE['roster']){
+      try{ LOCATIONS = JSON.parse(SERVER_STATE['roster']); }
+      catch(e){ console.error('Bad roster data, falling back to default', e); LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); }
+    } else {
+      LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS);
+      await saveRoster(); // first client to see an empty store seeds the shared roster for everyone
+    }
+    try{ MEETINGS = SERVER_STATE['meetings'] ? JSON.parse(SERVER_STATE['meetings']) : []; }
+    catch(e){ console.error('Bad meetings data, resetting', e); MEETINGS = []; }
+    return true;
+  }catch(e){
+    console.error('Failed to load shared state', e);
+    showToast('Could not reach server \u2014 showing last known data');
+    return false;
+  }
+}
+async function saveMeetingsList(){
+  await storSet('meetings', JSON.stringify(MEETINGS));
+}
+function newMeetingId(){
+  return 'mtg-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+const DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function meetingOccursOn(meeting, date){
+  if(meeting.cadence === 'Weekly') return DOW_NAMES[date.getDay()] === meeting.dayOfWeek;
+  if(meeting.cadence === 'Monthly') return date.getDate() === Number(meeting.dayOfMonth);
+  if(meeting.cadence === 'One-time') return isoDate(date) === meeting.onDate;
+  return false;
+}
+async function storGet(key){
+  return Object.prototype.hasOwnProperty.call(SERVER_STATE, key) ? SERVER_STATE[key] : null;
+}
+async function storSet(key, value){
+  SERVER_STATE[key] = value;
+  try{
+    const res = await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    });
+    return res.ok;
+  }catch(e){ console.error('storage set failed', e); return false; }
+}
+
+function escapeAttr(s){
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function getKpiForTask(loc, empIdx, taskId){
+  try{
+    const raw = SERVER_STATE[`map:${loc}:${empIdx}:${taskId}`];
+    if(!raw) return null;
+    const f = JSON.parse(raw);
+    if(!f || !f.metric) return null;
+    const label = (f.current && f.target) ? `${f.current} \u2192 ${f.target}`
+                : (f.current || f.target || f.metric);
+    const cls = f.onTrack === 'On track' ? 'good'
+              : f.onTrack === 'At risk' ? 'risk'
+              : f.onTrack === 'Off track' ? 'bad'
+              : 'none';
+    const title = f.metric + (f.onTrack ? ' \u2014 ' + f.onTrack : '');
+    return { label, cls, title };
+  }catch(e){ return null; }
+}
+
+// ---- Monthly Overview (resets automatically each calendar month - nothing is deleted, each month's
+// numbers are computed live from that month's own daily entries) ----
+let monthCursor = firstOfMonth(new Date());
+let monthlyShown = false;
+
+function firstOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function daysInMonthOf(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); }
+function fmtMonthLabel(d){ return d.toLocaleDateString('en-US', {month:'long', year:'numeric'}); }
+function rateClass(rate){
+  if(rate === null) return 'none';
+  if(rate >= 90) return 'good';
+  if(rate >= 75) return 'risk';
+  return 'bad';
+}
+
+async function computeMonthlyStats(loc, empIdx, monthDate){
+  const emp = LOCATIONS[loc].data[empIdx];
+  const countable = emp.tasks.filter(t => t.cadence !== 'Awareness');
+  const numTasks = countable.length;
+  const nDays = daysInMonthOf(monthDate);
+  let complete=0, incomplete=0, off=0, filled=0;
+  const jobs = [];
+  for(let day=1; day<=nDays; day++){
+    const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+    const dateStr = isoDate(d);
+    jobs.push(loadStatuses(loc, empIdx, dateStr).then(obj => {
+      countable.forEach(t => {
+        const v = obj[t.id];
+        if(v === 'C'){ complete++; filled++; }
+        else if(v === 'I'){ incomplete++; filled++; }
+        else if(v === 'O'){ off++; filled++; }
+      });
+    }));
+  }
+  await Promise.all(jobs);
+  const totalPossible = numTasks * nDays;
+  const denom = complete + incomplete;
+  const completionRate = denom > 0 ? Math.round((complete/denom)*100) : null;
+  const fillRate = totalPossible > 0 ? Math.round((filled/totalPossible)*100) : 0;
+  return { complete, incomplete, off, filled, totalPossible, completionRate, fillRate };
+}
+
+async function renderMonthlyOverview(){
+  await refreshServerState();
+  const view = document.getElementById('monthlyView');
+  view.innerHTML = '<div class="empty-note">Crunching this month\'s numbers...</div>';
+
+  const monthLabel = fmtMonthLabel(monthCursor);
+  let bodyHtml = `
+    <div class="monthly-header">
+      <h1>Monthly Overview \u2014 ${monthLabel}</h1>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="month-nav">
+          <button id="prevMonth" title="Previous month">&#8592;</button>
+          <span class="month-label">${monthLabel}</span>
+          <button id="nextMonth" title="Next month">&#8594;</button>
+        </div>
+        <span class="month-today-pill" id="thisMonthBtn">This month</span>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 4px;">
+      Resets automatically every calendar month \u2014 each month starts at 0% and is computed live from that
+      month's daily check-ins. Nothing is ever deleted; past months stay available by navigating back with the arrows above.
+    </p>
+    <div class="monthly-actions">
+      <button id="copyMonthlyBtn">Copy as text</button>
+      <button id="printMonthlyBtn">Print / Save as PDF</button>
+    </div>
+  `;
+
+  const allRows = [];
+
+  for(const [locKey, loc] of Object.entries(LOCATIONS)){
+    bodyHtml += `<div class="monthly-loc-group"><div class="monthly-loc-title">${loc.name}</div>
+      <table class="monthly-table"><thead><tr>
+        <th>Employee</th><th class="num">Tasks tracked</th><th class="num">Complete</th><th class="num">Incomplete</th><th class="num">Off</th><th class="num">Completion rate</th><th class="num">Logging rate</th>
+      </tr></thead><tbody>`;
+    for(let empIdx=0; empIdx<loc.data.length; empIdx++){
+      const emp = loc.data[empIdx];
+      if(emp.tasks.length === 0) continue;
+      const stats = await computeMonthlyStats(locKey, empIdx, monthCursor);
+      const rc = rateClass(stats.completionRate);
+      const rateLabel = stats.completionRate === null ? '\u2014' : stats.completionRate + '%';
+      bodyHtml += `<tr>
+        <td>${emp.label}</td>
+        <td class="num">${stats.totalPossible}</td>
+        <td class="num">${stats.complete}</td>
+        <td class="num">${stats.incomplete}</td>
+        <td class="num">${stats.off}</td>
+        <td class="num"><span class="rate-pill rate-${rc}">${rateLabel}</span></td>
+        <td class="num">${stats.fillRate}%</td>
+      </tr>`;
+      allRows.push({ loc: loc.name, employee: emp.label, ...stats, rateLabel });
+    }
+    bodyHtml += `</tbody></table></div>`;
+  }
+
+  view.innerHTML = bodyHtml;
+
+  document.getElementById('prevMonth').onclick = () => { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()-1, 1); renderMonthlyOverview(); };
+  document.getElementById('nextMonth').onclick = () => { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth()+1, 1); renderMonthlyOverview(); };
+  document.getElementById('thisMonthBtn').onclick = () => { monthCursor = firstOfMonth(new Date()); renderMonthlyOverview(); };
+  document.getElementById('copyMonthlyBtn').onclick = () => copyMonthlyAsText(monthLabel, allRows);
+  document.getElementById('printMonthlyBtn').onclick = () => window.print();
+}
+
+function copyMonthlyAsText(monthLabel, rows){
+  let text = `MONTHLY OVERVIEW \u2014 ${monthLabel}\n\n`;
+  let currentLocName = null;
+  rows.forEach(r => {
+    if(r.loc !== currentLocName){ text += `=== ${r.loc} ===\n`; currentLocName = r.loc; }
+    text += `${r.employee}: ${r.rateLabel} complete (${r.complete}C / ${r.incomplete}I / ${r.off}O) \u2014 ${r.fillRate}% logged\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => showToast('Copy failed'));
+}
+
+async function loadStatuses(loc, empIdx, dateStr){
+  const key = statusKey(loc, empIdx, dateStr);
+  if(statusCache[key]) return statusCache[key];
+  const raw = await storGet(key);
+  // stored keyed by stable task id (not array position), so reassigning a task between
+  // roles never scrambles anyone's history
+  const obj = raw ? JSON.parse(raw) : {};
+  statusCache[key] = obj;
+  return obj;
+}
+async function saveStatuses(loc, empIdx, dateStr, obj){
+  const key = statusKey(loc, empIdx, dateStr);
+  statusCache[key] = obj;
+  const ok = await storSet(key, JSON.stringify(obj));
+  showToast(ok ? 'Saved' : 'Save failed');
+}
+
+async function loadOnetimeList(loc, empIdx){
+  const key = onetimeListKey(loc, empIdx);
+  if(onetimeListCache[key]) return onetimeListCache[key];
+  const raw = await storGet(key);
+  const arr = raw ? JSON.parse(raw) : [];
+  onetimeListCache[key] = arr;
+  return arr;
+}
+async function saveOnetimeList(loc, empIdx, arr){
+  const key = onetimeListKey(loc, empIdx);
+  onetimeListCache[key] = arr;
+  const ok = await storSet(key, JSON.stringify(arr));
+  showToast(ok ? 'Saved' : 'Save failed');
+}
+
+function fileToDataUrl(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function openPhotoModal(title, dataUrl, actions){
+  document.getElementById('photoModalTitle').textContent = title;
+  const body = document.getElementById('photoModalBody');
+  body.innerHTML = dataUrl ? `<img src="${dataUrl}">` : `<div class="empty-note" style="padding:0 0 10px">No photo attached yet.</div>`;
+  const actionsEl = document.getElementById('photoModalActions');
+  actionsEl.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.textContent = a.label;
+    btn.className = a.cls || '';
+    btn.onclick = a.onClick;
+    actionsEl.appendChild(btn);
+  });
+  document.getElementById('photoModal').classList.add('show');
+}
+function closePhotoModal(){ document.getElementById('photoModal').classList.remove('show'); }
+
+function renderLocSwitch(){
+  const el = document.getElementById('locSwitch');
+  el.innerHTML = '';
+  Object.entries(LOCATIONS).forEach(([key, loc]) => {
+    const btn = document.createElement('button');
+    btn.className = 'loc-btn' + (key === currentLoc ? ' active' : '');
+    btn.textContent = loc.name;
+    btn.onclick = () => { currentLoc = key; currentEmployee = 0; renderAll(); };
+    el.appendChild(btn);
+  });
+  document.getElementById('appIcon').textContent = LOCATIONS[currentLoc].short;
+}
+
+function renderNav(){
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  LOCATIONS[currentLoc].data.forEach((emp, idx) => {
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (idx === currentEmployee ? ' active' : '');
+    item.innerHTML = `
+      <div class="nav-avatar">${initials(emp.label)}</div>
+      <div>${emp.label}</div>
+      <div class="nav-progress" data-idx="${idx}"></div>
+    `;
+    item.onclick = async () => { currentEmployee = idx; await renderMain(); renderNavProgress(); highlightNav(); };
+    nav.appendChild(item);
+  });
+}
+function highlightNav(){
+  document.querySelectorAll('#navList .nav-item').forEach((el,i) => {
+    el.classList.toggle('active', i === currentEmployee);
+  });
+}
+
+function fmtWeekLabel(dates){
+  const opts = {month:'short', day:'numeric'};
+  return dates[0].toLocaleDateString('en-US', opts) + ' – ' + dates[6].toLocaleDateString('en-US', opts) + ', ' + dates[0].getFullYear();
+}
+
+function groupTasks(tasks){
+  const order = ['Daily','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
+  const groups = {};
+  tasks.forEach((t) => {
+    const c = t.cadence || 'Daily';
+    if(!groups[c]) groups[c] = [];
+    groups[c].push(t);
+  });
+  return order.filter(o => groups[o]).map(o => ({cadence:o, tasks:groups[o]}));
+}
+
+async function renderMain(){
+  await refreshServerState();
+  const emp = LOCATIONS[currentLoc].data[currentEmployee];
+  document.getElementById('empAvatar').textContent = initials(emp.label);
+  document.getElementById('empName').textContent = emp.label;
+  document.getElementById('empSub').textContent = LOCATIONS[currentLoc].name + ' · ' + emp.tasks.length + ' tasks';
+
+  const dates = weekDates(weekStart);
+  document.getElementById('weekLabel').textContent = fmtWeekLabel(dates);
+
+  // preload statuses for all 7 days
+  const dayStatuses = await Promise.all(dates.map(d => loadStatuses(currentLoc, currentEmployee, isoDate(d))));
+
+  const groups = groupTasks(emp.tasks);
+  const wrap = document.getElementById('tableWrap');
+
+  if(emp.tasks.length === 0){
+    wrap.innerHTML = '<div class="empty-note">No tasks on file for this role.</div>';
+    updateSummaryStat(0,0,0,0);
+    return;
+  }
+
+  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = '<table class="week-table"><thead><tr><th class="task-col">Task</th>';
+  dates.forEach((d,i) => {
+    html += `<th>${dow[i]}<span class="dow-date">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  groups.forEach(g => {
+    const isAwareness = g.cadence === 'Awareness';
+    html += `<tr class="cadence-row${isAwareness ? ' awareness-row' : ''}"><td colspan="8">${g.cadence}${isAwareness ? ' <span style="font-weight:400;text-transform:none;">\u2014 parked, not a current priority, excluded from completion stats</span>' : ''}</td></tr>`;
+    g.tasks.forEach(t => {
+      html += `<tr data-taskid="${t.id}"${isAwareness ? ' class="awareness-task"' : ''}>`;
+      const kpi = getKpiForTask(currentLoc, currentEmployee, t.id);
+      const kpiHtml = kpi ? `<span class="kpi-badge kpi-${kpi.cls}" title="${escapeAttr(kpi.title)}">${escapeHtml(kpi.label)}</span>` : '';
+      const howToHtml = t.videoUrl ? `<a href="${escapeAttr(t.videoUrl)}" target="_blank" rel="noopener" style="font-size:11px;margin-left:6px;">Training video</a>` : '';
+      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${howToHtml}</td>`;
+      dates.forEach((d,i) => {
+        const val = dayStatuses[i][t.id] || '';
+        html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
+          <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C">C</button>
+          <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I">I</button>
+          <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O">O</button>
+        </div></td>`;
+      });
+      html += '</tr>';
+    });
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  const countableIds = emp.tasks.filter(t => t.cadence !== 'Awareness').map(t => t.id);
+
+  // wire status buttons
+  wrap.querySelectorAll('.seg').forEach(seg => {
+    const taskId = seg.dataset.taskid;
+    const dayIdx = parseInt(seg.dataset.dayindex,10);
+    seg.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const dateStr = isoDate(dates[dayIdx]);
+        const obj = await loadStatuses(currentLoc, currentEmployee, dateStr);
+        const val = btn.dataset.val;
+        const newVal = obj[taskId] === val ? '' : val;
+        if(newVal){ obj[taskId] = newVal; } else { delete obj[taskId]; }
+        seg.querySelectorAll('.seg-btn').forEach(b => b.className = 'seg-btn');
+        if(newVal) btn.classList.add('seg-btn', 'sel-'+newVal);
+        await saveStatuses(currentLoc, currentEmployee, dateStr, obj);
+        computeSummary(dates, countableIds);
+      };
+    });
+  });
+
+  computeSummary(dates, countableIds);
+  renderMeetingsPanel(dates);
+
+  // Every role gets a One-Time Tasks panel (for ad-hoc things assigned outside the
+  // regular daily/weekly/monthly list) - checking one off leaves it visible with a
+  // strikethrough rather than removing it, so nothing just disappears.
+  const otWrap = document.getElementById('onetimeWrap');
+  otWrap.style.display = '';
+  await renderOnetimePanel();
+}
+
+function renderMeetingsPanel(dates){
+  const wrap = document.getElementById('meetingsPanelWrap');
+  if(!wrap) return;
+  const myKey = `${currentLoc}::${currentEmployee}`;
+  const rows = [];
+  dates.forEach((d) => {
+    MEETINGS.forEach(m => {
+      if((m.attendeeRoles||[]).includes(myKey) && meetingOccursOn(m, d)){
+        rows.push({ date: d, meeting: m });
+      }
+    });
+  });
+  if(rows.length === 0){ wrap.innerHTML = ''; return; }
+  rows.sort((a,b) => a.date - b.date);
+  const dowFmt = (d) => d.toLocaleDateString('en-US', {weekday:'short', month:'numeric', day:'numeric'});
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Meetings this week</div>`;
+  rows.forEach(({date, meeting}) => {
+    html += `<div style="border:1px solid var(--win-border);border-radius:6px;padding:9px 12px;margin-bottom:6px;background:var(--win-surface);">
+      <div style="font-size:12.5px;font-weight:600;">${escapeHtml(meeting.title||'Untitled meeting')} <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${dowFmt(date)}${meeting.time ? ' \u00b7 ' + escapeHtml(meeting.time) : ''} \u00b7 ${escapeHtml(meeting.type||'')}</span></div>
+      ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;white-space:pre-line;">${escapeHtml(meeting.agenda)}</div>` : ''}
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+async function renderOnetimePanel(){
+  const list = await loadOnetimeList(currentLoc, currentEmployee);
+  const panel = document.getElementById('onetimeList');
+  panel.innerHTML = '';
+
+  if(list.length === 0){
+    panel.innerHTML = '<div class="empty-note" style="padding:10px 4px">No one-time tasks added yet.</div>';
+  }
+
+  list.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'onetime-row' + (item.done ? ' done' : '');
+    row.innerHTML = `
+      <div class="onetime-thumb-wrap">${item.refPhoto ? `<img class="photo-thumb" src="${item.refPhoto}">` : `<div class="photo-btn" style="cursor:default">&#128247;</div>`}</div>
+      <div class="onetime-text">${item.text}</div>
+      <button class="mini-btn" data-action="ref">${item.refPhoto ? 'View photo' : 'Add photo'}</button>
+      <button class="mini-btn ${item.done ? 'sel-C' : ''}" data-action="done">${item.done ? 'Complete' : 'Mark complete'}</button>
+      ${item.done ? `<button class="mini-btn" data-action="donephoto">${item.donePhoto ? 'View completion photo' : 'Add completion photo'}</button>` : ''}
+      <button class="mini-btn danger-mini" data-action="delete">Remove</button>
+    `;
+    row.querySelector('[data-action="ref"]').onclick = () => {
+      const actions = [
+        { label:'Close', onClick: closePhotoModal },
+        { label: item.refPhoto ? 'Replace photo' : 'Add photo', onClick: () => triggerUpload(async (durl) => {
+            item.refPhoto = durl;
+            await saveOnetimeList(currentLoc, currentEmployee, list);
+            closePhotoModal(); renderOnetimePanel();
+          })
+        }
+      ];
+      if(item.refPhoto) actions.push({ label:'Remove photo', cls:'danger', onClick: async () => { item.refPhoto = null; await saveOnetimeList(currentLoc, currentEmployee, list); closePhotoModal(); renderOnetimePanel(); } });
+      openPhotoModal('Task photo — ' + item.text, item.refPhoto, actions);
+    };
+    row.querySelector('[data-action="done"]').onclick = async () => {
+      item.done = !item.done;
+      await saveOnetimeList(currentLoc, currentEmployee, list);
+      renderOnetimePanel();
+    };
+    const donephotoBtn = row.querySelector('[data-action="donephoto"]');
+    if(donephotoBtn){
+      donephotoBtn.onclick = () => {
+        const actions = [
+          { label:'Close', onClick: closePhotoModal },
+          { label: item.donePhoto ? 'Replace photo' : 'Add completion photo', onClick: () => triggerUpload(async (durl) => {
+              item.donePhoto = durl;
+              await saveOnetimeList(currentLoc, currentEmployee, list);
+              closePhotoModal(); renderOnetimePanel();
+            })
+          }
+        ];
+        if(item.donePhoto) actions.push({ label:'Remove photo', cls:'danger', onClick: async () => { item.donePhoto = null; await saveOnetimeList(currentLoc, currentEmployee, list); closePhotoModal(); renderOnetimePanel(); } });
+        openPhotoModal('Completion photo — ' + item.text, item.donePhoto, actions);
+      };
+    }
+    row.querySelector('[data-action="delete"]').onclick = async () => {
+      if(!confirm('Remove this one-time task?')) return;
+      list.splice(i,1);
+      await saveOnetimeList(currentLoc, currentEmployee, list);
+      renderOnetimePanel();
+    };
+    panel.appendChild(row);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const addBtn = document.getElementById('addOnetimeBtn');
+  if(addBtn){
+    addBtn.onclick = async () => {
+      const input = document.getElementById('addOnetimeInput');
+      const text = input.value.trim();
+      if(!text) return;
+      const list = await loadOnetimeList(currentLoc, currentEmployee);
+      list.push({ text, refPhoto:null, done:false, donePhoto:null });
+      await saveOnetimeList(currentLoc, currentEmployee, list);
+      input.value = '';
+      renderOnetimePanel();
+    };
+  }
+});
+
+function triggerUpload(cb){
+  const input = document.getElementById('fileInput');
+  input.value = '';
+  input.onchange = async () => {
+    if(input.files && input.files[0]){
+      const durl = await fileToDataUrl(input.files[0]);
+      cb(durl);
+    }
+  };
+  input.click();
+}
+
+function computeSummary(dates, countableIds){
+  // quick aggregate across cached day statuses already in statusCache, restricted to
+  // non-Awareness task ids so parked tasks never affect the reported rate
+  let filled=0, total=0, complete=0;
+  dates.forEach(d => {
+    const key = statusKey(currentLoc, currentEmployee, isoDate(d));
+    const obj = statusCache[key] || {};
+    countableIds.forEach(id => {
+      total++;
+      const v = obj[id];
+      if(v){ filled++; if(v==='C') complete++; }
+    });
+  });
+  updateSummaryStat(filled, total, complete);
+}
+function updateSummaryStat(filled, total, complete){
+  const pct = total ? Math.round((filled/total)*100) : 0;
+  document.getElementById('summaryStat').innerHTML =
+    `<b>${pct}%</b> of this week's checkboxes filled &middot; <b>${complete}</b> marked complete`;
+}
+
+async function renderNavProgress(){
+  const items = document.querySelectorAll('#navList .nav-progress');
+  const dates = weekDates(weekStart);
+  for(const el of items){
+    const idx = parseInt(el.dataset.idx,10);
+    const countableIds = LOCATIONS[currentLoc].data[idx].tasks.filter(t => t.cadence !== 'Awareness').map(t => t.id);
+    let filled=0, total=0;
+    for(const d of dates){
+      const obj = await loadStatuses(currentLoc, idx, isoDate(d));
+      countableIds.forEach(id => { total++; if(obj[id]) filled++; });
+    }
+    el.textContent = total ? `${filled}/${total}` : '';
+  }
+}
+
+async function renderAll(){
+  renderLocSwitch();
+  renderNav();
+  await renderMain();
+  renderNavProgress();
+}
+
+document.getElementById('prevWeek').onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderAll(); };
+document.getElementById('nextWeek').onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderAll(); };
+document.getElementById('todayBtn').onclick = () => { weekStart = mondayOf(new Date()); renderAll(); };
+document.getElementById('photoModal').addEventListener('click', (e) => { if(e.target.id === 'photoModal') closePhotoModal(); });
+
+// ---- Export / Import (backup, sharing between devices, and pulling in KPI mappings from Task Workflow Mapper) ----
+async function exportData(){
+  await refreshServerState();
+  const data = SERVER_STATE;
+  if(Object.keys(data).length === 0){ showToast('Nothing to export yet'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `dealership-daily-ops-data-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exported (this is a backup - the live data already lives on the server)');
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      const res = await fetch('/api/state/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      statusCache = {};
+      onetimeListCache = {};
+      await renderAll();
+      showToast(`Imported ${result.count || 0} entries into the shared store`);
+    }catch(err){
+      console.error(err);
+      showToast('Import failed - invalid file');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ---- One-Time Tasks review/assign (ad-hoc things for anyone, at any location - checking
+// one off leaves it visible with a strikethrough instead of removing it, so Rob can review
+// what's done vs still open from one place instead of hunting through each person's view) ----
+let onetimeReviewShown = false;
+
+async function renderOnetimeReview(){
+  const view = document.getElementById('onetimeReviewView');
+  await refreshServerState();
+
+  const allTargets = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
+  });
+
+  let html = `
+    <div class="monthly-header"><h1>One-Time Tasks</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      For anything random you need a specific manager or employee to handle that isn't on their
+      regular list. Assign it below - it shows up right in their daily view. Once they check it
+      off it stays visible with a line through it (nothing disappears), so you can review
+      completion here any time.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;">
+      <select id="otAssignTarget" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Assign to\u2026</option>
+        ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+      </select>
+      <input type="text" id="otAssignText" placeholder="Describe the task..." style="flex:1;min-width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <button class="mini-btn primary-mini" id="otAssignBtn">Assign</button>
+    </div>
+  `;
+
+  const sections = [];
+  for(const [locKey, loc] of Object.entries(LOCATIONS)){
+    for(let empIdx=0; empIdx<loc.data.length; empIdx++){
+      const emp = loc.data[empIdx];
+      const list = await loadOnetimeList(locKey, empIdx);
+      if(list.length) sections.push({ locName: loc.name, empLabel: emp.label, list });
+    }
+  }
+
+  if(sections.length === 0){
+    html += `<div class="empty-note">No one-time tasks assigned yet.</div>`;
+  } else {
+    const pendingCount = sections.reduce((n,s) => n + s.list.filter(i=>!i.done).length, 0);
+    const doneCount = sections.reduce((n,s) => n + s.list.filter(i=>i.done).length, 0);
+    html += `<div class="spec-stats" style="margin-bottom:18px;">
+      <div class="spec-stat"><div class="num">${pendingCount}</div><div class="lbl">Open</div></div>
+      <div class="spec-stat"><div class="num">${doneCount}</div><div class="lbl">Completed</div></div>
+    </div>`;
+  }
+
+  sections.forEach(({locName, empLabel, list}) => {
+    html += `<div class="monthly-loc-group"><div class="monthly-loc-title">${escapeHtml(locName)} \u2014 ${escapeHtml(empLabel)}</div>`;
+    list.forEach((item) => {
+      html += `<div class="onetime-row${item.done ? ' done' : ''}" style="border:1px solid var(--win-border);border-radius:6px;margin-bottom:6px;padding:9px 12px;">
+        ${item.refPhoto ? `<img class="photo-thumb" src="${item.refPhoto}">` : ''}
+        <div class="onetime-text">${escapeHtml(item.text)}</div>
+        <span style="font-size:11px;font-weight:700;flex-shrink:0;color:${item.done ? 'var(--c-complete)' : 'var(--win-text-secondary)'};">${item.done ? 'Completed' : 'Open'}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  view.innerHTML = html;
+
+  document.getElementById('otAssignBtn').onclick = async () => {
+    const val = document.getElementById('otAssignTarget').value;
+    const text = document.getElementById('otAssignText').value.trim();
+    if(!val || !text) return;
+    const [locKey, empIdxStr] = val.split('::');
+    const empIdx = parseInt(empIdxStr, 10);
+    const list = await loadOnetimeList(locKey, empIdx);
+    list.push({ text, refPhoto: null, done: false, donePhoto: null });
+    await saveOnetimeList(locKey, empIdx, list);
+    showToast('Assigned');
+    await renderOnetimeReview();
+  };
+}
+
+// ---- Meetings (recurring or one-time, in-house or vendor). Attendees see these on their
+// own weekly view a week ahead as they page forward through the week-nav above. This admin
+// area is where the schedule, agenda bullets, and a running log of past meeting notes live. ----
+let meetingsShown = false;
+
+async function renderMeetings(){
+  await refreshServerState();
+  const view = document.getElementById('meetingsView');
+
+  const allTargets = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
+  });
+
+  let html = `
+    <div class="monthly-header"><h1>Meetings</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 18px;">
+      Recurring or one-time meetings with in-house teams or vendors. Anyone marked as an attendee
+      sees it on their own weekly view, a week ahead, as they page forward. Keep an agenda for
+      next time and a running log of notes from meetings already held.
+    </p>
+    <div class="monthly-actions" style="margin-bottom:18px;">
+      <button id="addMeetingBtn">+ Add meeting</button>
+    </div>
+  `;
+
+  if(MEETINGS.length === 0){
+    html += `<div class="empty-note">No meetings on file yet.</div>`;
+  }
+
+  MEETINGS.forEach((m) => {
+    let whenLabel = '';
+    if(m.cadence === 'Weekly') whenLabel = 'on ' + (m.dayOfWeek || '\u2014');
+    else if(m.cadence === 'Monthly') whenLabel = '\u2014 day ' + (m.dayOfMonth || '\u2014') + ' of the month';
+    else if(m.cadence === 'One-time') whenLabel = 'on ' + (m.onDate || '\u2014');
+
+    html += `<details class="setup-role" data-mid="${m.id}" style="margin-bottom:12px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+      <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
+        ${escapeHtml(m.title || 'Untitled meeting')}
+        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.type || 'In-house')} \u00b7 ${escapeHtml(m.cadence || 'Weekly')} ${escapeHtml(whenLabel)}${m.time ? ' \u00b7 ' + escapeHtml(m.time) : ''}</span>
+      </summary>
+      <div style="padding:6px 14px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <input type="text" class="m-title" placeholder="Meeting title" value="${escapeAttr(m.title||'')}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="m-type" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="In-house" ${m.type==='In-house'?'selected':''}>In-house</option>
+            <option value="Vendor" ${m.type==='Vendor'?'selected':''}>Vendor</option>
+          </select>
+          <select class="m-cadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="Weekly" ${m.cadence==='Weekly'?'selected':''}>Weekly</option>
+            <option value="Monthly" ${m.cadence==='Monthly'?'selected':''}>Monthly</option>
+            <option value="One-time" ${m.cadence==='One-time'?'selected':''}>One-time</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          ${m.cadence==='Weekly' ? `<select class="m-dow" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">${DOW_NAMES.map(d=>`<option value="${d}" ${m.dayOfWeek===d?'selected':''}>${d}</option>`).join('')}</select>` : ''}
+          ${m.cadence==='Monthly' ? `<input type="number" min="1" max="31" class="m-dom" placeholder="Day of month (1-31)" value="${escapeAttr(m.dayOfMonth||'')}" style="width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">` : ''}
+          ${m.cadence==='One-time' ? `<input type="date" class="m-date" value="${escapeAttr(m.onDate||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">` : ''}
+          <input type="text" class="m-time" placeholder="Time (e.g. 10:00 AM)" value="${escapeAttr(m.time||'')}" style="width:160px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <button class="mini-btn danger-mini m-remove">Remove meeting</button>
+        </div>
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Attendees (internal \u2014 shows on their weekly view; ctrl/cmd-click for multiple)</label>
+        <select class="m-attendees" multiple size="4" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;margin-bottom:8px;">
+          ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.attendeeRoles||[]).includes(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+        </select>
+        <input type="text" class="m-external" placeholder="External / vendor attendees (free text)" value="${escapeAttr(m.externalAttendees||'')}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:8px;">
+        <textarea class="m-agenda" placeholder="Agenda / bullet points for next meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:10px;">${escapeHtml(m.agenda||'')}</textarea>
+
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Notes from past meetings</label>
+        <div class="m-notes-log" style="margin-bottom:8px;">
+          ${(m.notesLog && m.notesLog.length) ? m.notesLog.slice().reverse().map((n) => `<div style="border-top:1px solid var(--win-border);padding:6px 0;font-size:12px;"><b>${escapeHtml(n.date)}</b><br>${escapeHtml(n.notes).replace(/\n/g,'<br>')}</div>`).join('') : '<div class="empty-note" style="padding:6px 0;">No notes logged yet.</div>'}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <textarea class="m-newnote" placeholder="Add notes from a meeting that just happened..." style="flex:1;min-height:44px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;"></textarea>
+          <button class="mini-btn primary-mini m-addnote">+ Log note</button>
+        </div>
+      </div>
+    </details>`;
+  });
+
+  view.innerHTML = html;
+  wireMeetingsHandlers(view);
+}
+
+function wireMeetingsHandlers(view){
+  document.getElementById('addMeetingBtn').onclick = async () => {
+    MEETINGS.push({ id: newMeetingId(), title: 'New meeting', type: 'In-house', cadence: 'Weekly', dayOfWeek: 'Monday', dayOfMonth: '', onDate: '', time: '', attendeeRoles: [], externalAttendees: '', agenda: '', notesLog: [] });
+    await saveMeetingsList();
+    await renderMeetings();
+  };
+
+  view.querySelectorAll('details[data-mid]').forEach(card => {
+    const mid = card.dataset.mid;
+    const findM = () => MEETINGS.find(m => m.id === mid);
+
+    const bind = (sel, prop, parse) => {
+      const el = card.querySelector(sel);
+      if(!el) return;
+      el.onchange = async (e) => {
+        const m = findM(); if(!m) return;
+        m[prop] = parse ? parse(e.target.value) : e.target.value;
+        await saveMeetingsList();
+      };
+    };
+    bind('.m-title', 'title');
+    bind('.m-type', 'type');
+    bind('.m-dow', 'dayOfWeek');
+    bind('.m-dom', 'dayOfMonth');
+    bind('.m-date', 'onDate');
+    bind('.m-time', 'time');
+    bind('.m-external', 'externalAttendees');
+    bind('.m-agenda', 'agenda');
+
+    const cadenceEl = card.querySelector('.m-cadence');
+    if(cadenceEl) cadenceEl.onchange = async (e) => {
+      const m = findM(); if(!m) return;
+      m.cadence = e.target.value;
+      await saveMeetingsList();
+      await renderMeetings(); // re-render so the right day/date field shows for the new cadence
+    };
+
+    const attendeesEl = card.querySelector('.m-attendees');
+    if(attendeesEl) attendeesEl.onchange = async (e) => {
+      const m = findM(); if(!m) return;
+      m.attendeeRoles = Array.from(e.target.selectedOptions).map(o => o.value);
+      await saveMeetingsList();
+    };
+
+    const removeEl = card.querySelector('.m-remove');
+    if(removeEl) removeEl.onclick = async () => {
+      if(!confirm('Remove this meeting series? Its notes log goes with it.')) return;
+      const i = MEETINGS.findIndex(x => x.id === mid);
+      if(i > -1) MEETINGS.splice(i, 1);
+      await saveMeetingsList();
+      await renderMeetings();
+    };
+
+    const addNoteBtn = card.querySelector('.m-addnote');
+    if(addNoteBtn) addNoteBtn.onclick = async () => {
+      const ta = card.querySelector('.m-newnote');
+      const text = (ta.value || '').trim();
+      if(!text) return;
+      const m = findM(); if(!m) return;
+      if(!m.notesLog) m.notesLog = [];
+      m.notesLog.push({ date: isoDate(new Date()), notes: text });
+      await saveMeetingsList();
+      await renderMeetings();
+    };
+  });
+}
+
+function closeOtherPanels(except){
+  if(except !== 'monthly' && monthlyShown){ monthlyShown = false; document.getElementById('monthlyToggleBtn').classList.remove('active'); document.getElementById('monthlyView').classList.remove('show'); }
+  if(except !== 'setup' && setupShown){ setupShown = false; document.getElementById('setupToggleBtn').classList.remove('active'); document.getElementById('setupView').classList.remove('show'); }
+  if(except !== 'onetime' && onetimeReviewShown){ onetimeReviewShown = false; document.getElementById('onetimeToggleBtn').classList.remove('active'); document.getElementById('onetimeReviewView').classList.remove('show'); }
+  if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
+}
+function updatePanelVisibility(){
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown;
+  document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
+  document.querySelector('.main').style.display = anyShown ? 'none' : '';
+}
+
+document.getElementById('monthlyToggleBtn').onclick = async () => {
+  closeOtherPanels('monthly');
+  monthlyShown = !monthlyShown;
+  document.getElementById('monthlyToggleBtn').classList.toggle('active', monthlyShown);
+  document.getElementById('monthlyView').classList.toggle('show', monthlyShown);
+  updatePanelVisibility();
+  if(monthlyShown) await renderMonthlyOverview();
+};
+
+document.getElementById('onetimeToggleBtn').onclick = async () => {
+  closeOtherPanels('onetime');
+  onetimeReviewShown = !onetimeReviewShown;
+  document.getElementById('onetimeToggleBtn').classList.toggle('active', onetimeReviewShown);
+  document.getElementById('onetimeReviewView').classList.toggle('show', onetimeReviewShown);
+  updatePanelVisibility();
+  if(onetimeReviewShown) await renderOnetimeReview();
+};
+
+document.getElementById('meetingsToggleBtn').onclick = async () => {
+  closeOtherPanels('meetings');
+  meetingsShown = !meetingsShown;
+  document.getElementById('meetingsToggleBtn').classList.toggle('active', meetingsShown);
+  document.getElementById('meetingsView').classList.toggle('show', meetingsShown);
+  updatePanelVisibility();
+  if(meetingsShown) await renderMeetings();
+};
+
+// ---- Setup (roster admin: add roles, reassign/add/remove tasks, cadence incl. Awareness,
+// how-to notes + training video links). Everything here writes straight to the shared
+// roster, so it's the same list every employee's daily view reads from. ----
+let setupShown = false;
+
+async function reassignTask(taskId, fromLoc, fromEmpIdx, toLoc, toEmpIdx){
+  const fromTasks = LOCATIONS[fromLoc].data[fromEmpIdx].tasks;
+  const i = fromTasks.findIndex(t => t.id === taskId);
+  if(i === -1) return;
+  const [task] = fromTasks.splice(i, 1);
+  LOCATIONS[toLoc].data[toEmpIdx].tasks.push(task);
+  await saveRoster();
+
+  // carry any mapped KPI (from the Task Workflow Mapper) along so it isn't orphaned
+  const oldKey = `map:${fromLoc}:${fromEmpIdx}:${taskId}`;
+  const mapped = SERVER_STATE[oldKey];
+  if(mapped){
+    await storSet(`map:${toLoc}:${toEmpIdx}:${taskId}`, mapped);
+    await storSet(oldKey, null);
+  }
+}
+
+async function removeTask(taskId, loc, empIdx){
+  const tasks = LOCATIONS[loc].data[empIdx].tasks;
+  const i = tasks.findIndex(t => t.id === taskId);
+  if(i === -1) return;
+  if(!confirm('Remove this task? Past check-ins for it are kept but will no longer be shown.')) return;
+  tasks.splice(i,1);
+  await saveRoster();
+  await renderSetup();
+}
+
+async function renderSetup(){
+  await refreshServerState();
+  const view = document.getElementById('setupView');
+
+  const allTargets = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => {
+      allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` });
+    });
+  });
+  const CADENCES = ['Daily','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
+
+  let html = `
+    <div class="monthly-header"><h1>Setup</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 18px;">
+      The roster and task list exactly as it sits today, for every location. Add roles, reassign
+      tasks between people (history follows the task automatically), change cadence, park
+      something in <b>Awareness</b> so it stays visible without counting against completion, or
+      attach how-to notes and a training video link. Everything here saves immediately and is
+      shared with every employee's view.
+    </p>
+  `;
+
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    html += `<div class="monthly-loc-group">
+      <div class="monthly-loc-title">${loc.name}</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" class="add-role-input" placeholder="New role name at ${escapeAttr(loc.name)}..." style="border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 10px;font-size:12.5px;width:280px;">
+        <button class="mini-btn primary-mini add-role-btn" data-loc="${locKey}">+ Add role</button>
+      </div>`;
+
+    loc.data.forEach((emp, empIdx) => {
+      html += `<details class="setup-role" style="margin-bottom:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+        <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">${escapeHtml(emp.label)} <span style="font-weight:400;color:var(--win-text-secondary);">(${emp.tasks.length} tasks)</span></summary>
+        <div style="padding:2px 14px 14px;">`;
+
+      emp.tasks.forEach((t) => {
+        const cadOpts = CADENCES.map(c => `<option value="${c}" ${t.cadence===c?'selected':''}>${c}</option>`).join('');
+        const targetOpts = allTargets
+          .filter(x => !(x.locKey===locKey && x.empIdx===empIdx))
+          .map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('');
+        html += `<div class="setup-task-row" data-taskid="${t.id}" data-loc="${locKey}" data-emp="${empIdx}" style="border-top:1px solid var(--win-border);padding:10px 0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" class="st-text" value="${escapeAttr(t.text)}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+            <select class="st-cadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">${cadOpts}</select>
+            <select class="st-reassign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+              <option value="">Reassign to\u2026</option>${targetOpts}
+            </select>
+            <button class="mini-btn danger-mini st-remove">Remove</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <input type="text" class="st-howto" placeholder="How to perform this task..." value="${escapeAttr(t.howTo||'')}" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <input type="text" class="st-video" placeholder="Training video URL" value="${escapeAttr(t.videoUrl||'')}" style="width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          </div>
+        </div>`;
+      });
+
+      html += `<div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" class="add-task-input" placeholder="New task text..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+          <button class="mini-btn primary-mini add-task-btn" data-loc="${locKey}" data-emp="${empIdx}">+ Add task</button>
+        </div>`;
+      html += `</div></details>`;
+    });
+
+    html += `</div>`;
+  });
+
+  view.innerHTML = html;
+
+  view.querySelectorAll('.add-role-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const input = btn.previousElementSibling;
+      const name = (input.value || '').trim();
+      if(!name) return;
+      LOCATIONS[btn.dataset.loc].data.push({ label: name, tasks: [] });
+      await saveRoster();
+      await renderSetup();
+    };
+  });
+
+  view.querySelectorAll('.add-task-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const input = btn.previousElementSibling;
+      const text = (input.value || '').trim();
+      if(!text) return;
+      const empIdx = parseInt(btn.dataset.emp, 10);
+      LOCATIONS[btn.dataset.loc].data[empIdx].tasks.push({ id: newTaskId(), text, cadence: 'Daily', howTo: '', videoUrl: '' });
+      await saveRoster();
+      await renderSetup();
+    };
+  });
+
+  view.querySelectorAll('.setup-task-row').forEach(row => {
+    const taskId = row.dataset.taskid;
+    const loc = row.dataset.loc;
+    const empIdx = parseInt(row.dataset.emp, 10);
+    const findTask = () => LOCATIONS[loc].data[empIdx].tasks.find(t => t.id === taskId);
+
+    row.querySelector('.st-text').onchange = async (e) => { const t = findTask(); if(t){ t.text = e.target.value; await saveRoster(); } };
+    row.querySelector('.st-cadence').onchange = async (e) => { const t = findTask(); if(t){ t.cadence = e.target.value; await saveRoster(); } };
+    row.querySelector('.st-howto').onchange = async (e) => { const t = findTask(); if(t){ t.howTo = e.target.value; await saveRoster(); } };
+    row.querySelector('.st-video').onchange = async (e) => { const t = findTask(); if(t){ t.videoUrl = e.target.value; await saveRoster(); } };
+    row.querySelector('.st-remove').onclick = () => removeTask(taskId, loc, empIdx);
+    row.querySelector('.st-reassign').onchange = async (e) => {
+      const val = e.target.value;
+      if(!val) return;
+      const [toLoc, toEmpIdxStr] = val.split('::');
+      await reassignTask(taskId, loc, empIdx, toLoc, parseInt(toEmpIdxStr, 10));
+      await renderSetup();
+    };
+  });
+}
+
+document.getElementById('setupToggleBtn').onclick = async () => {
+  closeOtherPanels('setup');
+  setupShown = !setupShown;
+  document.getElementById('setupToggleBtn').classList.toggle('active', setupShown);
+  document.getElementById('setupView').classList.toggle('show', setupShown);
+  updatePanelVisibility();
+  if(setupShown) await renderSetup();
+};
+
+document.getElementById('exportBtn').onclick = exportData;
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if(file) importData(file);
+  e.target.value = '';
+};
+
+renderAll();
+</script>
+</body>
+</html>
