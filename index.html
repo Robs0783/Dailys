@@ -1569,6 +1569,10 @@ function updatePanelVisibility(){
   const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
+  // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
+  // refresh it so anything just edited (roster changes, a newly-assigned project step, a new
+  // meeting) shows up immediately instead of needing a manual page reload.
+  if(!anyShown){ renderMain(); renderNavProgress(); }
 }
 
 document.getElementById('monthlyToggleBtn').onclick = async () => {
