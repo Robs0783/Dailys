@@ -1,5 +1,5 @@
 // Zero-dependency Node server: pure http/fs, nothing to npm install.
-// Serves the two static apps (public/index.html, public/mapper.html) and a tiny
+// Serves the two static apps (index.html, mapper.html) and a tiny
 // shared JSON key/value API that both apps talk to instead of localStorage --
 // that's what makes the data live and shared across every employee/device.
 const http = require('http');
@@ -11,6 +11,17 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
 const PUBLIC_DIR = __dirname; // index.html / mapper.html live next to server.js (flat repo, easy to upload)
 const STATIC_ALLOW = new Set(['/index.html', '/mapper.html']);
+
+// Admin/manager code: gates Setup, Meetings admin, and bulk Import so employees using the
+// shared checklist can't restructure the roster or wipe the shared data. Set your own via
+// the ADMIN_CODE environment variable in Railway - this fallback is only for local testing.
+const ADMIN_CODE = process.env.ADMIN_CODE || 'dailys2026';
+if (!process.env.ADMIN_CODE) {
+  console.warn('WARNING: ADMIN_CODE env var not set - using insecure default. Set ADMIN_CODE in Railway variables.');
+}
+// Keys only ever written by admin actions (Setup / Meetings admin panel). Employees never
+// legitimately write these, so they're safe to hard-gate server-side.
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings']);
 
 function loadStore() {
   try {
@@ -66,7 +77,7 @@ function readBody(req) {
     let size = 0;
     req.on('data', (c) => {
       size += c.length;
-      if (size > 20 * 1024 * 1024) { // 20mb cap (one-time task photos are data URLs)
+      if (size > 20 * 1024 * 1024) { // 20mb cap (one-time task photos / project attachments are data URLs)
         reject(new Error('Body too large'));
         req.destroy();
         return;
@@ -113,6 +124,12 @@ const server = http.createServer(async (req, res) => {
       return res.end('ok');
     }
 
+    if (pathname === '/api/verify-admin' && req.method === 'POST') {
+      const body = await readBody(req);
+      const code = body && body.code;
+      return sendJson(res, 200, { ok: typeof code === 'string' && code === ADMIN_CODE });
+    }
+
     if (pathname === '/api/state' && req.method === 'GET') {
       return sendJson(res, 200, store);
     }
@@ -121,8 +138,12 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const key = body && body.key;
       const value = body ? body.value : undefined;
+      const adminCode = body && body.adminCode;
       if (typeof key !== 'string' || !key) {
         return sendJson(res, 400, { error: 'key is required' });
+      }
+      if (ADMIN_ONLY_KEYS.has(key) && adminCode !== ADMIN_CODE) {
+        return sendJson(res, 403, { error: 'admin code required' });
       }
       if (value === null || value === undefined) {
         delete store[key];
@@ -134,12 +155,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/state/bulk' && req.method === 'POST') {
+      // Only used by the admin-only Import Data feature - gated entirely behind the admin code
+      // since a bulk import can overwrite the whole shared store.
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        return sendJson(res, 400, { error: 'body must be an object of key/value pairs' });
+        return sendJson(res, 400, { error: 'body must be an object' });
+      }
+      const { adminCode, data } = body;
+      if (adminCode !== ADMIN_CODE) {
+        return sendJson(res, 403, { error: 'admin code required' });
+      }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return sendJson(res, 400, { error: 'data object is required' });
       }
       let count = 0;
-      Object.entries(body).forEach(([k, v]) => {
+      Object.entries(data).forEach(([k, v]) => {
         store[k] = v;
         count++;
       });

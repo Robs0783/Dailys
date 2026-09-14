@@ -213,6 +213,19 @@
   ::-webkit-scrollbar{ width:10px; height:10px; }
   ::-webkit-scrollbar-thumb{ background:#C8C6C4; border-radius:6px; }
   ::-webkit-scrollbar-track{ background:transparent; }
+
+  .admin-only{ display:none !important; }
+  body.is-admin .admin-only{ display:inline-block !important; }
+  #adminToggleBtn.is-locked-state{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
+  .proj-card{ border:1px solid var(--win-border); border-radius:8px; background:var(--win-surface); margin-bottom:12px; }
+  .proj-step-row{ border-top:1px solid var(--win-border); padding:10px 0; }
+  .attach-chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--win-border-strong); border-radius:5px; padding:3px 8px; font-size:11.5px; margin:2px 4px 2px 0; background:#fff; }
+  .attach-chip a{ color:var(--win-accent); text-decoration:none; }
+  .attach-chip .rm{ cursor:pointer; color:var(--c-incomplete); font-weight:700; }
+  .status-pill-sm{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:9px; color:#fff; }
+  .status-pill-sm.st-done{ background:var(--c-complete); }
+  .status-pill-sm.st-progress{ background:var(--kpi-risk); }
+  .status-pill-sm.st-notstarted{ background:var(--kpi-none); }
 </style>
 </head>
 <body>
@@ -221,17 +234,19 @@
   <div class="titlebar">
     <div class="titlebar-left">
       <div class="app-icon" id="appIcon">B</div>
-      <div class="titlebar-title">Dealership Daily Ops</div><span style="font-size:10.5px;font-weight:700;color:var(--win-accent);background:var(--win-accent-light);padding:2px 8px;border-radius:10px;margin-left:4px;">Live &middot; shared</span><a href="/mapper" style="font-size:11.5px;color:var(--win-text-secondary);text-decoration:none;margin-left:10px;border:1px solid var(--win-border-strong);border-radius:6px;padding:3px 9px;">Open Task Workflow Mapper &rarr;</a>
+      <div class="titlebar-title">Dealership Daily Ops</div><span style="font-size:10.5px;font-weight:700;color:var(--win-accent);background:var(--win-accent-light);padding:2px 8px;border-radius:10px;margin-left:4px;">Live &middot; shared</span><a href="/mapper" id="mapperLink" class="admin-only" style="font-size:11.5px;color:var(--win-text-secondary);text-decoration:none;margin-left:10px;border:1px solid var(--win-border-strong);border-radius:6px;padding:3px 9px;">Open Task Workflow Mapper &rarr;</a>
       <div class="loc-switch" id="locSwitch"></div>
     </div>
     <div class="toolbar-actions">
-      <button class="tb-btn" id="setupToggleBtn">Setup</button>
-      <button class="tb-btn" id="onetimeToggleBtn">One-Time Tasks</button>
-      <button class="tb-btn" id="meetingsToggleBtn">Meetings</button>
-      <button class="tb-btn" id="monthlyToggleBtn">Monthly Overview</button>
-      <button class="tb-btn" id="exportBtn">Export Data</button>
-      <button class="tb-btn" id="importBtn">Import Data</button>
+      <button class="tb-btn admin-only" id="setupToggleBtn">Setup</button>
+      <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
+      <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
+      <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
+      <button class="tb-btn admin-only" id="monthlyToggleBtn">Monthly Overview</button>
+      <button class="tb-btn admin-only" id="exportBtn">Export Data</button>
+      <button class="tb-btn admin-only" id="importBtn">Import Data</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="tb-btn" id="adminToggleBtn" style="margin-left:6px;">Admin</button>
     </div>
     <div class="titlebar-controls">
       <button class="tc-btn">&#8211;</button>
@@ -277,6 +292,8 @@
 
       <div id="meetingsPanelWrap" style="margin-top:22px;"></div>
 
+      <div id="projectsPanelWrap" style="margin-top:22px;"></div>
+
       <div id="onetimeWrap" style="display:none; margin-top:22px;">
         <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">One-Time Tasks</div>
         <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
@@ -291,6 +308,7 @@
     <div class="monthly-view" id="setupView"></div>
     <div class="monthly-view" id="onetimeReviewView"></div>
     <div class="monthly-view" id="meetingsView"></div>
+    <div class="monthly-view" id="projectsView"></div>
   </div>
 </div>
 
@@ -333,7 +351,8 @@ function newTaskId(){
   return 'tsk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 }
 async function saveRoster(){
-  await storSet('roster', JSON.stringify(LOCATIONS));
+  const ok = await storSet('roster', JSON.stringify(LOCATIONS), true);
+  if(!ok) showToast('Not saved \u2014 admin code required');
 }
 
 let currentLoc = 'bridgeland';
@@ -375,10 +394,54 @@ function showToast(msg){
   showToast._t = setTimeout(()=> t.classList.remove('show'), 1300);
 }
 
+// ---- Admin/manager gate. Employees can open the app, check off their own tasks, and view
+// everyone else's completion pages, but Setup, Meetings admin, Projects planner, Monthly
+// Overview, Export/Import, and the KPI mapper all require this code. Ask Rob for the code
+// (set/changed via the ADMIN_CODE variable on the Railway service). ----
+const ADMIN_CODE_STORAGE_KEY = 'dailys_admin_code';
+function getAdminCode(){ return localStorage.getItem(ADMIN_CODE_STORAGE_KEY) || ''; }
+function isAdmin(){ return !!getAdminCode(); }
+async function verifyAdminCode(code){
+  try{
+    const res = await fetch('/api/verify-admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+    const data = await res.json();
+    return !!data.ok;
+  }catch(e){ return false; }
+}
+async function promptAdminUnlock(){
+  const code = prompt('Enter the admin/manager code:');
+  if(code === null || code.trim() === '') return false;
+  const ok = await verifyAdminCode(code.trim());
+  if(ok){
+    localStorage.setItem(ADMIN_CODE_STORAGE_KEY, code.trim());
+    showToast('Admin unlocked');
+    applyAdminVisibility();
+    return true;
+  }
+  showToast('Incorrect code');
+  return false;
+}
+function lockAdmin(){
+  localStorage.removeItem(ADMIN_CODE_STORAGE_KEY);
+  showToast('Admin locked');
+  closeOtherPanels(null);
+  updatePanelVisibility();
+  applyAdminVisibility();
+}
+function applyAdminVisibility(){
+  document.body.classList.toggle('is-admin', isAdmin());
+  const btn = document.getElementById('adminToggleBtn');
+  if(btn){
+    btn.textContent = isAdmin() ? 'Admin: Unlocked' : 'Admin';
+    btn.classList.toggle('is-locked-state', isAdmin());
+  }
+}
+
 // ---- Shared server-backed store (every employee/device reads and writes the SAME
 // data through this API - this is what makes it live/shared instead of per-device) ----
 let SERVER_STATE = {};
 let MEETINGS = [];
+let PROJECTS = [];
 async function refreshServerState(){
   try{
     const res = await fetch('/api/state');
@@ -392,6 +455,8 @@ async function refreshServerState(){
     }
     try{ MEETINGS = SERVER_STATE['meetings'] ? JSON.parse(SERVER_STATE['meetings']) : []; }
     catch(e){ console.error('Bad meetings data, resetting', e); MEETINGS = []; }
+    try{ PROJECTS = SERVER_STATE['projects'] ? JSON.parse(SERVER_STATE['projects']) : []; }
+    catch(e){ console.error('Bad projects data, resetting', e); PROJECTS = []; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -399,8 +464,19 @@ async function refreshServerState(){
     return false;
   }
 }
+// Projects are NOT admin-gated at the server level (like one-time tasks) because employees
+// have a legitimate write of their own: marking their assigned step done/in-progress. The
+// Project Planner admin screen that creates/edits/deletes projects is UI-gated instead.
+async function saveProjects(){
+  const ok = await storSet('projects', JSON.stringify(PROJECTS));
+  showToast(ok ? 'Saved' : 'Save failed');
+}
+function newProjectId(){ return 'proj-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newStepId(){ return 'step-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newAttachId(){ return 'att-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 async function saveMeetingsList(){
-  await storSet('meetings', JSON.stringify(MEETINGS));
+  const ok = await storSet('meetings', JSON.stringify(MEETINGS), true);
+  if(!ok) showToast('Not saved \u2014 admin code required');
 }
 function newMeetingId(){
   return 'mtg-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -415,13 +491,15 @@ function meetingOccursOn(meeting, date){
 async function storGet(key){
   return Object.prototype.hasOwnProperty.call(SERVER_STATE, key) ? SERVER_STATE[key] : null;
 }
-async function storSet(key, value){
+async function storSet(key, value, requireAdmin){
   SERVER_STATE[key] = value;
   try{
+    const body = { key, value };
+    if(requireAdmin) body.adminCode = getAdminCode();
     const res = await fetch('/api/state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value })
+      body: JSON.stringify(body)
     });
     return res.ok;
   }catch(e){ console.error('storage set failed', e); return false; }
@@ -749,6 +827,7 @@ async function renderMain(){
 
   computeSummary(dates, countableIds);
   renderMeetingsPanel(dates);
+  renderProjectsPanel();
 
   // Every role gets a One-Time Tasks panel (for ad-hoc things assigned outside the
   // regular daily/weekly/monthly list) - checking one off leaves it visible with a
@@ -756,6 +835,72 @@ async function renderMain(){
   const otWrap = document.getElementById('onetimeWrap');
   otWrap.style.display = '';
   await renderOnetimePanel();
+}
+
+// ---- Employee-facing inline "My Projects" panel: any step assigned to the employee
+// currently being viewed, across every project, with a quick way to update its status.
+// Full project creation/editing lives in the admin-only Project Planner (see renderProjects). ----
+function projStatusClass(status){
+  if(status === 'Done') return 'st-done';
+  if(status === 'In Progress') return 'st-progress';
+  return 'st-notstarted';
+}
+function renderAttachmentChips(attachments){
+  if(!attachments || attachments.length === 0) return '';
+  return attachments.map(a => {
+    if(a.kind === 'link'){
+      return `<span class="attach-chip">\u{1F517} <a href="${escapeAttr(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.name || 'Link')}</a></span>`;
+    }
+    return `<span class="attach-chip">\u{1F4CE} <a href="${a.dataUrl}" download="${escapeAttr(a.name || 'file')}">${escapeHtml(a.name || 'File')}</a></span>`;
+  }).join('');
+}
+function renderProjectsPanel(){
+  const wrap = document.getElementById('projectsPanelWrap');
+  if(!wrap) return;
+  const myKey = `${currentLoc}::${currentEmployee}`;
+  const rows = [];
+  PROJECTS.forEach(p => {
+    if(p.status === 'Completed') return;
+    (p.steps||[]).forEach(s => {
+      if(`${s.assignedLoc}::${s.assignedEmp}` === myKey){
+        rows.push({ project: p, step: s });
+      }
+    });
+  });
+  if(rows.length === 0){ wrap.innerHTML = ''; return; }
+  rows.sort((a,b) => (a.step.dueDate||'9999').localeCompare(b.step.dueDate||'9999'));
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Projects</div>`;
+  rows.forEach(({project, step}) => {
+    html += `<div class="proj-card" data-pid="${project.id}" data-sid="${step.id}" style="padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:13px;font-weight:600;">${escapeHtml(step.title)}</div>
+          <div style="font-size:11.5px;color:var(--win-text-secondary);">${escapeHtml(project.name)}${step.dueDate ? ' \u00b7 due ' + escapeHtml(step.dueDate) : ''}</div>
+        </div>
+        <span class="status-pill-sm ${projStatusClass(step.status)}">${escapeHtml(step.status||'Not Started')}</span>
+        <select class="proj-status-select" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:5px;font-size:12px;">
+          <option value="Not Started" ${step.status==='Not Started'?'selected':''}>Not Started</option>
+          <option value="In Progress" ${step.status==='In Progress'?'selected':''}>In Progress</option>
+          <option value="Done" ${step.status==='Done'?'selected':''}>Done</option>
+        </select>
+      </div>
+      ${step.notes ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:6px;white-space:pre-line;">${escapeHtml(step.notes)}</div>` : ''}
+      ${step.attachments && step.attachments.length ? `<div style="margin-top:6px;">${renderAttachmentChips(step.attachments)}</div>` : ''}
+    </div>`;
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.proj-card').forEach(card => {
+    const pid = card.dataset.pid, sid = card.dataset.sid;
+    const sel = card.querySelector('.proj-status-select');
+    sel.onchange = async () => {
+      const p = PROJECTS.find(x => x.id === pid);
+      const s = p && (p.steps||[]).find(x => x.id === sid);
+      if(!s) return;
+      s.status = sel.value;
+      await saveProjects();
+      renderProjectsPanel();
+    };
+  });
 }
 
 function renderMeetingsPanel(dates){
@@ -949,8 +1094,9 @@ function importData(file){
       const res = await fetch('/api/state/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ adminCode: getAdminCode(), data })
       });
+      if(res.status === 403){ showToast('Import blocked \u2014 admin code required'); return; }
       const result = await res.json();
       statusCache = {};
       onetimeListCache = {};
@@ -1195,19 +1341,238 @@ function wireMeetingsHandlers(view){
   });
 }
 
+// ---- Project Planner (owner-only). Projects with steps assigned to specific employees,
+// deadlines, status, and attachments (a pasted Google Drive/file link, or an uploaded file
+// stored as a data URL). Employees see just their own assigned steps inline in their daily
+// view (see renderProjectsPanel above) and can update status there - everything else here
+// (creating projects, adding/removing steps, reassigning, deleting) is admin-only. ----
+let projectsShown = false;
+
+function allRosterTargets(){
+  const out = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => out.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
+  });
+  return out;
+}
+
+async function renderProjects(){
+  await refreshServerState();
+  const view = document.getElementById('projectsView');
+  const targets = allRosterTargets();
+
+  let html = `
+    <div class="monthly-header"><h1>Project Planner</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Projects that need specific employees to do particular things by a deadline. Add steps,
+      assign each to someone on the roster, set a due date, and attach a file or a Google Drive
+      link. Assigned employees see their own steps on their daily page and can update status \u2014
+      full editing stays here.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <input type="text" id="newProjName" placeholder="New project name..." style="flex:1;max-width:360px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <button class="mini-btn primary-mini" id="newProjBtn">+ New project</button>
+    </div>
+  `;
+
+  if(PROJECTS.length === 0){
+    html += `<div class="empty-note">No projects yet.</div>`;
+  }
+
+  PROJECTS.forEach(p => {
+    const doneCount = (p.steps||[]).filter(s => s.status === 'Done').length;
+    const totalCount = (p.steps||[]).length;
+    html += `<details class="proj-card" data-pid="${p.id}" style="padding:0;">
+      <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
+        ${escapeHtml(p.name)}
+        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(p.status||'Active')}${p.deadline ? ' \u00b7 due ' + escapeHtml(p.deadline) : ''} \u00b7 ${doneCount}/${totalCount} steps done</span>
+      </summary>
+      <div style="padding:4px 14px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <input type="text" class="p-name" value="${escapeAttr(p.name)}" placeholder="Project name" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="p-status" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="Active" ${p.status==='Active'?'selected':''}>Active</option>
+            <option value="On Hold" ${p.status==='On Hold'?'selected':''}>On Hold</option>
+            <option value="Completed" ${p.status==='Completed'?'selected':''}>Completed</option>
+          </select>
+          <input type="date" class="p-deadline" value="${escapeAttr(p.deadline||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <button class="mini-btn danger-mini p-remove">Delete project</button>
+        </div>
+        <textarea class="p-desc" placeholder="Project description..." style="width:100%;min-height:48px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:12px;">${escapeHtml(p.description||'')}</textarea>
+
+        <div class="p-steps">`;
+
+    (p.steps||[]).forEach(s => {
+      const targetOpts = targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(s.assignedLoc===x.locKey && s.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('');
+      html += `<div class="proj-step-row" data-sid="${s.id}">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="text" class="s-title" value="${escapeAttr(s.title)}" placeholder="Step / task" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="s-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">Unassigned</option>${targetOpts}
+          </select>
+          <input type="date" class="s-due" value="${escapeAttr(s.dueDate||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <select class="s-status" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="Not Started" ${s.status==='Not Started'?'selected':''}>Not Started</option>
+            <option value="In Progress" ${s.status==='In Progress'?'selected':''}>In Progress</option>
+            <option value="Done" ${s.status==='Done'?'selected':''}>Done</option>
+          </select>
+          <button class="mini-btn danger-mini s-remove">Remove</button>
+        </div>
+        <textarea class="s-notes" placeholder="Notes for this step..." style="width:100%;min-height:36px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-top:6px;">${escapeHtml(s.notes||'')}</textarea>
+        <div class="s-attachments" style="margin-top:6px;">${renderAttachmentChips(s.attachments)}</div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <input type="text" class="s-link-name" placeholder="Link name (e.g. Drive folder)" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:5px 8px;font-size:11.5px;width:180px;">
+          <input type="text" class="s-link-url" placeholder="https://drive.google.com/..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:5px 8px;font-size:11.5px;">
+          <button class="mini-btn s-addlink">+ Add link</button>
+          <button class="mini-btn s-addfile">+ Add file</button>
+        </div>
+      </div>`;
+    });
+
+    html += `</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" class="add-step-input" placeholder="New step / task..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+          <button class="mini-btn primary-mini add-step-btn">+ Add step</button>
+        </div>
+      </div>
+    </details>`;
+  });
+
+  view.innerHTML = html;
+  wireProjectsHandlers(view);
+}
+
+function wireProjectsHandlers(view){
+  const newBtn = document.getElementById('newProjBtn');
+  if(newBtn) newBtn.onclick = async () => {
+    const input = document.getElementById('newProjName');
+    const name = (input.value || '').trim();
+    if(!name) return;
+    PROJECTS.push({ id: newProjectId(), name, description: '', deadline: '', status: 'Active', createdAt: isoDate(new Date()), steps: [] });
+    await saveProjects();
+    await renderProjects();
+  };
+
+  view.querySelectorAll('details[data-pid]').forEach(card => {
+    const pid = card.dataset.pid;
+    const findP = () => PROJECTS.find(p => p.id === pid);
+
+    const bindP = (sel, prop) => {
+      const el = card.querySelector(sel);
+      if(!el) return;
+      el.onchange = async (e) => { const p = findP(); if(!p) return; p[prop] = e.target.value; await saveProjects(); };
+    };
+    bindP('.p-name', 'name');
+    bindP('.p-status', 'status');
+    bindP('.p-deadline', 'deadline');
+    bindP('.p-desc', 'description');
+
+    const removeBtn = card.querySelector('.p-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!confirm('Delete this project and all its steps? This cannot be undone.')) return;
+      const i = PROJECTS.findIndex(p => p.id === pid);
+      if(i > -1) PROJECTS.splice(i, 1);
+      await saveProjects();
+      await renderProjects();
+    };
+
+    const addStepBtn = card.querySelector('.add-step-btn');
+    if(addStepBtn) addStepBtn.onclick = async () => {
+      const input = card.querySelector('.add-step-input');
+      const title = (input.value || '').trim();
+      if(!title) return;
+      const p = findP(); if(!p) return;
+      if(!p.steps) p.steps = [];
+      p.steps.push({ id: newStepId(), title, assignedLoc: '', assignedEmp: null, dueDate: '', status: 'Not Started', notes: '', attachments: [] });
+      await saveProjects();
+      await renderProjects();
+    };
+
+    card.querySelectorAll('.proj-step-row').forEach(row => {
+      const sid = row.dataset.sid;
+      const findS = () => { const p = findP(); return p && (p.steps||[]).find(s => s.id === sid); };
+
+      const bindS = (sel, prop) => {
+        const el = row.querySelector(sel);
+        if(!el) return;
+        el.onchange = async (e) => { const s = findS(); if(!s) return; s[prop] = e.target.value; await saveProjects(); };
+      };
+      bindS('.s-title', 'title');
+      bindS('.s-due', 'dueDate');
+      bindS('.s-status', 'status');
+      bindS('.s-notes', 'notes');
+
+      const assignEl = row.querySelector('.s-assign');
+      if(assignEl) assignEl.onchange = async (e) => {
+        const s = findS(); if(!s) return;
+        const val = e.target.value;
+        if(!val){ s.assignedLoc = ''; s.assignedEmp = null; }
+        else { const [locKey, empIdxStr] = val.split('::'); s.assignedLoc = locKey; s.assignedEmp = parseInt(empIdxStr, 10); }
+        await saveProjects();
+      };
+
+      const removeS = row.querySelector('.s-remove');
+      if(removeS) removeS.onclick = async () => {
+        if(!confirm('Remove this step?')) return;
+        const p = findP(); if(!p) return;
+        const i = (p.steps||[]).findIndex(s => s.id === sid);
+        if(i > -1) p.steps.splice(i, 1);
+        await saveProjects();
+        await renderProjects();
+      };
+
+      const addLinkBtn = row.querySelector('.s-addlink');
+      if(addLinkBtn) addLinkBtn.onclick = async () => {
+        const nameInput = row.querySelector('.s-link-name');
+        const urlInput = row.querySelector('.s-link-url');
+        const url = (urlInput.value || '').trim();
+        if(!url) return;
+        const name = (nameInput.value || '').trim() || url;
+        const s = findS(); if(!s) return;
+        if(!s.attachments) s.attachments = [];
+        s.attachments.push({ id: newAttachId(), kind:'link', name, url, addedAt: isoDate(new Date()) });
+        await saveProjects();
+        await renderProjects();
+      };
+
+      const addFileBtn = row.querySelector('.s-addfile');
+      if(addFileBtn) addFileBtn.onclick = () => {
+        const input = document.getElementById('fileInput');
+        input.value = '';
+        input.accept = '';
+        input.onchange = async () => {
+          if(input.files && input.files[0]){
+            const file = input.files[0];
+            const durl = await fileToDataUrl(file);
+            const s = findS(); if(!s) return;
+            if(!s.attachments) s.attachments = [];
+            s.attachments.push({ id: newAttachId(), kind:'file', name: file.name, dataUrl: durl, addedAt: isoDate(new Date()) });
+            await saveProjects();
+            await renderProjects();
+            input.accept = 'image/*';
+          }
+        };
+        input.click();
+      };
+    });
+  });
+}
+
 function closeOtherPanels(except){
   if(except !== 'monthly' && monthlyShown){ monthlyShown = false; document.getElementById('monthlyToggleBtn').classList.remove('active'); document.getElementById('monthlyView').classList.remove('show'); }
   if(except !== 'setup' && setupShown){ setupShown = false; document.getElementById('setupToggleBtn').classList.remove('active'); document.getElementById('setupView').classList.remove('show'); }
   if(except !== 'onetime' && onetimeReviewShown){ onetimeReviewShown = false; document.getElementById('onetimeToggleBtn').classList.remove('active'); document.getElementById('onetimeReviewView').classList.remove('show'); }
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
+  if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
 }
 
 document.getElementById('monthlyToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
   closeOtherPanels('monthly');
   monthlyShown = !monthlyShown;
   document.getElementById('monthlyToggleBtn').classList.toggle('active', monthlyShown);
@@ -1217,6 +1582,7 @@ document.getElementById('monthlyToggleBtn').onclick = async () => {
 };
 
 document.getElementById('onetimeToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
   closeOtherPanels('onetime');
   onetimeReviewShown = !onetimeReviewShown;
   document.getElementById('onetimeToggleBtn').classList.toggle('active', onetimeReviewShown);
@@ -1226,12 +1592,31 @@ document.getElementById('onetimeToggleBtn').onclick = async () => {
 };
 
 document.getElementById('meetingsToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
   closeOtherPanels('meetings');
   meetingsShown = !meetingsShown;
   document.getElementById('meetingsToggleBtn').classList.toggle('active', meetingsShown);
   document.getElementById('meetingsView').classList.toggle('show', meetingsShown);
   updatePanelVisibility();
   if(meetingsShown) await renderMeetings();
+};
+
+document.getElementById('projectsToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  closeOtherPanels('projects');
+  projectsShown = !projectsShown;
+  document.getElementById('projectsToggleBtn').classList.toggle('active', projectsShown);
+  document.getElementById('projectsView').classList.toggle('show', projectsShown);
+  updatePanelVisibility();
+  if(projectsShown) await renderProjects();
+};
+
+document.getElementById('adminToggleBtn').onclick = async () => {
+  if(isAdmin()){
+    if(confirm('Lock admin features again?')) lockAdmin();
+  } else {
+    await promptAdminUnlock();
+  }
 };
 
 // ---- Setup (roster admin: add roles, reassign/add/remove tasks, cadence incl. Awareness,
@@ -1380,6 +1765,7 @@ async function renderSetup(){
 }
 
 document.getElementById('setupToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
   closeOtherPanels('setup');
   setupShown = !setupShown;
   document.getElementById('setupToggleBtn').classList.toggle('active', setupShown);
@@ -1388,14 +1774,21 @@ document.getElementById('setupToggleBtn').onclick = async () => {
   if(setupShown) await renderSetup();
 };
 
-document.getElementById('exportBtn').onclick = exportData;
-document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('exportBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  exportData();
+};
+document.getElementById('importBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  document.getElementById('importFile').click();
+};
 document.getElementById('importFile').onchange = (e) => {
   const file = e.target.files[0];
   if(file) importData(file);
   e.target.value = '';
 };
 
+applyAdminVisibility();
 renderAll();
 </script>
 </body>
