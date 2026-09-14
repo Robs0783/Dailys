@@ -229,6 +229,10 @@
   .loc-applies-badge{ font-size:9.5px; font-weight:700; color:#fff; background:#8A8886; border-radius:4px; padding:2px 6px; flex-shrink:0; white-space:nowrap; }
   .info-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:50%; width:20px;height:20px; flex-shrink:0; cursor:pointer; font-size:12px; line-height:1; padding:0; color:var(--win-accent); }
   .info-btn:hover{ background:var(--win-accent-light); }
+  .off-day-cell{ text-align:center; color:#C8C6C4; font-size:12px; background:#FAFAFA; }
+  .metric-entry-btn{ display:block; margin:4px auto 0; border:1px solid var(--win-border-strong); background:#fff; border-radius:5px; width:22px;height:20px; cursor:pointer; font-size:11px; padding:0; }
+  .metric-entry-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); }
+  .metric-entry-btn.has-value{ border-color:var(--win-accent); background:var(--win-accent-light); }
 </style>
 </head>
 <body>
@@ -241,6 +245,7 @@
       <div class="loc-switch" id="locSwitch"></div>
     </div>
     <div class="toolbar-actions">
+      <button class="tb-btn" id="dashboardToggleBtn">Metrics Dashboard</button>
       <button class="tb-btn admin-only" id="setupToggleBtn">Setup</button>
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
@@ -316,6 +321,7 @@
     <div class="monthly-view" id="meetingsView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="metricsView"></div>
+    <div class="monthly-view" id="dashboardView"></div>
   </div>
 </div>
 
@@ -599,15 +605,16 @@ function rateClass(rate){
 async function computeMonthlyStats(loc, empIdx, monthDate){
   const emp = LOCATIONS[loc].data[empIdx];
   const countable = emp.tasks.filter(t => t.cadence !== 'Awareness');
-  const numTasks = countable.length;
   const nDays = daysInMonthOf(monthDate);
-  let complete=0, incomplete=0, off=0, filled=0;
+  let complete=0, incomplete=0, off=0, filled=0, totalPossible=0;
   const jobs = [];
   for(let day=1; day<=nDays; day++){
     const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
     const dateStr = isoDate(d);
     jobs.push(loadStatuses(loc, empIdx, dateStr).then(obj => {
       countable.forEach(t => {
+        if(!taskAppliesOnDate(t, d)) return; // Specific Days tasks only count on their chosen weekdays
+        totalPossible++;
         const v = obj[t.id];
         if(v === 'C'){ complete++; filled++; }
         else if(v === 'I'){ incomplete++; filled++; }
@@ -616,7 +623,6 @@ async function computeMonthlyStats(loc, empIdx, monthDate){
     }));
   }
   await Promise.all(jobs);
-  const totalPossible = numTasks * nDays;
   const denom = complete + incomplete;
   const completionRate = denom > 0 ? Math.round((complete/denom)*100) : null;
   const fillRate = totalPossible > 0 ? Math.round((filled/totalPossible)*100) : 0;
@@ -738,6 +744,40 @@ function fileToDataUrl(file){
   });
 }
 
+function openMetricEntryModal(metric, date, onSaved){
+  const dateStr = isoDate(date);
+  document.getElementById('photoModalTitle').textContent = metric.name + ' \u2014 ' + date.toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'});
+  const body = document.getElementById('photoModalBody');
+  body.innerHTML = `
+    ${metric.calculation ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 8px;"><b>How it's calculated:</b> ${escapeHtml(metric.calculation)}</p>` : ''}
+    ${metric.source ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 12px;"><b>Where to get it:</b> ${escapeHtml(metric.source)}</p>` : ''}
+    <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px;">Value${metric.unit ? ' (' + escapeHtml(metric.unit) + ')' : ''}</label>
+    <input type="number" step="any" id="metricEntryInput" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:14px;box-sizing:border-box;">
+  `;
+  document.getElementById('photoModalActions').innerHTML = '';
+  loadMetricEntries(metric.id).then(entries => {
+    const input = document.getElementById('metricEntryInput');
+    if(input && entries[dateStr] !== undefined) input.value = entries[dateStr];
+    if(input) input.focus();
+  });
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save';
+  saveBtn.className = 'primary';
+  saveBtn.onclick = async () => {
+    const input = document.getElementById('metricEntryInput');
+    const entries = await loadMetricEntries(metric.id);
+    if(input.value === ''){ delete entries[dateStr]; } else { entries[dateStr] = input.value; }
+    await saveMetricEntries(metric.id, entries);
+    closePhotoModal();
+    if(onSaved) onSaved();
+  };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Cancel';
+  closeBtn.onclick = closePhotoModal;
+  document.getElementById('photoModalActions').appendChild(closeBtn);
+  document.getElementById('photoModalActions').appendChild(saveBtn);
+  document.getElementById('photoModal').classList.add('show');
+}
 function openTaskInfoModal(t){
   document.getElementById('photoModalTitle').textContent = t.text;
   const body = document.getElementById('photoModalBody');
@@ -807,8 +847,25 @@ function fmtWeekLabel(dates){
   return dates[0].toLocaleDateString('en-US', opts) + ' – ' + dates[6].toLocaleDateString('en-US', opts) + ', ' + dates[0].getFullYear();
 }
 
+// ---- "Specific Days" cadence: for tasks done every 2-3 days rather than daily or once a week.
+// Admin picks exact weekdays in Setup; every other cadence is unaffected (always applies). ----
+const SHORT_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']; // indexed by Date.getDay()
+function taskAppliesOnDate(t, date){
+  if(t.cadence !== 'Specific Days') return true;
+  return (t.specificDays||[]).includes(SHORT_DOW[date.getDay()]);
+}
+// A task can optionally be linked to an existing Metric as its completion verification - this
+// decides which days it's valid to log a number for that metric (Mon-Fri for a Daily metric,
+// Thursday only for a Weekly one, matching the same convention used everywhere else).
+function metricValidOnDate(metric, date){
+  if(!metric) return false;
+  const dow = date.getDay();
+  if(metric.cadence === 'Weekly') return dow === 4; // Thursday
+  return dow >= 1 && dow <= 5; // Mon-Fri
+}
+
 function groupTasks(tasks){
-  const order = ['Daily','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
+  const order = ['Daily','Specific Days','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
   const groups = {};
   tasks.forEach((t) => {
     const c = t.cadence || 'Daily';
@@ -830,6 +887,12 @@ async function renderMain(){
 
   // preload statuses for all 7 days
   const dayStatuses = await Promise.all(dates.map(d => loadStatuses(currentLoc, currentEmployee, isoDate(d))));
+
+  // preload entries for any metrics linked to this employee's tasks, so the little entry
+  // button can show whether a value's already there without an extra round trip per click
+  const linkedMetricIds = [...new Set(emp.tasks.filter(t => t.linkedMetricId).map(t => t.linkedMetricId))];
+  const linkedMetricEntries = {};
+  await Promise.all(linkedMetricIds.map(async id => { linkedMetricEntries[id] = await loadMetricEntries(id); }));
 
   const groups = groupTasks(emp.tasks);
   const wrap = document.getElementById('tableWrap');
@@ -857,14 +920,26 @@ async function renderMain(){
       const locBadgeHtml = LOCATIONS[currentLoc].dual ? `<span class="loc-applies-badge">${t.appliesTo==='bridgeland'?'Bridgeland':t.appliesTo==='candycars'?'Candy Cars':'Both locations'}</span>` : '';
       const hasInfo = (t.howTo && t.howTo.trim()) || (t.videoUrl && t.videoUrl.trim());
       const infoBtnHtml = hasInfo ? `<button class="info-btn" data-taskid="${t.id}" title="How to / training">ⓘ</button>` : '';
+      const linkedMetric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
       html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${infoBtnHtml}</td>`;
       dates.forEach((d,i) => {
+        if(!taskAppliesOnDate(t, d)){
+          html += `<td class="day-cell off-day-cell" title="Not scheduled this day">—</td>`;
+          return;
+        }
         const val = dayStatuses[i][t.id] || '';
+        let metricBtnHtml = '';
+        if(linkedMetric && metricValidOnDate(linkedMetric, d)){
+          const mEntries = linkedMetricEntries[linkedMetric.id] || {};
+          const mVal = mEntries[isoDate(d)];
+          const hasVal = mVal !== undefined && mVal !== '';
+          metricBtnHtml = `<button class="metric-entry-btn${hasVal ? ' has-value' : ''}" data-taskid="${t.id}" data-dayindex="${i}" data-metricid="${linkedMetric.id}" title="${hasVal ? escapeAttr(linkedMetric.name)+': '+escapeAttr(String(mVal)) : 'Enter '+escapeAttr(linkedMetric.name)}">${hasVal ? escapeHtml(String(mVal)) : '🔢'}</button>`;
+        }
         html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
           <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C">C</button>
           <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I">I</button>
           <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O">O</button>
-        </div></td>`;
+        </div>${metricBtnHtml}</td>`;
       });
       html += '</tr>';
     });
@@ -872,7 +947,7 @@ async function renderMain(){
   html += '</tbody></table>';
   wrap.innerHTML = html;
 
-  const countableIds = emp.tasks.filter(t => t.cadence !== 'Awareness').map(t => t.id);
+  const countableTasks = emp.tasks.filter(t => t.cadence !== 'Awareness');
 
   // wire status buttons
   wrap.querySelectorAll('.seg').forEach(seg => {
@@ -888,7 +963,7 @@ async function renderMain(){
         seg.querySelectorAll('.seg-btn').forEach(b => b.className = 'seg-btn');
         if(newVal) btn.classList.add('seg-btn', 'sel-'+newVal);
         await saveStatuses(currentLoc, currentEmployee, dateStr, obj);
-        computeSummary(dates, countableIds);
+        computeSummary(dates, countableTasks);
       };
     });
   });
@@ -900,7 +975,16 @@ async function renderMain(){
     };
   });
 
-  computeSummary(dates, countableIds);
+  wrap.querySelectorAll('.metric-entry-btn').forEach(btn => {
+    btn.onclick = () => {
+      const metric = METRICS.find(m => m.id === btn.dataset.metricid);
+      const dayIdx = parseInt(btn.dataset.dayindex, 10);
+      const date = dates[dayIdx];
+      if(metric) openMetricEntryModal(metric, date, async () => { await renderMain(); });
+    };
+  });
+
+  computeSummary(dates, countableTasks);
   renderMeetingsPanel(dates);
   renderProjectsPanel();
   await renderMetricsPanel(dates);
@@ -1160,16 +1244,18 @@ function triggerUpload(cb){
   input.click();
 }
 
-function computeSummary(dates, countableIds){
+function computeSummary(dates, countableTasks){
   // quick aggregate across cached day statuses already in statusCache, restricted to
-  // non-Awareness task ids so parked tasks never affect the reported rate
+  // non-Awareness tasks so parked tasks never affect the reported rate, and only counting a
+  // day for a task if that task actually applies that day (matters for Specific Days tasks)
   let filled=0, total=0, complete=0;
   dates.forEach(d => {
     const key = statusKey(currentLoc, currentEmployee, isoDate(d));
     const obj = statusCache[key] || {};
-    countableIds.forEach(id => {
+    countableTasks.forEach(t => {
+      if(!taskAppliesOnDate(t, d)) return;
       total++;
-      const v = obj[id];
+      const v = obj[t.id];
       if(v){ filled++; if(v==='C') complete++; }
     });
   });
@@ -1186,11 +1272,15 @@ async function renderNavProgress(){
   const dates = weekDates(weekStart);
   for(const el of items){
     const idx = parseInt(el.dataset.idx,10);
-    const countableIds = LOCATIONS[currentLoc].data[idx].tasks.filter(t => t.cadence !== 'Awareness').map(t => t.id);
+    const countableTasks = LOCATIONS[currentLoc].data[idx].tasks.filter(t => t.cadence !== 'Awareness');
     let filled=0, total=0;
     for(const d of dates){
       const obj = await loadStatuses(currentLoc, idx, isoDate(d));
-      countableIds.forEach(id => { total++; if(obj[id]) filled++; });
+      countableTasks.forEach(t => {
+        if(!taskAppliesOnDate(t, d)) return;
+        total++;
+        if(obj[t.id]) filled++;
+      });
     }
     el.textContent = total ? `${filled}/${total}` : '';
   }
@@ -1699,10 +1789,13 @@ function wireProjectsHandlers(view){
 }
 
 // ---- KPI Metrics admin panel: define what gets tracked (name, Daily or Weekly, who's
-// assigned, optional unit/target) - this is where Rob replaces the manual Google Sheet.
-// Each metric shows its own recent entries (read-only here) so there's a place to actually
-// SEE the numbers over time without needing a separate spreadsheet. Entering new numbers day
-// to day happens on the assigned employee's own page (see renderMetricsPanel above). ----
+// assigned, unit, how it's calculated, where to get the info, and a monthly goal) - this is
+// where Rob replaces the manual "Metrics Dashboard 2026" Google Sheet. Each metric shows its
+// own recent entries (read-only here) so there's a place to actually SEE the numbers over time.
+// Entering new day-to-day numbers happens on the assigned employee's own page (see
+// renderMetricsPanel above). Give two metrics for different stores the SAME name (e.g.
+// "Delivered Units" for both Bridgeland and Candy Cars) and they'll line up side by side in the
+// public Metrics Dashboard (see renderDashboard further down). ----
 let metricsShown = false;
 
 function recentDailyDates(n){
@@ -1720,11 +1813,18 @@ function recentMondays(n){
   for(let i=0;i<n;i++){ out.unshift(new Date(m)); m.setDate(m.getDate()-7); }
   return out;
 }
+function monthKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function monthKeyLabel(key){
+  const [y,m] = key.split('-').map(Number);
+  return new Date(y, m-1, 1).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+}
 
 async function renderMetrics(){
   await refreshServerState();
   const view = document.getElementById('metricsView');
   const targets = allRosterTargets();
+  const thisMonthKey = monthKey(new Date());
+  const nextMonthKey = monthKey(new Date(new Date().getFullYear(), new Date().getMonth()+1, 1));
 
   let html = `
     <div class="monthly-header"><h1>Metrics</h1></div>
@@ -1732,10 +1832,12 @@ async function renderMetrics(){
       Daily and weekly KPI numbers, tracked here instead of a Google Sheet. Assign each metric to
       an employee - they'll see it on their own page and fill it in themselves (daily metrics get
       Monday-Friday boxes for the week; weekly metrics get one box, meant to be entered Thursday).
-      Recent entries for each metric are shown below for a quick look at the trend.
+      Give two metrics the same name to line them up side by side, per store, in the public
+      Metrics Dashboard. Set next month's goal before the month starts - it's flagged below if
+      it's still missing.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
-      <input type="text" id="newMetricName" placeholder="New metric name (e.g. Delivered Units - Bridgeland)..." style="flex:1;min-width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <input type="text" id="newMetricName" placeholder="Metric name (e.g. Delivered Units)..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
       <select id="newMetricCadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="Daily">Daily (Mon-Fri)</option>
         <option value="Weekly">Weekly (Thursday)</option>
@@ -1756,8 +1858,10 @@ async function renderMetrics(){
   const weeklyMondays = recentMondays(6);
 
   for(const m of METRICS){
+    if(!m.goals) m.goals = {};
     const entries = await loadMetricEntries(m.id);
     const assignedLabel = targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp);
+    const nextGoalMissing = !m.goals[nextMonthKey];
     let recentHtml = '';
     if(m.cadence === 'Weekly'){
       recentHtml = weeklyMondays.map(d => {
@@ -1777,6 +1881,7 @@ async function renderMetrics(){
       <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
         ${escapeHtml(m.name)}
         <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}</span>
+        ${nextGoalMissing ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Next month's goal not set</span>` : ''}
       </summary>
       <div style="padding:4px 14px 16px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
@@ -1789,9 +1894,20 @@ async function renderMetrics(){
             <option value="">Unassigned</option>
             ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.assignedLoc===x.locKey && m.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
           </select>
-          <input type="text" class="mt-unit" placeholder="Unit (e.g. hours, units)" value="${escapeAttr(m.unit||'')}" style="width:160px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
-          <input type="text" class="mt-target" placeholder="Target (optional)" value="${escapeAttr(m.target||'')}" style="width:140px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <input type="text" class="mt-unit" placeholder="Unit (e.g. hours, units)" value="${escapeAttr(m.unit||'')}" style="width:140px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
           <button class="mini-btn danger-mini mt-remove">Delete metric</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" class="mt-calc" placeholder="How it's calculated..." value="${escapeAttr(m.calculation||'')}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <input type="text" class="mt-source" placeholder="Where to get the info..." value="${escapeAttr(m.source||'')}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:12px;background:var(--win-accent-light);border-radius:6px;padding:8px 10px;">
+          <label style="font-size:11.5px;font-weight:600;">${monthKeyLabel(thisMonthKey)} goal:
+            <input type="text" class="mt-goal" data-monthkey="${thisMonthKey}" value="${escapeAttr(m.goals[thisMonthKey]||'')}" style="width:100px;margin-left:6px;border:1px solid var(--win-border-strong);border-radius:6px;padding:5px 8px;font-size:12px;">
+          </label>
+          <label style="font-size:11.5px;font-weight:600;">${monthKeyLabel(nextMonthKey)} goal:
+            <input type="text" class="mt-goal" data-monthkey="${nextMonthKey}" value="${escapeAttr(m.goals[nextMonthKey]||'')}" style="width:100px;margin-left:6px;border:1px solid var(--win-border-strong);border-radius:6px;padding:5px 8px;font-size:12px;">
+          </label>
         </div>
         <div style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);margin-bottom:6px;">Recent entries</div>
         <div>${recentHtml || '<span class="empty-note">No entries yet.</span>'}</div>
@@ -1812,7 +1928,7 @@ function wireMetricsAdminHandlers(view){
     if(!name) return;
     let assignedLoc = '', assignedEmp = null;
     if(targetVal){ const [l, eStr] = targetVal.split('::'); assignedLoc = l; assignedEmp = parseInt(eStr,10); }
-    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, unit: '', target: '', createdAt: isoDate(new Date()) });
+    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, unit: '', calculation: '', source: '', goals: {}, createdAt: isoDate(new Date()) });
     await saveMetrics();
     await renderMetrics();
   };
@@ -1829,7 +1945,17 @@ function wireMetricsAdminHandlers(view){
     bind('.mt-name', 'name');
     bind('.mt-cadence', 'cadence');
     bind('.mt-unit', 'unit');
-    bind('.mt-target', 'target');
+    bind('.mt-calc', 'calculation');
+    bind('.mt-source', 'source');
+
+    card.querySelectorAll('.mt-goal').forEach(el => {
+      el.onchange = async (e) => {
+        const m = findM(); if(!m) return;
+        if(!m.goals) m.goals = {};
+        m.goals[e.target.dataset.monthkey] = e.target.value;
+        await saveMetrics();
+      };
+    });
 
     const assignEl = card.querySelector('.mt-assign');
     if(assignEl) assignEl.onchange = async (e) => {
@@ -1851,6 +1977,146 @@ function wireMetricsAdminHandlers(view){
   });
 }
 
+// ---- Public Metrics Dashboard: read-only, NOT admin-gated - every employee can open this to
+// see how each store is doing side by side. Two metrics with the SAME name (e.g. "Delivered
+// Units" defined once for Bridgeland and once for Candy Cars) are grouped into one card with a
+// column per store. Shows the monthly goal, a week-by-week breakdown for the month being viewed,
+// and the running month-to-date total, plus the calculation/source notes so it's clear where the
+// number comes from and how it's worked out (same information the old Metrics Dashboard 2026
+// Google Sheet carried). ----
+let dashboardShown = false;
+let dashboardMonthCursor = firstOfMonth(new Date());
+
+function weeksTouchingMonth(monthDate){
+  const n = daysInMonthOf(monthDate);
+  const seen = {};
+  const out = [];
+  for(let day=1; day<=n; day++){
+    const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+    const mon = mondayOf(d);
+    const key = isoDate(mon);
+    if(!seen[key]){ seen[key] = true; out.push(mon); }
+  }
+  out.sort((a,b) => a-b);
+  return out;
+}
+function sumInMonth(entries, dateStrs, monthDate){
+  const y = monthDate.getFullYear(), m = monthDate.getMonth();
+  let total = 0, any = false;
+  dateStrs.forEach(ds => {
+    const v = entries[ds];
+    if(v === undefined || v === '') return;
+    const d = new Date(ds + 'T00:00:00');
+    if(d.getFullYear() === y && d.getMonth() === m){
+      const n = parseFloat(v);
+      if(!isNaN(n)){ total += n; any = true; }
+    }
+  });
+  return any ? total : null;
+}
+
+async function renderDashboard(){
+  await refreshServerState();
+  const view = document.getElementById('dashboardView');
+  const monthLabel = fmtMonthLabel(dashboardMonthCursor);
+  const goalMonthKey = monthKey(dashboardMonthCursor);
+  const weeks = weeksTouchingMonth(dashboardMonthCursor);
+
+  let html = `
+    <div class="monthly-header"><h1>Metrics Dashboard \u2014 ${monthLabel}</h1>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="month-nav">
+          <button id="dbPrevMonth" title="Previous month">&#8592;</button>
+          <span class="month-label">${monthLabel}</span>
+          <button id="dbNextMonth" title="Next month">&#8594;</button>
+        </div>
+        <span class="month-today-pill" id="dbThisMonthBtn">This month</span>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 18px;">
+      Side-by-side store view of every KPI, for anyone to check. Metrics defined under the same
+      name at more than one store line up in the same card. Numbers are entered day to day by
+      whoever's assigned - see the Metrics area if you're setting up what gets tracked.
+    </p>
+  `;
+
+  if(METRICS.length === 0){
+    html += `<div class="empty-note">No metrics set up yet.</div>`;
+    view.innerHTML = html;
+    wireDashboardHandlers();
+    return;
+  }
+
+  const targets = allRosterTargets();
+  const groups = {};
+  METRICS.forEach(m => { (groups[m.name] = groups[m.name] || []).push(m); });
+
+  for(const [name, metrics] of Object.entries(groups)){
+    html += `<div class="monthly-loc-group"><div class="monthly-loc-title">${escapeHtml(name)}</div>
+      <table class="monthly-table"><thead><tr><th>Store / who</th>`;
+    weeks.forEach(w => {
+      const wEnd = new Date(w); wEnd.setDate(wEnd.getDate()+4);
+      html += `<th class="num">Wk of ${w.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</th>`;
+    });
+    html += `<th class="num">Month to date</th><th class="num">Goal</th></tr></thead><tbody>`;
+
+    for(const m of metrics){
+      if(!m.goals) m.goals = {};
+      const entries = await loadMetricEntries(m.id);
+      const assignedLabel = targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp);
+      const goal = m.goals[goalMonthKey];
+
+      html += `<tr><td>${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${m.unit ? ` <span style="color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}</td>`;
+
+      let monthDateStrs = [];
+      weeks.forEach(w => {
+        let wVal;
+        if(m.cadence === 'Weekly'){
+          const v = entries[isoDate(w)];
+          wVal = (v !== undefined && v !== '') ? parseFloat(v) : null;
+          monthDateStrs.push(isoDate(w));
+        } else {
+          let sum = 0, any = false;
+          for(let i=0;i<5;i++){
+            const d = new Date(w); d.setDate(d.getDate()+i);
+            const ds = isoDate(d);
+            monthDateStrs.push(ds);
+            const v = entries[ds];
+            if(v !== undefined && v !== ''){ const n = parseFloat(v); if(!isNaN(n)){ sum += n; any = true; } }
+          }
+          wVal = any ? sum : null;
+        }
+        html += `<td class="num">${wVal !== null && !isNaN(wVal) ? wVal : '\u2014'}</td>`;
+      });
+
+      const mtd = sumInMonth(entries, monthDateStrs, dashboardMonthCursor);
+      html += `<td class="num"><b>${mtd !== null ? mtd : '\u2014'}</b></td>`;
+      html += `<td class="num">${goal ? escapeHtml(String(goal)) : '<span style="color:var(--kpi-risk);font-weight:600;">not set</span>'}</td>`;
+      html += `</tr>`;
+
+      if(m.calculation || m.source){
+        html += `<tr><td colspan="${weeks.length+3}" style="font-size:11px;color:var(--win-text-secondary);padding:4px 14px 10px;">
+          ${m.calculation ? `<b>How it's calculated:</b> ${escapeHtml(m.calculation)}` : ''}${m.calculation && m.source ? ' \u00b7 ' : ''}${m.source ? `<b>Where to get it:</b> ${escapeHtml(m.source)}` : ''}
+        </td></tr>`;
+      }
+    }
+
+    html += `</tbody></table></div>`;
+  }
+
+  view.innerHTML = html;
+  wireDashboardHandlers();
+}
+
+function wireDashboardHandlers(){
+  const prevBtn = document.getElementById('dbPrevMonth');
+  if(prevBtn) prevBtn.onclick = () => { dashboardMonthCursor = new Date(dashboardMonthCursor.getFullYear(), dashboardMonthCursor.getMonth()-1, 1); renderDashboard(); };
+  const nextBtn = document.getElementById('dbNextMonth');
+  if(nextBtn) nextBtn.onclick = () => { dashboardMonthCursor = new Date(dashboardMonthCursor.getFullYear(), dashboardMonthCursor.getMonth()+1, 1); renderDashboard(); };
+  const thisBtn = document.getElementById('dbThisMonthBtn');
+  if(thisBtn) thisBtn.onclick = () => { dashboardMonthCursor = firstOfMonth(new Date()); renderDashboard(); };
+}
+
 function closeOtherPanels(except){
   if(except !== 'monthly' && monthlyShown){ monthlyShown = false; document.getElementById('monthlyToggleBtn').classList.remove('active'); document.getElementById('monthlyView').classList.remove('show'); }
   if(except !== 'setup' && setupShown){ setupShown = false; document.getElementById('setupToggleBtn').classList.remove('active'); document.getElementById('setupView').classList.remove('show'); }
@@ -1858,9 +2124,10 @@ function closeOtherPanels(except){
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
+  if(except !== 'dashboard' && dashboardShown){ dashboardShown = false; document.getElementById('dashboardToggleBtn').classList.remove('active'); document.getElementById('dashboardView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || metricsShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || metricsShown || dashboardShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -1919,6 +2186,15 @@ document.getElementById('metricsToggleBtn').onclick = async () => {
   if(metricsShown) await renderMetrics();
 };
 
+document.getElementById('dashboardToggleBtn').onclick = async () => {
+  closeOtherPanels('dashboard');
+  dashboardShown = !dashboardShown;
+  document.getElementById('dashboardToggleBtn').classList.toggle('active', dashboardShown);
+  document.getElementById('dashboardView').classList.toggle('show', dashboardShown);
+  updatePanelVisibility();
+  if(dashboardShown) await renderDashboard();
+};
+
 document.getElementById('adminToggleBtn').onclick = async () => {
   if(isAdmin()){
     if(confirm('Lock admin features again?')) lockAdmin();
@@ -1969,7 +2245,8 @@ async function renderSetup(){
       allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` });
     });
   });
-  const CADENCES = ['Daily','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
+  const CADENCES = ['Daily','Specific Days','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
+  const DOW_OPTS = [['Mon','Mon'],['Tue','Tue'],['Wed','Wed'],['Thu','Thu'],['Fri','Fri'],['Sat','Sat'],['Sun','Sun']];
 
   let html = `
     <div class="monthly-header"><h1>Setup</h1></div>
@@ -2005,6 +2282,11 @@ async function renderSetup(){
               <option value="candycars" ${t.appliesTo==='candycars'?'selected':''}>Candy Cars only</option>
               <option value="both" ${t.appliesTo==='both'?'selected':''}>Both locations</option>
             </select>` : '';
+        const dowChecks = t.cadence === 'Specific Days' ? `<div class="st-dow-row" style="display:flex;gap:10px;margin-top:6px;align-items:center;flex-wrap:wrap;background:#FFF8E5;border:1px solid #F0D98A;border-radius:6px;padding:6px 10px;">
+              <span style="font-size:11.5px;color:var(--win-text-secondary);font-weight:600;">Due on:</span>
+              ${DOW_OPTS.map(([val,lbl]) => `<label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" class="st-dow" value="${val}" ${(t.specificDays||[]).includes(val)?'checked':''}> ${lbl}</label>`).join('')}
+            </div>` : '';
+        const metricOpts = METRICS.map(m => `<option value="${m.id}" ${t.linkedMetricId===m.id?'selected':''}>${escapeAttr(m.name)} (${escapeAttr(m.cadence)})</option>`).join('');
         html += `<div class="setup-task-row" data-taskid="${t.id}" data-loc="${locKey}" data-emp="${empIdx}" style="border-top:1px solid var(--win-border);padding:10px 0;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="text" class="st-text" value="${escapeAttr(t.text)}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
@@ -2015,9 +2297,16 @@ async function renderSetup(){
             </select>
             <button class="mini-btn danger-mini st-remove">Remove</button>
           </div>
+          ${dowChecks}
           <div style="display:flex;gap:8px;margin-top:6px;">
             <input type="text" class="st-howto" placeholder="How to perform this task..." value="${escapeAttr(t.howTo||'')}" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
             <input type="text" class="st-video" placeholder="Training video URL" value="${escapeAttr(t.videoUrl||'')}" style="width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+            <span style="font-size:11.5px;color:var(--win-text-secondary);white-space:nowrap;">Linked metric (for verification):</span>
+            <select class="st-linked-metric" style="flex:1;max-width:340px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+              <option value="">\u2014 None \u2014</option>${metricOpts}
+            </select>
           </div>
         </div>`;
       });
@@ -2072,11 +2361,30 @@ async function renderSetup(){
     const findTask = () => LOCATIONS[loc].data[empIdx].tasks.find(t => t.id === taskId);
 
     row.querySelector('.st-text').onchange = async (e) => { const t = findTask(); if(t){ t.text = e.target.value; await saveRoster(); } };
-    row.querySelector('.st-cadence').onchange = async (e) => { const t = findTask(); if(t){ t.cadence = e.target.value; await saveRoster(); } };
+    row.querySelector('.st-cadence').onchange = async (e) => {
+      const t = findTask();
+      if(t){
+        t.cadence = e.target.value;
+        if(t.cadence !== 'Specific Days') t.specificDays = [];
+        await saveRoster();
+        await renderSetup(); // re-render so the day-of-week checkboxes appear/disappear live
+      }
+    };
     row.querySelector('.st-howto').onchange = async (e) => { const t = findTask(); if(t){ t.howTo = e.target.value; await saveRoster(); } };
     row.querySelector('.st-video').onchange = async (e) => { const t = findTask(); if(t){ t.videoUrl = e.target.value; await saveRoster(); } };
     const appliesEl = row.querySelector('.st-applies');
     if(appliesEl) appliesEl.onchange = async (e) => { const t = findTask(); if(t){ t.appliesTo = e.target.value; await saveRoster(); } };
+    row.querySelectorAll('.st-dow').forEach(cb => {
+      cb.onchange = async () => {
+        const t = findTask();
+        if(!t) return;
+        const checked = Array.from(row.querySelectorAll('.st-dow')).filter(x => x.checked).map(x => x.value);
+        t.specificDays = checked;
+        await saveRoster();
+      };
+    });
+    const linkedMetricEl = row.querySelector('.st-linked-metric');
+    if(linkedMetricEl) linkedMetricEl.onchange = async (e) => { const t = findTask(); if(t){ t.linkedMetricId = e.target.value || null; await saveRoster(); } };
     row.querySelector('.st-remove').onclick = () => removeTask(taskId, loc, empIdx);
     row.querySelector('.st-reassign').onchange = async (e) => {
       const val = e.target.value;
