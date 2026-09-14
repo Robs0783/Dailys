@@ -226,6 +226,9 @@
   .status-pill-sm.st-done{ background:var(--c-complete); }
   .status-pill-sm.st-progress{ background:var(--kpi-risk); }
   .status-pill-sm.st-notstarted{ background:var(--kpi-none); }
+  .loc-applies-badge{ font-size:9.5px; font-weight:700; color:#fff; background:#8A8886; border-radius:4px; padding:2px 6px; flex-shrink:0; white-space:nowrap; }
+  .info-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:50%; width:20px;height:20px; flex-shrink:0; cursor:pointer; font-size:12px; line-height:1; padding:0; color:var(--win-accent); }
+  .info-btn:hover{ background:var(--win-accent-light); }
 </style>
 </head>
 <body>
@@ -242,6 +245,7 @@
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
+      <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
       <button class="tb-btn admin-only" id="monthlyToggleBtn">Monthly Overview</button>
       <button class="tb-btn admin-only" id="exportBtn">Export Data</button>
       <button class="tb-btn admin-only" id="importBtn">Import Data</button>
@@ -294,6 +298,8 @@
 
       <div id="projectsPanelWrap" style="margin-top:22px;"></div>
 
+      <div id="metricsPanelWrap" style="margin-top:22px;"></div>
+
       <div id="onetimeWrap" style="display:none; margin-top:22px;">
         <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">One-Time Tasks</div>
         <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
@@ -309,6 +315,7 @@
     <div class="monthly-view" id="onetimeReviewView"></div>
     <div class="monthly-view" id="meetingsView"></div>
     <div class="monthly-view" id="projectsView"></div>
+    <div class="monthly-view" id="metricsView"></div>
   </div>
 </div>
 
@@ -327,7 +334,15 @@
 const DEFAULT_LOCATIONS = {
   bridgeland: { name: 'Bridgeland', short: 'B', data: [{"label": "Bridgeland Service Mgr.", "tasks": [{"text": "AM: Ck phones for Blinking VM -pw 2019   Writer", "cadence": "Daily"}, {"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Daily"}, {"text": "Audit reviews and verify they were sent to the customer follow up with Advisor", "cadence": "Daily"}, {"text": "Audit Customer pay RO'S and Labor Profit Analysis for both BL/CC", "cadence": "Daily"}, {"text": "Audit ASR reports for Required KPI Tracking", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "all special ordered parts are contacted", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: Comment on Date in this row", "cadence": "Daily"}, {"text": "Metal Bin is Locked", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building and Vehicles are parked correctly", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "EOD: Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "Shop walk : clean/ paint needs etc communicated", "cadence": "Daily"}, {"text": "Policy: collect all from Kristen - TUE", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking", "cadence": "Weekly"}, {"text": "1160 Schedule", "cadence": "Weekly"}, {"text": "Rapid Recon  Sublets", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}]}, {"label": "Bridgeland Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "We Owes", "cadence": "Weekly"}, {"text": "We Owes RR", "cadence": "Weekly"}, {"text": "BL Parts Suite", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Clean your Space", "cadence": "Weekly"}]}, {"label": "Bridgeland Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}, {"text": "Quarterly Audit", "cadence": "Monthly"}, {"text": "Audit BL", "cadence": "Monthly"}, {"text": "Audit CC", "cadence": "Monthly"}, {"text": "THURSDAY", "cadence": "Monthly"}, {"text": "FRIDAY / SAT", "cadence": "Monthly"}]}, {"label": "Bridgeland Recon Manager", "tasks": [{"text": "Vehicle Check-Ins (Check Drop Box, Stage Vehicle, Move In RR)", "cadence": "Daily"}, {"text": "UVI first day photos completed", "cadence": "Daily"}, {"text": "Key In All Vehicles And Barcode Every Vehicle", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "Set Detailers Up For The Day", "cadence": "Daily"}, {"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Recon Side of Lot", "cadence": "Daily"}, {"text": "(Titles) Make Sure In Correct Area/Step In Rapid With Notes", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 10 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Photo Vehicles", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "UVeye Report - Email list of UVEye vehicles that are needed for next day", "cadence": "Daily"}, {"text": "Weekly Garrett", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Daily"}, {"text": "BL Gather Supply List (Monday - Bob)", "cadence": "Daily"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Daily"}, {"text": "Lot Audit", "cadence": "Daily"}]}, {"label": "Bridgeland Sales Manager #2", "tasks": [{"text": "Review Photos of Inventory/ Confirm QUALITY/ MINIMUM Photos per unit met.", "cadence": "Daily"}, {"text": "social media posting Confirm/ Sales associates posting", "cadence": "Daily"}, {"text": "Review Prev Day appraisals for accuracy/ drive notes (Both locations).", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Review Pricing in ProfitTime/ Make adjustment for Alignment", "cadence": "Daily"}, {"text": "VAUTO Check missing CG Tags (Needs Attention) Mon/Wed/Fri", "cadence": "Daily"}, {"text": "VAUTO: vehicle descriptions generated.", "cadence": "Daily"}, {"text": "Review vehicles in Sold Status", "cadence": "Weekly"}, {"text": "Friday! Merchandising/ ws suite/ vauto/ 3rd party matching", "cadence": "Weekly"}, {"text": "FRIDAY! Update Metrics SPRDSHT for Monday meeting.", "cadence": "Weekly"}]}, {"label": "Bridgeland Finance / Tom", "tasks": [{"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Delivered Deals Statused", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Dead Deals Filed -MON", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Task", "cadence": "Monthly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}, {"text": "One Time (Not counted in %)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales GM", "tasks": [{"text": "Verify MPG log (Match to DMS)", "cadence": "Daily"}, {"text": "Verify managers/ Reps complete CRM tasks", "cadence": "Daily"}, {"text": "Policy log updated to the Day", "cadence": "Daily"}, {"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Birdeye: Address negative reviews", "cadence": "Daily"}, {"text": "No photo list reviewed", "cadence": "Daily"}, {"text": "RR: Review Color Trigger Report", "cadence": "Daily"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "UVI first day completed", "cadence": "Daily"}, {"text": "Pay Sheets Gone over with sales reps Before final", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Birdseye Reviewed . Negative reviews/ Tracking", "cadence": "Weekly"}, {"text": "Policy tied out to GL", "cadence": "Weekly"}, {"text": "Social media Vehicles chosen . payments Ran", "cadence": "Weekly"}, {"text": "Lot Re-merchandised", "cadence": "Weekly"}, {"text": "Desk compliance inspection/ food/Clutter (Enter in AE48)", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E. (Enter in AE49)", "cadence": "Monthly"}, {"text": "Review deal audit (Enter in AE50)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales  Kyle", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "EOD Digital Delivery Board /", "cadence": "Daily"}, {"text": "Facebook Posting verify previous day done", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Key report : 4 day max rule /", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}]}] },
   candycars:  { name: 'Candy Cars', short: 'C', data: [{"label": "Service Manager", "tasks": [{"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: input to metrics dashboard", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building", "cadence": "Daily"}, {"text": "Metal Bin is locked", "cadence": "Daily"}, {"text": "Shop walk : clean", "cadence": "Daily"}, {"text": "all special ordered parts are contacted  (Dave Green)", "cadence": "Daily"}, {"text": "Policy: collect all from Cashier - Mon", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking (Wednesday Metrics)", "cadence": "Weekly"}, {"text": "Verify loaners are clean and mechanically on point/ ready for next customer (Dave Green)", "cadence": "Weekly"}, {"text": "Saturday Dispatch (Dave Green)", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}, {"text": "Awareness", "cadence": "Monthly"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Monthly"}]}, {"label": "CC Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Parts Suite - Parts being returned here", "cadence": "Weekly"}, {"text": "BL&CC 15 DAY OLD RO'S STATUS", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Policy - Sales / Service (Monday's)", "cadence": "Weekly"}, {"text": "We Owe make contact to schedule appt in RR", "cadence": "Weekly"}]}, {"label": "Candy Cars Sales GM/MGR", "tasks": [{"text": "Desk compliance inspection/ food/Clutter", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E.", "cadence": "Monthly"}, {"text": "Review deal audit", "cadence": "Monthly"}]}, {"label": "Corey T", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "Review unanswered comm's and AI recommendations.", "cadence": "Daily"}, {"text": "EOD Confirm via phone call or text nnext day appt's", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "EOD; UPDATE deal tracker", "cadence": "Daily"}, {"text": "SOCIAL MEDIA LOG", "cadence": "Daily"}, {"text": "NO PHOTO", "cadence": "Daily"}, {"text": "Daily metrics delivered", "cadence": "Daily"}, {"text": "Finalize appraisals", "cadence": "Daily"}, {"text": "Review dead/ lost request in drivecentric/ Notifications", "cadence": "Daily"}, {"text": "Key Reprt", "cadence": "Weekly"}]}, {"label": "Lou", "tasks": [{"text": "PRICING", "cadence": "Daily"}, {"text": "missed Trades Tab under Aquire Vauto scrubbed/Noted", "cadence": "Daily"}, {"text": "No photo list reviewed / T2L monitored for target", "cadence": "Daily"}, {"text": "Color trigger report : address yellow/red", "cadence": "Daily"}, {"text": "SERVICE AM MEETING ON DELIVERIES", "cadence": "Daily"}, {"text": "CIT", "cadence": "Daily"}, {"text": "EOD: Confirm MPG Updated", "cadence": "Daily"}, {"text": "CRM MORNING METRICS", "cadence": "Daily"}, {"text": "FINALIZE APPRAISALS", "cadence": "Daily"}, {"text": "T2L DAYS IS STEP", "cadence": "Daily"}, {"text": "DAILY METRICS", "cadence": "Daily"}, {"text": "REVIEWS", "cadence": "Daily"}, {"text": "SALES TRACKER", "cadence": "Daily"}, {"text": "SCAN DAILYS", "cadence": "Daily"}, {"text": "REVIEW APPTS/SHOW", "cadence": "Daily"}, {"text": "MISSED APPRAISALS", "cadence": "Daily"}, {"text": "REVIEW UNSOLD VISITS FRON PREVIOUS DAY", "cadence": "Daily"}, {"text": "WEEKLY METRICS", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Weekly"}, {"text": "7 Day Trade Report (Monday task ) insert to report", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Review CIT (over 4 days)", "cadence": "Weekly"}, {"text": "MPG log review", "cadence": "Weekly"}, {"text": "FORECASTER", "cadence": "Weekly"}]}, {"label": "Finnegan", "tasks": [{"text": "Confirm Sales reps posting on social media  (Enter each page - Deliveries included )", "cadence": "Daily"}, {"text": "Employee Sites (Indeed)", "cadence": "Daily"}, {"text": "Go over trade appraisals Vauto .. Completed / Notes etc Look2Book", "cadence": "Daily"}, {"text": "MPG Log : Does this match the DMS ?  ()", "cadence": "Daily"}, {"text": "ICO : Look over communication : ARE WE TRACKING? ARE BUYERS Appraising?", "cadence": "Daily"}, {"text": "Scan Daily's : Who is not completing ?", "cadence": "Daily"}, {"text": "Confirm Policy matches GL & all items filled out", "cadence": "Weekly"}, {"text": "ICO Monthly Campaign launched", "cadence": "Weekly"}, {"text": "7 Day trade Reports collected with notes", "cadence": "Weekly"}, {"text": "Overtime Collected from Nina : All addressed ? Turn into Rob", "cadence": "Weekly"}, {"text": "Metrics Log : Confirm ALL metrics reported", "cadence": "Weekly"}, {"text": "Review LocalShift Dashboard for proper communication", "cadence": "Weekly"}, {"text": "CG Digital Deal : Review Dealer portal . Inspect Leads", "cadence": "Weekly"}, {"text": "Claims Pending Cleared up and turned in By 7th of following month", "cadence": "Monthly"}, {"text": "Claims Register Google sheet matches Autoshield Register", "cadence": "Monthly"}, {"text": "Deal audit completed : 10 Random pulled per MGR: turn in checklists to Rob", "cadence": "Monthly"}]}, {"label": "CANDY CARS FINANCE", "tasks": [{"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Capital one portal scrub for applications", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Digital Delivery Board", "cadence": "Daily"}, {"text": "Match CRM/ DMS/ Delivery board / Deal Tracker", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "Warranty cancellations", "cadence": "Daily"}, {"text": "Delivery checklist/Service Drive", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Poly/Paint Fab     Dakota", "cadence": "Weekly"}, {"text": "Ally deal Count / Ally tracking -TUE", "cadence": "Weekly"}, {"text": "Dead Deals filed", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Missing title list - Drop in reports sheet", "cadence": "Weekly"}, {"text": "Econtracting %/ Spot%/ tracking #", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in report sheet -MON", "cadence": "Weekly"}, {"text": "VSC Cancellations/ Alpha Log", "cadence": "Weekly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}]}, {"label": "Candy Cars Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES (fri/sat)", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}]}, {"label": "RECON", "tasks": [{"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Hotel & Pen Side of Lot", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 5 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "go throught second lot for cars being moved", "cadence": "Daily"}, {"text": "go through approvals", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Weekly"}, {"text": "CC Gather Supply List", "cadence": "Weekly"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Weekly"}, {"text": "Lot Audit", "cadence": "Weekly"}, {"text": "check title report and xtime", "cadence": "Weekly"}]}] },
-  maintenance:{ name: 'Maintenance', short: 'M', isMaintenance: true, data: [{"label": "Bridgeland Facility", "tasks": [{"text": "Off Day prep ( main store and wholesale offices)", "cadence": "Daily"}, {"text": "Check metal bin & empty if full", "cadence": "Daily"}, {"text": "Empty Shop trash", "cadence": "Daily"}, {"text": "Walk grounds for any debris, trash, cigs", "cadence": "Daily"}, {"text": "Water inside plants", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Showroom Paint Touch-ups", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Friday clean", "cadence": "Weekly"}, {"text": "Clean tech sink area thoroughly", "cadence": "Weekly"}, {"text": "Bottom of chairs & baseboards within showroom and offices", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub", "cadence": "Weekly"}, {"text": "Clean Tire Machine/ Wheel balancer / Alignment ctr", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Clean compressor room , Oil tanks, Mop etc", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Inside/ Outside store glass and doors", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}, {"label": "Candy Cars Facility", "tasks": [{"text": "Empty Trash  (Shop, Parts, Break Rm, Detail)", "cadence": "Daily"}, {"text": "Check Metal Bin Empty if full", "cadence": "Daily"}, {"text": "Walk around Building for debris, Trash, Butts", "cadence": "Daily"}, {"text": "Clean stair treads ( both shop stairways )", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360 (Whole interior)", "cadence": "Weekly"}, {"text": "Clean Marks on baseboards", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Clean all bottoms of chairs", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Friday Clean", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub (Fri)", "cadence": "Weekly"}, {"text": "Clean shop sink / detail sink", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Scrub tire room , Machines , oil tanks , Compressor", "cadence": "Weekly"}, {"text": "clean bottom of all chairs", "cadence": "Monthly"}, {"text": "Check furnace filters / replace where needed", "cadence": "Monthly"}, {"text": "Clean all glass inside/out including overhead doors", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Change Karcher pressure washer oil", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}] }
+  maintenance:{ name: 'Maintenance', short: 'M', isMaintenance: true, data: [{"label": "Bridgeland Facility", "tasks": [{"text": "Off Day prep ( main store and wholesale offices)", "cadence": "Daily"}, {"text": "Check metal bin & empty if full", "cadence": "Daily"}, {"text": "Empty Shop trash", "cadence": "Daily"}, {"text": "Walk grounds for any debris, trash, cigs", "cadence": "Daily"}, {"text": "Water inside plants", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Showroom Paint Touch-ups", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Friday clean", "cadence": "Weekly"}, {"text": "Clean tech sink area thoroughly", "cadence": "Weekly"}, {"text": "Bottom of chairs & baseboards within showroom and offices", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub", "cadence": "Weekly"}, {"text": "Clean Tire Machine/ Wheel balancer / Alignment ctr", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Clean compressor room , Oil tanks, Mop etc", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Inside/ Outside store glass and doors", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}, {"label": "Candy Cars Facility", "tasks": [{"text": "Empty Trash  (Shop, Parts, Break Rm, Detail)", "cadence": "Daily"}, {"text": "Check Metal Bin Empty if full", "cadence": "Daily"}, {"text": "Walk around Building for debris, Trash, Butts", "cadence": "Daily"}, {"text": "Clean stair treads ( both shop stairways )", "cadence": "Weekly"}, {"text": "Interior wall Touchup 360 (Whole interior)", "cadence": "Weekly"}, {"text": "Clean Marks on baseboards", "cadence": "Weekly"}, {"text": "Mop closet emptied , Floor sink cleaned /reorganized", "cadence": "Weekly"}, {"text": "Mop photo bay floor", "cadence": "Weekly"}, {"text": "Clean all bottoms of chairs", "cadence": "Weekly"}, {"text": "Detail shop Walk through (Walls, Maintenance etc)", "cadence": "Weekly"}, {"text": "Clean all doors", "cadence": "Weekly"}, {"text": "Check copy paper stock inside store", "cadence": "Weekly"}, {"text": "Control room organized and cleaned/mopped", "cadence": "Weekly"}, {"text": "Friday Clean", "cadence": "Weekly"}, {"text": "Empty and clean Refrigerator Breakroom (Fri)", "cadence": "Weekly"}, {"text": "Shop wall 360 scrub (Fri)", "cadence": "Weekly"}, {"text": "Clean shop sink / detail sink", "cadence": "Weekly"}, {"text": "Shop wall paint touchups", "cadence": "Weekly"}, {"text": "Scrub tire room , Machines , oil tanks , Compressor", "cadence": "Weekly"}, {"text": "clean bottom of all chairs", "cadence": "Monthly"}, {"text": "Check furnace filters / replace where needed", "cadence": "Monthly"}, {"text": "Clean all glass inside/out including overhead doors", "cadence": "Monthly"}, {"text": "Clean shop drains / Detail bay drains", "cadence": "Monthly"}, {"text": "Change compressor oil with tech assistance", "cadence": "Monthly"}, {"text": "Change Karcher pressure washer oil", "cadence": "Monthly"}, {"text": "Empty cigarette Butt containers / Clean recepticle", "cadence": "Monthly"}, {"text": "High cleaning inside shop", "cadence": "Monthly"}, {"text": "Pull tile in photo bay clean underneath/ Photo bay walls", "cadence": "Monthly"}, {"text": "Adjust outside light timers  15 mins prior to Sundown", "cadence": "Monthly"}, {"text": "Pressure wash buildings/ Wash all overhead doors", "cadence": "Quarterly"}, {"text": "Snow plowing", "cadence": "As Needed"}, {"text": "Salt lots/walks/entrances", "cadence": "As Needed"}]}] },
+  both: { name: 'Both Locations', short: 'BC', dual: true, data: [
+    {"label": "Parts Manager", "tasks": []},
+    {"label": "Transportation / Sublet Coordinator", "tasks": []},
+    {"label": "Finnegan (GM)", "tasks": []},
+    {"label": "Wholesaler (Tyler)", "tasks": []},
+    {"label": "Buyers (Isaac/Justin)", "tasks": []},
+    {"label": "Controller (Lori)", "tasks": []}
+  ] }
 };
 
 let LOCATIONS = DEFAULT_LOCATIONS;
@@ -342,10 +357,21 @@ function assignTaskIds(locs){
         if(!t.id){ t.id = `seed-${locKey}-${empIdx}-${n++}`; }
         if(t.howTo === undefined) t.howTo = '';
         if(t.videoUrl === undefined) t.videoUrl = '';
+        if(t.appliesTo === undefined) t.appliesTo = 'both';
       });
     });
   });
   return locs;
+}
+// Adds any new built-in location (currently just 'both', for dual-location roles) to a roster
+// that was already saved on the server before that location existed, without touching anything
+// Rob has already added/edited. Existing single-location rosters are left completely alone.
+function backfillLocations(locs){
+  if(!locs.both && DEFAULT_LOCATIONS.both){
+    locs.both = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS.both));
+    return true;
+  }
+  return false;
 }
 function newTaskId(){
   return 'tsk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -447,7 +473,12 @@ async function refreshServerState(){
     const res = await fetch('/api/state');
     SERVER_STATE = await res.json();
     if(SERVER_STATE['roster']){
-      try{ LOCATIONS = JSON.parse(SERVER_STATE['roster']); }
+      try{
+        LOCATIONS = JSON.parse(SERVER_STATE['roster']);
+        const addedLocation = backfillLocations(LOCATIONS);
+        LOCATIONS = assignTaskIds(LOCATIONS);
+        if(addedLocation) await saveRoster(); // persist the newly-added 'Both Locations' tab right away
+      }
       catch(e){ console.error('Bad roster data, falling back to default', e); LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); }
     } else {
       LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS);
@@ -457,6 +488,8 @@ async function refreshServerState(){
     catch(e){ console.error('Bad meetings data, resetting', e); MEETINGS = []; }
     try{ PROJECTS = SERVER_STATE['projects'] ? JSON.parse(SERVER_STATE['projects']) : []; }
     catch(e){ console.error('Bad projects data, resetting', e); PROJECTS = []; }
+    try{ METRICS = SERVER_STATE['metrics'] ? JSON.parse(SERVER_STATE['metrics']) : []; }
+    catch(e){ console.error('Bad metrics data, resetting', e); METRICS = []; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -474,6 +507,26 @@ async function saveProjects(){
 function newProjectId(){ return 'proj-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newStepId(){ return 'step-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newAttachId(){ return 'att-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ---- KPI Metrics tracker. Metric DEFINITIONS (name, cadence, who's assigned, unit/target) are
+// admin-only, same as the roster and meetings - so this is gated server-side like those. The
+// actual day-to-day NUMBERS an assigned employee enters are not gated (same reasoning as project
+// step status): that's the whole point, replacing a manually-updated Google Sheet with something
+// the assigned person fills in themselves right on their daily page. ----
+let METRICS = [];
+async function saveMetrics(){
+  const ok = await storSet('metrics', JSON.stringify(METRICS), true);
+  if(!ok) showToast('Not saved \u2014 admin code required');
+}
+function newMetricId(){ return 'metric-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function metricEntriesKey(metricId){ return `metric-entries:${metricId}`; }
+async function loadMetricEntries(metricId){
+  const raw = await storGet(metricEntriesKey(metricId));
+  try{ return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+}
+async function saveMetricEntries(metricId, obj){
+  await storSet(metricEntriesKey(metricId), JSON.stringify(obj));
+}
 async function saveMeetingsList(){
   const ok = await storSet('meetings', JSON.stringify(MEETINGS), true);
   if(!ok) showToast('Not saved \u2014 admin code required');
@@ -685,6 +738,19 @@ function fileToDataUrl(file){
   });
 }
 
+function openTaskInfoModal(t){
+  document.getElementById('photoModalTitle').textContent = t.text;
+  const body = document.getElementById('photoModalBody');
+  const howToHtml = (t.howTo && t.howTo.trim()) ? `<p style="font-size:13px;line-height:1.5;margin:0 0 12px;white-space:pre-line;">${escapeHtml(t.howTo)}</p>` : '';
+  const videoHtml = (t.videoUrl && t.videoUrl.trim()) ? `<a href="${escapeAttr(t.videoUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--win-accent);">▶ Watch training video</a>` : '';
+  body.innerHTML = howToHtml + videoHtml || '<div class="empty-note" style="padding:0 0 10px">No how-to notes yet.</div>';
+  document.getElementById('photoModalActions').innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.onclick = closePhotoModal;
+  document.getElementById('photoModalActions').appendChild(closeBtn);
+  document.getElementById('photoModal').classList.add('show');
+}
 function openPhotoModal(title, dataUrl, actions){
   document.getElementById('photoModalTitle').textContent = title;
   const body = document.getElementById('photoModalBody');
@@ -788,8 +854,10 @@ async function renderMain(){
       html += `<tr data-taskid="${t.id}"${isAwareness ? ' class="awareness-task"' : ''}>`;
       const kpi = getKpiForTask(currentLoc, currentEmployee, t.id);
       const kpiHtml = kpi ? `<span class="kpi-badge kpi-${kpi.cls}" title="${escapeAttr(kpi.title)}">${escapeHtml(kpi.label)}</span>` : '';
-      const howToHtml = t.videoUrl ? `<a href="${escapeAttr(t.videoUrl)}" target="_blank" rel="noopener" style="font-size:11px;margin-left:6px;">Training video</a>` : '';
-      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${howToHtml}</td>`;
+      const locBadgeHtml = LOCATIONS[currentLoc].dual ? `<span class="loc-applies-badge">${t.appliesTo==='bridgeland'?'Bridgeland':t.appliesTo==='candycars'?'Candy Cars':'Both locations'}</span>` : '';
+      const hasInfo = (t.howTo && t.howTo.trim()) || (t.videoUrl && t.videoUrl.trim());
+      const infoBtnHtml = hasInfo ? `<button class="info-btn" data-taskid="${t.id}" title="How to / training">ⓘ</button>` : '';
+      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${infoBtnHtml}</td>`;
       dates.forEach((d,i) => {
         const val = dayStatuses[i][t.id] || '';
         html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
@@ -825,9 +893,17 @@ async function renderMain(){
     });
   });
 
+  wrap.querySelectorAll('.info-btn').forEach(btn => {
+    btn.onclick = () => {
+      const t = emp.tasks.find(x => x.id === btn.dataset.taskid);
+      if(t) openTaskInfoModal(t);
+    };
+  });
+
   computeSummary(dates, countableIds);
   renderMeetingsPanel(dates);
   renderProjectsPanel();
+  await renderMetricsPanel(dates);
 
   // Every role gets a One-Time Tasks panel (for ad-hoc things assigned outside the
   // regular daily/weekly/monthly list) - checking one off leaves it visible with a
@@ -900,6 +976,70 @@ function renderProjectsPanel(){
       await saveProjects();
       renderProjectsPanel();
     };
+  });
+}
+
+// ---- Employee-facing inline metrics entry: daily metrics get Mon-Fri boxes for the week being
+// viewed (no Saturday/Sunday - the dealership is closed Sunday and daily metrics are only kept
+// Mon-Fri), weekly metrics get a single box for the week (meant to be filled in on Thursday).
+// Full metric definitions (create/edit/remove, who's assigned) live in the admin-only panel
+// below (see renderMetrics). ----
+async function renderMetricsPanel(dates){
+  const wrap = document.getElementById('metricsPanelWrap');
+  if(!wrap) return;
+  const myKey = `${currentLoc}::${currentEmployee}`;
+  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey);
+  if(mine.length === 0){ wrap.innerHTML = ''; return; }
+
+  const weekdayDates = dates.slice(0,5); // Mon-Fri
+  const weekKey = isoDate(dates[0]); // Monday of the displayed week, used as the key for weekly entries
+  const dow = ['Mon','Tue','Wed','Thu','Fri'];
+
+  const entriesByMetric = {};
+  await Promise.all(mine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
+
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Metrics</div>
+    <div class="task-card" style="padding:10px 12px;">`;
+
+  mine.forEach(m => {
+    const entries = entriesByMetric[m.id];
+    html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>`;
+    if(m.cadence === 'Weekly'){
+      const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
+      html += `<div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11.5px;color:var(--win-text-secondary);min-width:110px;">This week (enter Thu):</span>
+        <input type="number" step="any" class="metric-input" data-datekey="${weekKey}" value="${escapeAttr(val)}" style="width:110px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+      </div>`;
+    } else {
+      html += `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
+      weekdayDates.forEach((d,i) => {
+        const dk = isoDate(d);
+        const val = entries[dk] !== undefined ? entries[dk] : '';
+        html += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <span style="font-size:10.5px;color:var(--win-text-secondary);">${dow[i]}</span>
+          <input type="number" step="any" class="metric-input" data-datekey="${dk}" value="${escapeAttr(val)}" style="width:70px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 7px;font-size:12.5px;text-align:center;">
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.metric-row').forEach(row => {
+    const mid = row.dataset.mid;
+    row.querySelectorAll('.metric-input').forEach(input => {
+      input.onchange = async () => {
+        const entries = entriesByMetric[mid];
+        const dk = input.dataset.datekey;
+        if(input.value === ''){ delete entries[dk]; } else { entries[dk] = input.value; }
+        await saveMetricEntries(mid, entries);
+        showToast('Saved');
+      };
+    });
   });
 }
 
@@ -1558,15 +1698,169 @@ function wireProjectsHandlers(view){
   });
 }
 
+// ---- KPI Metrics admin panel: define what gets tracked (name, Daily or Weekly, who's
+// assigned, optional unit/target) - this is where Rob replaces the manual Google Sheet.
+// Each metric shows its own recent entries (read-only here) so there's a place to actually
+// SEE the numbers over time without needing a separate spreadsheet. Entering new numbers day
+// to day happens on the assigned employee's own page (see renderMetricsPanel above). ----
+let metricsShown = false;
+
+function recentDailyDates(n){
+  const out = [];
+  const d = new Date(); d.setHours(0,0,0,0);
+  while(out.length < n){
+    if(d.getDay() !== 0){ out.unshift(new Date(d)); } // skip Sundays (closed)
+    d.setDate(d.getDate()-1);
+  }
+  return out;
+}
+function recentMondays(n){
+  const out = [];
+  let m = mondayOf(new Date());
+  for(let i=0;i<n;i++){ out.unshift(new Date(m)); m.setDate(m.getDate()-7); }
+  return out;
+}
+
+async function renderMetrics(){
+  await refreshServerState();
+  const view = document.getElementById('metricsView');
+  const targets = allRosterTargets();
+
+  let html = `
+    <div class="monthly-header"><h1>Metrics</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Daily and weekly KPI numbers, tracked here instead of a Google Sheet. Assign each metric to
+      an employee - they'll see it on their own page and fill it in themselves (daily metrics get
+      Monday-Friday boxes for the week; weekly metrics get one box, meant to be entered Thursday).
+      Recent entries for each metric are shown below for a quick look at the trend.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <input type="text" id="newMetricName" placeholder="New metric name (e.g. Delivered Units - Bridgeland)..." style="flex:1;min-width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <select id="newMetricCadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="Daily">Daily (Mon-Fri)</option>
+        <option value="Weekly">Weekly (Thursday)</option>
+      </select>
+      <select id="newMetricTarget" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Assign to\u2026</option>
+        ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+      </select>
+      <button class="mini-btn primary-mini" id="newMetricBtn">+ New metric</button>
+    </div>
+  `;
+
+  if(METRICS.length === 0){
+    html += `<div class="empty-note">No metrics set up yet.</div>`;
+  }
+
+  const dailyDates = recentDailyDates(7);
+  const weeklyMondays = recentMondays(6);
+
+  for(const m of METRICS){
+    const entries = await loadMetricEntries(m.id);
+    const assignedLabel = targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp);
+    let recentHtml = '';
+    if(m.cadence === 'Weekly'){
+      recentHtml = weeklyMondays.map(d => {
+        const dk = isoDate(d);
+        const val = entries[dk];
+        return `<span class="attach-chip">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}: <b>${val !== undefined ? escapeHtml(String(val)) : '\u2014'}</b></span>`;
+      }).join('');
+    } else {
+      recentHtml = dailyDates.map(d => {
+        const dk = isoDate(d);
+        const val = entries[dk];
+        return `<span class="attach-chip">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}: <b>${val !== undefined ? escapeHtml(String(val)) : '\u2014'}</b></span>`;
+      }).join('');
+    }
+
+    html += `<details class="proj-card" data-mid="${m.id}" style="padding:0;">
+      <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
+        ${escapeHtml(m.name)}
+        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}</span>
+      </summary>
+      <div style="padding:4px 14px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" class="mt-name" value="${escapeAttr(m.name)}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="mt-cadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="Daily" ${m.cadence==='Daily'?'selected':''}>Daily (Mon-Fri)</option>
+            <option value="Weekly" ${m.cadence==='Weekly'?'selected':''}>Weekly (Thursday)</option>
+          </select>
+          <select class="mt-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">Unassigned</option>
+            ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.assignedLoc===x.locKey && m.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+          </select>
+          <input type="text" class="mt-unit" placeholder="Unit (e.g. hours, units)" value="${escapeAttr(m.unit||'')}" style="width:160px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <input type="text" class="mt-target" placeholder="Target (optional)" value="${escapeAttr(m.target||'')}" style="width:140px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <button class="mini-btn danger-mini mt-remove">Delete metric</button>
+        </div>
+        <div style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);margin-bottom:6px;">Recent entries</div>
+        <div>${recentHtml || '<span class="empty-note">No entries yet.</span>'}</div>
+      </div>
+    </details>`;
+  }
+
+  view.innerHTML = html;
+  wireMetricsAdminHandlers(view);
+}
+
+function wireMetricsAdminHandlers(view){
+  const newBtn = document.getElementById('newMetricBtn');
+  if(newBtn) newBtn.onclick = async () => {
+    const name = (document.getElementById('newMetricName').value || '').trim();
+    const cadence = document.getElementById('newMetricCadence').value;
+    const targetVal = document.getElementById('newMetricTarget').value;
+    if(!name) return;
+    let assignedLoc = '', assignedEmp = null;
+    if(targetVal){ const [l, eStr] = targetVal.split('::'); assignedLoc = l; assignedEmp = parseInt(eStr,10); }
+    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, unit: '', target: '', createdAt: isoDate(new Date()) });
+    await saveMetrics();
+    await renderMetrics();
+  };
+
+  view.querySelectorAll('details[data-mid]').forEach(card => {
+    const mid = card.dataset.mid;
+    const findM = () => METRICS.find(m => m.id === mid);
+
+    const bind = (sel, prop) => {
+      const el = card.querySelector(sel);
+      if(!el) return;
+      el.onchange = async (e) => { const m = findM(); if(!m) return; m[prop] = e.target.value; await saveMetrics(); };
+    };
+    bind('.mt-name', 'name');
+    bind('.mt-cadence', 'cadence');
+    bind('.mt-unit', 'unit');
+    bind('.mt-target', 'target');
+
+    const assignEl = card.querySelector('.mt-assign');
+    if(assignEl) assignEl.onchange = async (e) => {
+      const m = findM(); if(!m) return;
+      const val = e.target.value;
+      if(!val){ m.assignedLoc = ''; m.assignedEmp = null; }
+      else { const [l, eStr] = val.split('::'); m.assignedLoc = l; m.assignedEmp = parseInt(eStr,10); }
+      await saveMetrics();
+    };
+
+    const removeBtn = card.querySelector('.mt-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!confirm('Delete this metric? Its recorded history stays on the server but will no longer be shown anywhere.')) return;
+      const i = METRICS.findIndex(m => m.id === mid);
+      if(i > -1) METRICS.splice(i,1);
+      await saveMetrics();
+      await renderMetrics();
+    };
+  });
+}
+
 function closeOtherPanels(except){
   if(except !== 'monthly' && monthlyShown){ monthlyShown = false; document.getElementById('monthlyToggleBtn').classList.remove('active'); document.getElementById('monthlyView').classList.remove('show'); }
   if(except !== 'setup' && setupShown){ setupShown = false; document.getElementById('setupToggleBtn').classList.remove('active'); document.getElementById('setupView').classList.remove('show'); }
   if(except !== 'onetime' && onetimeReviewShown){ onetimeReviewShown = false; document.getElementById('onetimeToggleBtn').classList.remove('active'); document.getElementById('onetimeReviewView').classList.remove('show'); }
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
+  if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || metricsShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -1613,6 +1907,16 @@ document.getElementById('projectsToggleBtn').onclick = async () => {
   document.getElementById('projectsView').classList.toggle('show', projectsShown);
   updatePanelVisibility();
   if(projectsShown) await renderProjects();
+};
+
+document.getElementById('metricsToggleBtn').onclick = async () => {
+  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  closeOtherPanels('metrics');
+  metricsShown = !metricsShown;
+  document.getElementById('metricsToggleBtn').classList.toggle('active', metricsShown);
+  document.getElementById('metricsView').classList.toggle('show', metricsShown);
+  updatePanelVisibility();
+  if(metricsShown) await renderMetrics();
 };
 
 document.getElementById('adminToggleBtn').onclick = async () => {
@@ -1696,10 +2000,16 @@ async function renderSetup(){
         const targetOpts = allTargets
           .filter(x => !(x.locKey===locKey && x.empIdx===empIdx))
           .map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('');
+        const appliesSelect = loc.dual ? `<select class="st-applies" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+              <option value="bridgeland" ${t.appliesTo==='bridgeland'?'selected':''}>Bridgeland only</option>
+              <option value="candycars" ${t.appliesTo==='candycars'?'selected':''}>Candy Cars only</option>
+              <option value="both" ${t.appliesTo==='both'?'selected':''}>Both locations</option>
+            </select>` : '';
         html += `<div class="setup-task-row" data-taskid="${t.id}" data-loc="${locKey}" data-emp="${empIdx}" style="border-top:1px solid var(--win-border);padding:10px 0;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="text" class="st-text" value="${escapeAttr(t.text)}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
             <select class="st-cadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">${cadOpts}</select>
+            ${appliesSelect}
             <select class="st-reassign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
               <option value="">Reassign to\u2026</option>${targetOpts}
             </select>
@@ -1712,8 +2022,13 @@ async function renderSetup(){
         </div>`;
       });
 
-      html += `<div style="display:flex;gap:8px;margin-top:10px;">
+      html += `<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
           <input type="text" class="add-task-input" placeholder="New task text..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+          ${loc.dual ? `<select class="add-task-applies" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:7px;font-size:12.5px;">
+            <option value="both" selected>Both locations</option>
+            <option value="bridgeland">Bridgeland only</option>
+            <option value="candycars">Candy Cars only</option>
+          </select>` : ''}
           <button class="mini-btn primary-mini add-task-btn" data-loc="${locKey}" data-emp="${empIdx}">+ Add task</button>
         </div>`;
       html += `</div></details>`;
@@ -1737,11 +2052,14 @@ async function renderSetup(){
 
   view.querySelectorAll('.add-task-btn').forEach(btn => {
     btn.onclick = async () => {
-      const input = btn.previousElementSibling;
+      const row = btn.parentElement;
+      const input = row.querySelector('.add-task-input');
+      const appliesSelect = row.querySelector('.add-task-applies');
       const text = (input.value || '').trim();
       if(!text) return;
       const empIdx = parseInt(btn.dataset.emp, 10);
-      LOCATIONS[btn.dataset.loc].data[empIdx].tasks.push({ id: newTaskId(), text, cadence: 'Daily', howTo: '', videoUrl: '' });
+      const appliesTo = appliesSelect ? appliesSelect.value : 'both';
+      LOCATIONS[btn.dataset.loc].data[empIdx].tasks.push({ id: newTaskId(), text, cadence: 'Daily', howTo: '', videoUrl: '', appliesTo });
       await saveRoster();
       await renderSetup();
     };
@@ -1757,6 +2075,8 @@ async function renderSetup(){
     row.querySelector('.st-cadence').onchange = async (e) => { const t = findTask(); if(t){ t.cadence = e.target.value; await saveRoster(); } };
     row.querySelector('.st-howto').onchange = async (e) => { const t = findTask(); if(t){ t.howTo = e.target.value; await saveRoster(); } };
     row.querySelector('.st-video').onchange = async (e) => { const t = findTask(); if(t){ t.videoUrl = e.target.value; await saveRoster(); } };
+    const appliesEl = row.querySelector('.st-applies');
+    if(appliesEl) appliesEl.onchange = async (e) => { const t = findTask(); if(t){ t.appliesTo = e.target.value; await saveRoster(); } };
     row.querySelector('.st-remove').onclick = () => removeTask(taskId, loc, empIdx);
     row.querySelector('.st-reassign').onchange = async (e) => {
       const val = e.target.value;

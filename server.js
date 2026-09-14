@@ -21,7 +21,7 @@ if (!process.env.ADMIN_CODE) {
 }
 // Keys only ever written by admin actions (Setup / Meetings admin panel). Employees never
 // legitimately write these, so they're safe to hard-gate server-side.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings']);
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics']);
 
 function loadStore() {
   try {
