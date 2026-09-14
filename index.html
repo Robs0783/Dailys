@@ -2282,10 +2282,11 @@ async function renderSetup(){
               <option value="candycars" ${t.appliesTo==='candycars'?'selected':''}>Candy Cars only</option>
               <option value="both" ${t.appliesTo==='both'?'selected':''}>Both locations</option>
             </select>` : '';
-        const dowChecks = t.cadence === 'Specific Days' ? `<div class="st-dow-row" style="display:flex;gap:10px;margin-top:6px;align-items:center;flex-wrap:wrap;background:#FFF8E5;border:1px solid #F0D98A;border-radius:6px;padding:6px 10px;">
+        const dowRowVisible = t.cadence === 'Specific Days';
+        const dowChecks = `<div class="st-dow-row" style="display:${dowRowVisible ? 'flex' : 'none'};gap:10px;margin-top:6px;align-items:center;flex-wrap:wrap;background:#FFF8E5;border:1px solid #F0D98A;border-radius:6px;padding:6px 10px;">
               <span style="font-size:11.5px;color:var(--win-text-secondary);font-weight:600;">Due on:</span>
               ${DOW_OPTS.map(([val,lbl]) => `<label style="display:flex;align-items:center;gap:4px;font-size:12px;"><input type="checkbox" class="st-dow" value="${val}" ${(t.specificDays||[]).includes(val)?'checked':''}> ${lbl}</label>`).join('')}
-            </div>` : '';
+            </div>`;
         const metricOpts = METRICS.map(m => `<option value="${m.id}" ${t.linkedMetricId===m.id?'selected':''}>${escapeAttr(m.name)} (${escapeAttr(m.cadence)})</option>`).join('');
         html += `<div class="setup-task-row" data-taskid="${t.id}" data-loc="${locKey}" data-emp="${empIdx}" style="border-top:1px solid var(--win-border);padding:10px 0;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2366,8 +2367,9 @@ async function renderSetup(){
       if(t){
         t.cadence = e.target.value;
         if(t.cadence !== 'Specific Days') t.specificDays = [];
+        const dowRow = row.querySelector('.st-dow-row');
+        if(dowRow) dowRow.style.display = (t.cadence === 'Specific Days') ? 'flex' : 'none';
         await saveRoster();
-        await renderSetup(); // re-render so the day-of-week checkboxes appear/disappear live
       }
     };
     row.querySelector('.st-howto').onchange = async (e) => { const t = findTask(); if(t){ t.howTo = e.target.value; await saveRoster(); } };
