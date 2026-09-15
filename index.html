@@ -215,7 +215,9 @@
   ::-webkit-scrollbar-track{ background:transparent; }
 
   .admin-only{ display:none !important; }
-  body.is-admin .admin-only{ display:inline-block !important; }
+  body.is-staff .admin-only{ display:inline-block !important; }
+  .owner-only{ display:none !important; }
+  body.is-owner .owner-only{ display:inline-block !important; }
   #adminToggleBtn.is-locked-state{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
   .proj-card{ border:1px solid var(--win-border); border-radius:8px; background:var(--win-surface); margin-bottom:12px; }
   .proj-step-row{ border-top:1px solid var(--win-border); padding:10px 0; }
@@ -246,14 +248,17 @@
     </div>
     <div class="toolbar-actions">
       <button class="tb-btn" id="dashboardToggleBtn">Metrics Dashboard</button>
+      <button class="tb-btn" id="trainingLibraryToggleBtn">Training Library</button>
       <button class="tb-btn admin-only" id="setupToggleBtn">Setup</button>
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
-      <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
+      <button class="tb-btn owner-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
+      <button class="tb-btn admin-only" id="trainingToggleBtn">Training Admin</button>
+      <button class="tb-btn admin-only" id="targetsToggleBtn">Team Targets</button>
       <button class="tb-btn admin-only" id="monthlyToggleBtn">Monthly Overview</button>
-      <button class="tb-btn admin-only" id="exportBtn">Export Data</button>
-      <button class="tb-btn admin-only" id="importBtn">Import Data</button>
+      <button class="tb-btn owner-only" id="exportBtn">Export Data</button>
+      <button class="tb-btn owner-only" id="importBtn">Import Data</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
       <button class="tb-btn" id="adminToggleBtn" style="margin-left:6px;">Admin</button>
     </div>
@@ -321,7 +326,10 @@
     <div class="monthly-view" id="meetingsView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="metricsView"></div>
+    <div class="monthly-view" id="trainingView"></div>
+    <div class="monthly-view" id="targetsView"></div>
     <div class="monthly-view" id="dashboardView"></div>
+    <div class="monthly-view" id="trainingLibraryView"></div>
   </div>
 </div>
 
@@ -426,46 +434,74 @@ function showToast(msg){
   showToast._t = setTimeout(()=> t.classList.remove('show'), 1300);
 }
 
-// ---- Admin/manager gate. Employees can open the app, check off their own tasks, and view
-// everyone else's completion pages, but Setup, Meetings admin, Projects planner, Monthly
-// Overview, Export/Import, and the KPI mapper all require this code. Ask Rob for the code
-// (set/changed via the ADMIN_CODE variable on the Railway service). ----
+// ---- Owner/manager access gate. Employees can open the app, check off their own tasks, and
+// view everyone else's completion pages, but Setup, Meetings, Metrics, Training, Team Targets,
+// One-Time Tasks review, Monthly Overview, and the KPI mapper all require a staff code (owner
+// OR manager). The owner's private Projects planner, and the raw Export/Import tools, require
+// the OWNER code specifically - managers never see or touch those. Ask Rob for the right code
+// (set/changed via the ADMIN_CODE / MANAGER_CODE variables on the Railway service). ----
 const ADMIN_CODE_STORAGE_KEY = 'dailys_admin_code';
+const ACCESS_TIER_STORAGE_KEY = 'dailys_access_tier';
 function getAdminCode(){ return localStorage.getItem(ADMIN_CODE_STORAGE_KEY) || ''; }
-function isAdmin(){ return !!getAdminCode(); }
-async function verifyAdminCode(code){
+function getAccessTier(){ return localStorage.getItem(ACCESS_TIER_STORAGE_KEY) || ''; }
+function isOwnerAdmin(){ return !!getAdminCode() && getAccessTier() === 'owner'; }
+function isManager(){ return !!getAdminCode() && getAccessTier() === 'manager'; }
+function isStaff(){ return isOwnerAdmin() || isManager(); }
+async function verifyAccessCode(code){
   try{
-    const res = await fetch('/api/verify-admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+    const res = await fetch('/api/verify-access', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
     const data = await res.json();
-    return !!data.ok;
-  }catch(e){ return false; }
+    return (data && data.ok) ? data.tier : null;
+  }catch(e){ return null; }
 }
 async function promptAdminUnlock(){
-  const code = prompt('Enter the admin/manager code:');
+  const code = prompt('Enter your owner or manager access code:');
   if(code === null || code.trim() === '') return false;
-  const ok = await verifyAdminCode(code.trim());
-  if(ok){
+  const tier = await verifyAccessCode(code.trim());
+  if(tier){
     localStorage.setItem(ADMIN_CODE_STORAGE_KEY, code.trim());
-    showToast('Admin unlocked');
+    localStorage.setItem(ACCESS_TIER_STORAGE_KEY, tier);
+    showToast(tier === 'owner' ? 'Owner access unlocked' : 'Manager access unlocked');
     applyAdminVisibility();
     return true;
   }
   showToast('Incorrect code');
   return false;
 }
+// Staff-level actions (Setup/Meetings/Metrics/Training/Team Targets/One-Time review/Monthly
+// Overview/mapper): either code works. Prompts to unlock if not already unlocked.
+async function requireStaff(){
+  if(isStaff()) return true;
+  return await promptAdminUnlock();
+}
+// Owner-only actions (Projects planner, Export/Import): only the owner code works, even if a
+// manager code is already unlocked - prompts again and tells the manager plainly if so.
+async function requireOwner(){
+  if(isOwnerAdmin()) return true;
+  if(!isStaff()){
+    if(!(await promptAdminUnlock())) return false;
+  }
+  if(!isOwnerAdmin()){
+    showToast('Owner access required for this');
+    return false;
+  }
+  return true;
+}
 function lockAdmin(){
   localStorage.removeItem(ADMIN_CODE_STORAGE_KEY);
-  showToast('Admin locked');
+  localStorage.removeItem(ACCESS_TIER_STORAGE_KEY);
+  showToast('Access locked');
   closeOtherPanels(null);
   updatePanelVisibility();
   applyAdminVisibility();
 }
 function applyAdminVisibility(){
-  document.body.classList.toggle('is-admin', isAdmin());
+  document.body.classList.toggle('is-staff', isStaff());
+  document.body.classList.toggle('is-owner', isOwnerAdmin());
   const btn = document.getElementById('adminToggleBtn');
   if(btn){
-    btn.textContent = isAdmin() ? 'Admin: Unlocked' : 'Admin';
-    btn.classList.toggle('is-locked-state', isAdmin());
+    btn.textContent = isOwnerAdmin() ? 'Admin: Owner' : isManager() ? 'Admin: Manager' : 'Admin';
+    btn.classList.toggle('is-locked-state', isStaff());
   }
 }
 
@@ -474,6 +510,8 @@ function applyAdminVisibility(){
 let SERVER_STATE = {};
 let MEETINGS = [];
 let PROJECTS = [];
+let TRAINING = [];
+let TARGETS = [];
 async function refreshServerState(){
   try{
     const res = await fetch('/api/state');
@@ -496,6 +534,10 @@ async function refreshServerState(){
     catch(e){ console.error('Bad projects data, resetting', e); PROJECTS = []; }
     try{ METRICS = SERVER_STATE['metrics'] ? JSON.parse(SERVER_STATE['metrics']) : []; }
     catch(e){ console.error('Bad metrics data, resetting', e); METRICS = []; }
+    try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
+    catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
+    try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
+    catch(e){ console.error('Bad targets data, resetting', e); TARGETS = []; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -532,6 +574,35 @@ async function loadMetricEntries(metricId){
 }
 async function saveMetricEntries(metricId, obj){
   await storSet(metricEntriesKey(metricId), JSON.stringify(obj));
+}
+
+// ---- Training suite. Entries (title, platform, type, url, who it's for, manager-only flag,
+// optional linked KPI) are staff-gated the same way roster/meetings/metrics are - owner OR
+// manager can add/edit, but only the owner can delete (enforced client-side: the Delete button
+// carries the owner-only class, same trick used elsewhere in this app). ----
+let TRAINING_TYPES = ['Platform video', 'Guidde walkthrough', 'Other'];
+async function saveTraining(){
+  const ok = await storSet('training', JSON.stringify(TRAINING), true);
+  if(!ok) showToast('Not saved — owner or manager code required');
+}
+function newTrainingId(){ return 'trn-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ---- Team Targets. A manager (or owner) sets a target + tolerance for a specific employee on
+// a specific KPI - reference only, shown alongside that metric's latest actual entry so a
+// manager can scan the list and see at a glance who needs coaching on what. No automatic
+// flagging/coloring - just the numbers side by side. Full CRUD for any staff (owner or
+// manager), same as Setup/Meetings/Metrics. ----
+async function saveTargets(){
+  const ok = await storSet('targets', JSON.stringify(TARGETS), true);
+  if(!ok) showToast('Not saved — owner or manager code required');
+}
+function newTargetId(){ return 'tgt-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+async function latestMetricEntry(metricId){
+  const entries = await loadMetricEntries(metricId);
+  const keys = Object.keys(entries).filter(k => entries[k] !== undefined && entries[k] !== '').sort();
+  if(keys.length === 0) return null;
+  const lastKey = keys[keys.length-1];
+  return { date: lastKey, value: entries[lastKey] };
 }
 async function saveMeetingsList(){
   const ok = await storSet('meetings', JSON.stringify(MEETINGS), true);
@@ -748,9 +819,16 @@ function openMetricEntryModal(metric, date, onSaved){
   const dateStr = isoDate(date);
   document.getElementById('photoModalTitle').textContent = metric.name + ' \u2014 ' + date.toLocaleDateString('en-US',{weekday:'long', month:'short', day:'numeric'});
   const body = document.getElementById('photoModalBody');
+  const linkedTrainings = TRAINING.filter(t => t.linkedMetricId === metric.id);
+  const trainingHtml = linkedTrainings.length ? `
+    <div style="background:var(--win-accent-light);border-radius:6px;padding:8px 10px;margin:0 0 12px;">
+      <div style="font-size:11.5px;font-weight:700;margin-bottom:4px;">How we fix it:</div>
+      ${linkedTrainings.map(t => `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" style="display:block;font-size:12px;color:var(--win-accent);margin-bottom:2px;">${escapeHtml(t.title)}</a>`).join('')}
+    </div>` : '';
   body.innerHTML = `
     ${metric.calculation ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 8px;"><b>How it's calculated:</b> ${escapeHtml(metric.calculation)}</p>` : ''}
     ${metric.source ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 12px;"><b>Where to get it:</b> ${escapeHtml(metric.source)}</p>` : ''}
+    ${trainingHtml}
     <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px;">Value${metric.unit ? ' (' + escapeHtml(metric.unit) + ')' : ''}</label>
     <input type="number" step="any" id="metricEntryInput" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:14px;box-sizing:border-box;">
   `;
@@ -1797,6 +1875,9 @@ function wireProjectsHandlers(view){
 // "Delivered Units" for both Bridgeland and Candy Cars) and they'll line up side by side in the
 // public Metrics Dashboard (see renderDashboard further down). ----
 let metricsShown = false;
+let trainingShown = false;
+let targetsShown = false;
+let trainingLibraryShown = false;
 
 function recentDailyDates(n){
   const out = [];
@@ -1977,6 +2058,281 @@ function wireMetricsAdminHandlers(view){
   });
 }
 
+// ---- Training suite admin: organize videos by platform (free-typed, e.g. DealerSocket, vAuto,
+// Guidde walkthroughs Rob records himself) and/or restrict to specific roles by a free-typed
+// tag matched against the role label (e.g. "Service Writer" matches every Service Writer role
+// at both stores). Any staff (owner or manager) can add/edit; only the owner can delete (the
+// Delete button carries owner-only, same trick as elsewhere in this app). ----
+async function renderTraining(){
+  await refreshServerState();
+  const view = document.getElementById('trainingView');
+
+  let html = `
+    <div class="monthly-header"><h1>Training Admin</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Organize training videos by platform (e.g. DealerSocket, vAuto, Xtime, or "Guidde" for the
+      walkthroughs you record yourself) and, if you want, restrict a video to certain roles by
+      typing a word or two that matches part of their title (e.g. "Service Writer" matches every
+      Service Writer role at both stores) — leave it blank to show a video to everyone.
+      Manager-only videos stay hidden from the public Training Library unless the viewer has
+      unlocked staff access. Link a video to a KPI and it shows up as a "how we fix it" reference
+      right where that metric is entered. Anyone with staff access can add training here —
+      only the owner code can delete something.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <input type="text" id="newTrnTitle" placeholder="Title..." style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <input type="text" id="newTrnPlatform" placeholder="Platform (e.g. DealerSocket)..." style="width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <select id="newTrnType" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        ${TRAINING_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <input type="text" id="newTrnUrl" placeholder="Video URL..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <input type="text" id="newTrnRoles" placeholder="Role tags, comma separated (blank = everyone)..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <select id="newTrnMetric" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Linked KPI: — None —</option>
+        ${METRICS.map(m => `<option value="${m.id}">${escapeAttr(m.name)}</option>`).join('')}
+      </select>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;"><input type="checkbox" id="newTrnManagersOnly"> Managers only</label>
+      <button class="mini-btn primary-mini" id="newTrnBtn">+ Add training</button>
+    </div>
+  `;
+
+  if(TRAINING.length === 0){
+    html += `<div class="empty-note">No training videos added yet.</div>`;
+  }
+
+  const platforms = [...new Set(TRAINING.map(t => t.platform || 'Uncategorized'))].sort((a,b) => a.localeCompare(b));
+  platforms.forEach(platform => {
+    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(platform)}</div>`;
+    TRAINING.filter(t => (t.platform || 'Uncategorized') === platform).forEach(t => {
+      html += `<div class="setup-task-row" data-tid="${t.id}" style="border-top:1px solid var(--win-border);padding:10px 0;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" class="tr-title" value="${escapeAttr(t.title)}" style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <input type="text" class="tr-platform" value="${escapeAttr(t.platform||'')}" placeholder="Platform" style="width:160px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <select class="tr-type" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            ${TRAINING_TYPES.map(ty => `<option value="${ty}" ${t.type===ty?'selected':''}>${ty}</option>`).join('')}
+          </select>
+          <button class="mini-btn danger-mini tr-remove owner-only">Delete</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+          <input type="text" class="tr-url" value="${escapeAttr(t.url||'')}" placeholder="Video URL" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <input type="text" class="tr-roles" value="${escapeAttr((t.roleTags||[]).join(', '))}" placeholder="Role tags (blank = everyone)" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+          <select class="tr-metric" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">Linked KPI: — None —</option>
+            ${METRICS.map(m => `<option value="${m.id}" ${t.linkedMetricId===m.id?'selected':''}>${escapeAttr(m.name)}</option>`).join('')}
+          </select>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;"><input type="checkbox" class="tr-managers-only" ${t.managersOnly?'checked':''}> Managers only</label>
+          <a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--win-accent);">Open video →</a>
+        </div>
+      </div>`;
+    });
+  });
+
+  view.innerHTML = html;
+  wireTrainingAdminHandlers(view);
+}
+
+function wireTrainingAdminHandlers(view){
+  const newBtn = document.getElementById('newTrnBtn');
+  if(newBtn) newBtn.onclick = async () => {
+    const title = (document.getElementById('newTrnTitle').value || '').trim();
+    const platform = (document.getElementById('newTrnPlatform').value || '').trim();
+    const type = document.getElementById('newTrnType').value;
+    const url = (document.getElementById('newTrnUrl').value || '').trim();
+    const roleTags = (document.getElementById('newTrnRoles').value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const linkedMetricId = document.getElementById('newTrnMetric').value || '';
+    const managersOnly = document.getElementById('newTrnManagersOnly').checked;
+    if(!title || !url){ showToast('Title and URL are required'); return; }
+    TRAINING.push({ id: newTrainingId(), title, platform, type, url, roleTags, linkedMetricId, managersOnly, notes: '', createdAt: isoDate(new Date()) });
+    await saveTraining();
+    await renderTraining();
+  };
+
+  view.querySelectorAll('.setup-task-row[data-tid]').forEach(row => {
+    const tid = row.dataset.tid;
+    const findT = () => TRAINING.find(t => t.id === tid);
+    const bind = (sel, prop, transform) => {
+      const el = row.querySelector(sel);
+      if(!el) return;
+      el.onchange = async (e) => { const t = findT(); if(!t) return; t[prop] = transform ? transform(e.target.value) : e.target.value; await saveTraining(); };
+    };
+    bind('.tr-title', 'title');
+    bind('.tr-platform', 'platform');
+    bind('.tr-type', 'type');
+    bind('.tr-url', 'url');
+    bind('.tr-roles', 'roleTags', v => v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+    const metricEl = row.querySelector('.tr-metric');
+    if(metricEl) metricEl.onchange = async (e) => { const t = findT(); if(t){ t.linkedMetricId = e.target.value || ''; await saveTraining(); } };
+    const moEl = row.querySelector('.tr-managers-only');
+    if(moEl) moEl.onchange = async (e) => { const t = findT(); if(t){ t.managersOnly = e.target.checked; await saveTraining(); } };
+    const removeBtn = row.querySelector('.tr-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!isOwnerAdmin()){ showToast('Owner access required to delete training'); return; }
+      if(!confirm('Delete this training video?')) return;
+      const i = TRAINING.findIndex(t => t.id === tid);
+      if(i > -1) TRAINING.splice(i,1);
+      await saveTraining();
+      await renderTraining();
+    };
+  });
+}
+
+// ---- Public Training Library: NOT admin-gated (everyone can browse), filtered to whoever is
+// currently selected in the sidebar - same "who's selected" model the daily checklist itself
+// uses. Manager-only videos only show once the viewer has unlocked staff access. ----
+function trainingVisibleToCurrentEmployee(t){
+  if(t.managersOnly && !isStaff()) return false;
+  if(!t.roleTags || t.roleTags.length === 0) return true;
+  const loc = LOCATIONS[currentLoc];
+  const emp = loc && loc.data[currentEmployee];
+  if(!emp) return true;
+  const label = emp.label.toLowerCase();
+  return t.roleTags.some(tag => label.includes(tag));
+}
+
+async function renderTrainingLibrary(){
+  await refreshServerState();
+  const view = document.getElementById('trainingLibraryView');
+  const loc = LOCATIONS[currentLoc];
+  const emp = loc && loc.data[currentEmployee];
+  const empLabel = emp ? emp.label : 'the selected role';
+
+  let html = `
+    <div class="monthly-header"><h1>Training Library</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Showing videos relevant to <b>${escapeHtml(empLabel)}</b>${isStaff() ? ' — staff access unlocked, so manager-only videos are included' : ''}.
+      Switch who's selected in the sidebar to see what someone else sees.
+    </p>
+  `;
+
+  const visible = TRAINING.filter(trainingVisibleToCurrentEmployee);
+  if(visible.length === 0){
+    html += `<div class="empty-note">No training videos for this role yet.</div>`;
+  }
+
+  const platforms = [...new Set(visible.map(t => t.platform || 'Uncategorized'))].sort((a,b) => a.localeCompare(b));
+  platforms.forEach(platform => {
+    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(platform)}</div>`;
+    visible.filter(t => (t.platform || 'Uncategorized') === platform).forEach(t => {
+      const metric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
+      html += `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" class="task-card" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">
+        <div style="font-weight:600;font-size:13px;">${escapeHtml(t.title)}
+          <span style="font-weight:400;color:var(--win-text-secondary);font-size:11.5px;"> · ${escapeHtml(t.type||'')}</span>
+          ${t.managersOnly ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Managers only</span>` : ''}
+        </div>
+        ${metric ? `<div style="font-size:11.5px;color:var(--win-text-secondary);margin-top:3px;">KPI: ${escapeHtml(metric.name)}</div>` : ''}
+      </a>`;
+    });
+  });
+
+  view.innerHTML = html;
+}
+
+// ---- Team Targets: a manager (or owner) sets a target + tolerance for a specific employee on
+// a specific KPI. Reference only - shown next to that metric's latest entered number so a
+// manager can scan the list and see who needs coaching on what. Nothing is auto-flagged. Full
+// CRUD for any staff (owner or manager). ----
+async function renderTargets(){
+  await refreshServerState();
+  const view = document.getElementById('targetsView');
+  const targets = allRosterTargets();
+
+  let html = `
+    <div class="monthly-header"><h1>Team Targets</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Set the target and acceptable tolerance you expect from each person on a KPI they track.
+      This is reference only — it shows their latest entered number right next to your target
+      so you can scan the list and see who needs coaching, but nothing is auto-flagged. Any
+      manager or owner can add, edit, or remove targets here.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <select id="newTgtEmp" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Employee…</option>
+        ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+      </select>
+      <select id="newTgtMetric" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Metric…</option>
+        ${METRICS.map(m => `<option value="${m.id}">${escapeAttr(m.name)}</option>`).join('')}
+      </select>
+      <input type="text" id="newTgtTarget" placeholder="Target (e.g. 90%)" style="width:130px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <input type="text" id="newTgtTolerance" placeholder="Tolerance (e.g. ± 5%)" style="width:150px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <button class="mini-btn primary-mini" id="newTgtBtn">+ Set target</button>
+    </div>
+  `;
+
+  if(TARGETS.length === 0){
+    html += `<div class="empty-note">No targets set yet.</div>`;
+  } else {
+    const byEmp = {};
+    TARGETS.forEach(tg => {
+      const key = `${tg.locKey}::${tg.empIdx}`;
+      if(!byEmp[key]) byEmp[key] = [];
+      byEmp[key].push(tg);
+    });
+    Object.keys(byEmp).forEach(key => {
+      const x = targets.find(t => `${t.locKey}::${t.empIdx}` === key);
+      html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(x ? x.label : key)}</div>`;
+      byEmp[key].forEach(tg => {
+        const metric = METRICS.find(m => m.id === tg.metricId);
+        html += `<div class="setup-task-row" data-tgid="${tg.id}" data-metricid="${tg.metricId}" style="border-top:1px solid var(--win-border);padding:10px 0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;font-size:12.5px;font-weight:600;">${escapeHtml(metric ? metric.name : '(deleted metric)')}</div>
+            <input type="text" class="tg-target" value="${escapeAttr(tg.target||'')}" placeholder="Target" style="width:110px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <input type="text" class="tg-tolerance" value="${escapeAttr(tg.tolerance||'')}" placeholder="Tolerance" style="width:130px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <span class="attach-chip tg-actual">Loading latest…</span>
+            <button class="mini-btn danger-mini tg-remove">Remove</button>
+          </div>
+        </div>`;
+      });
+    });
+  }
+
+  view.innerHTML = html;
+  wireTargetsHandlers(view);
+  view.querySelectorAll('.setup-task-row[data-tgid]').forEach(async row => {
+    const metricId = row.dataset.metricid;
+    const chip = row.querySelector('.tg-actual');
+    if(!metricId || !chip) return;
+    const latest = await latestMetricEntry(metricId);
+    chip.textContent = latest ? `Latest: ${latest.value} (${latest.date})` : 'No entries yet';
+  });
+}
+
+function wireTargetsHandlers(view){
+  const newBtn = document.getElementById('newTgtBtn');
+  if(newBtn) newBtn.onclick = async () => {
+    const empVal = document.getElementById('newTgtEmp').value;
+    const metricId = document.getElementById('newTgtMetric').value;
+    const target = (document.getElementById('newTgtTarget').value || '').trim();
+    const tolerance = (document.getElementById('newTgtTolerance').value || '').trim();
+    if(!empVal || !metricId){ showToast('Pick an employee and a metric'); return; }
+    const [locKey, empIdxStr] = empVal.split('::');
+    TARGETS.push({ id: newTargetId(), locKey, empIdx: parseInt(empIdxStr,10), metricId, target, tolerance, notes: '', updatedAt: isoDate(new Date()) });
+    await saveTargets();
+    await renderTargets();
+  };
+
+  view.querySelectorAll('.setup-task-row[data-tgid]').forEach(row => {
+    const tgid = row.dataset.tgid;
+    const findTg = () => TARGETS.find(t => t.id === tgid);
+    const targetEl = row.querySelector('.tg-target');
+    if(targetEl) targetEl.onchange = async (e) => { const tg = findTg(); if(tg){ tg.target = e.target.value; await saveTargets(); } };
+    const tolEl = row.querySelector('.tg-tolerance');
+    if(tolEl) tolEl.onchange = async (e) => { const tg = findTg(); if(tg){ tg.tolerance = e.target.value; await saveTargets(); } };
+    const removeBtn = row.querySelector('.tg-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!confirm('Remove this target?')) return;
+      const i = TARGETS.findIndex(t => t.id === tgid);
+      if(i > -1) TARGETS.splice(i,1);
+      await saveTargets();
+      await renderTargets();
+    };
+  });
+}
+
 // ---- Public Metrics Dashboard: read-only, NOT admin-gated - every employee can open this to
 // see how each store is doing side by side. Two metrics with the SAME name (e.g. "Delivered
 // Units" defined once for Bridgeland and once for Candy Cars) are grouped into one card with a
@@ -2124,10 +2480,13 @@ function closeOtherPanels(except){
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
+  if(except !== 'training' && trainingShown){ trainingShown = false; document.getElementById('trainingToggleBtn').classList.remove('active'); document.getElementById('trainingView').classList.remove('show'); }
+  if(except !== 'targets' && targetsShown){ targetsShown = false; document.getElementById('targetsToggleBtn').classList.remove('active'); document.getElementById('targetsView').classList.remove('show'); }
   if(except !== 'dashboard' && dashboardShown){ dashboardShown = false; document.getElementById('dashboardToggleBtn').classList.remove('active'); document.getElementById('dashboardView').classList.remove('show'); }
+  if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || metricsShown || dashboardShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -2137,7 +2496,7 @@ function updatePanelVisibility(){
 }
 
 document.getElementById('monthlyToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('monthly');
   monthlyShown = !monthlyShown;
   document.getElementById('monthlyToggleBtn').classList.toggle('active', monthlyShown);
@@ -2147,7 +2506,7 @@ document.getElementById('monthlyToggleBtn').onclick = async () => {
 };
 
 document.getElementById('onetimeToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('onetime');
   onetimeReviewShown = !onetimeReviewShown;
   document.getElementById('onetimeToggleBtn').classList.toggle('active', onetimeReviewShown);
@@ -2157,7 +2516,7 @@ document.getElementById('onetimeToggleBtn').onclick = async () => {
 };
 
 document.getElementById('meetingsToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('meetings');
   meetingsShown = !meetingsShown;
   document.getElementById('meetingsToggleBtn').classList.toggle('active', meetingsShown);
@@ -2167,7 +2526,7 @@ document.getElementById('meetingsToggleBtn').onclick = async () => {
 };
 
 document.getElementById('projectsToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireOwner())) return;
   closeOtherPanels('projects');
   projectsShown = !projectsShown;
   document.getElementById('projectsToggleBtn').classList.toggle('active', projectsShown);
@@ -2177,13 +2536,33 @@ document.getElementById('projectsToggleBtn').onclick = async () => {
 };
 
 document.getElementById('metricsToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('metrics');
   metricsShown = !metricsShown;
   document.getElementById('metricsToggleBtn').classList.toggle('active', metricsShown);
   document.getElementById('metricsView').classList.toggle('show', metricsShown);
   updatePanelVisibility();
   if(metricsShown) await renderMetrics();
+};
+
+document.getElementById('trainingToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('training');
+  trainingShown = !trainingShown;
+  document.getElementById('trainingToggleBtn').classList.toggle('active', trainingShown);
+  document.getElementById('trainingView').classList.toggle('show', trainingShown);
+  updatePanelVisibility();
+  if(trainingShown) await renderTraining();
+};
+
+document.getElementById('targetsToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('targets');
+  targetsShown = !targetsShown;
+  document.getElementById('targetsToggleBtn').classList.toggle('active', targetsShown);
+  document.getElementById('targetsView').classList.toggle('show', targetsShown);
+  updatePanelVisibility();
+  if(targetsShown) await renderTargets();
 };
 
 document.getElementById('dashboardToggleBtn').onclick = async () => {
@@ -2195,9 +2574,18 @@ document.getElementById('dashboardToggleBtn').onclick = async () => {
   if(dashboardShown) await renderDashboard();
 };
 
+document.getElementById('trainingLibraryToggleBtn').onclick = async () => {
+  closeOtherPanels('traininglib');
+  trainingLibraryShown = !trainingLibraryShown;
+  document.getElementById('trainingLibraryToggleBtn').classList.toggle('active', trainingLibraryShown);
+  document.getElementById('trainingLibraryView').classList.toggle('show', trainingLibraryShown);
+  updatePanelVisibility();
+  if(trainingLibraryShown) await renderTrainingLibrary();
+};
+
 document.getElementById('adminToggleBtn').onclick = async () => {
-  if(isAdmin()){
-    if(confirm('Lock admin features again?')) lockAdmin();
+  if(isStaff()){
+    if(confirm('Lock access again?')) lockAdmin();
   } else {
     await promptAdminUnlock();
   }
@@ -2399,7 +2787,7 @@ async function renderSetup(){
 }
 
 document.getElementById('setupToggleBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('setup');
   setupShown = !setupShown;
   document.getElementById('setupToggleBtn').classList.toggle('active', setupShown);
@@ -2409,11 +2797,11 @@ document.getElementById('setupToggleBtn').onclick = async () => {
 };
 
 document.getElementById('exportBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireOwner())) return;
   exportData();
 };
 document.getElementById('importBtn').onclick = async () => {
-  if(!isAdmin() && !(await promptAdminUnlock())) return;
+  if(!(await requireOwner())) return;
   document.getElementById('importFile').click();
 };
 document.getElementById('importFile').onchange = (e) => {

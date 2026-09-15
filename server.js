@@ -19,9 +19,27 @@ const ADMIN_CODE = process.env.ADMIN_CODE || 'dailys2026';
 if (!process.env.ADMIN_CODE) {
   console.warn('WARNING: ADMIN_CODE env var not set - using insecure default. Set ADMIN_CODE in Railway variables.');
 }
-// Keys only ever written by admin actions (Setup / Meetings admin panel). Employees never
-// legitimately write these, so they're safe to hard-gate server-side.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics']);
+// Manager code: a second, lower tier. Managers get the same edit access as the owner admin
+// code across Setup/Meetings/Metrics/Training/Team Targets, but never see or touch the
+// owner's private Projects (work plan) data or the raw Export/Import bulk tools.
+const MANAGER_CODE = process.env.MANAGER_CODE || 'dailysmgr2026';
+if (!process.env.MANAGER_CODE) {
+  console.warn('WARNING: MANAGER_CODE env var not set - using insecure default. Set MANAGER_CODE in Railway variables.');
+}
+// Returns 'owner' | 'manager' | null for a given submitted code.
+function codeTier(code) {
+  if (typeof code !== 'string' || !code) return null;
+  if (code === ADMIN_CODE) return 'owner';
+  if (code === MANAGER_CODE) return 'manager';
+  return null;
+}
+// Keys only ever written by staff actions (Setup / Meetings / Metrics / Training / Team
+// Targets admin panels). Employees never legitimately write these, so they're safe to
+// hard-gate server-side. Both the owner code and the manager code unlock these -- Projects
+// (the owner's private work plan) is deliberately NOT in this set; it stays ungated the same
+// way it always has (employees assigned to a step still need to update it), but is only ever
+// shown in the UI to the owner, never to managers.
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets']);
 
 function loadStore() {
   try {
@@ -124,10 +142,11 @@ const server = http.createServer(async (req, res) => {
       return res.end('ok');
     }
 
-    if (pathname === '/api/verify-admin' && req.method === 'POST') {
+    if (pathname === '/api/verify-access' && req.method === 'POST') {
       const body = await readBody(req);
       const code = body && body.code;
-      return sendJson(res, 200, { ok: typeof code === 'string' && code === ADMIN_CODE });
+      const tier = codeTier(code);
+      return sendJson(res, 200, { ok: tier !== null, tier });
     }
 
     if (pathname === '/api/state' && req.method === 'GET') {
@@ -142,8 +161,8 @@ const server = http.createServer(async (req, res) => {
       if (typeof key !== 'string' || !key) {
         return sendJson(res, 400, { error: 'key is required' });
       }
-      if (ADMIN_ONLY_KEYS.has(key) && adminCode !== ADMIN_CODE) {
-        return sendJson(res, 403, { error: 'admin code required' });
+      if (ADMIN_ONLY_KEYS.has(key) && codeTier(adminCode) === null) {
+        return sendJson(res, 403, { error: 'admin or manager code required' });
       }
       if (value === null || value === undefined) {
         delete store[key];
@@ -155,8 +174,9 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/state/bulk' && req.method === 'POST') {
-      // Only used by the admin-only Import Data feature - gated entirely behind the admin code
-      // since a bulk import can overwrite the whole shared store.
+      // Only used by the owner-only Import/Export Data feature - gated entirely behind the
+      // OWNER admin code (not the manager code) since a bulk import/export touches the whole
+      // shared store, including the owner's private Projects data.
       const body = await readBody(req);
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         return sendJson(res, 400, { error: 'body must be an object' });

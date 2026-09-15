@@ -796,13 +796,14 @@ document.getElementById('importFile').onchange = (e) => {
   e.target.value = '';
 };
 
-// ---- Admin gate: this whole tool is manager-only. Same admin code as the Setup/Meetings/
-// Projects areas in the Daily Ops app (shared localStorage on this origin), re-verified
-// against the server on every load so a stale/incorrect stored code doesn't let anyone in. ----
+// ---- Staff gate: this whole tool is staff-only (owner OR manager - same two codes as the
+// Setup/Meetings/Metrics areas in the Daily Ops app, shared localStorage on this origin),
+// re-verified against the server on every load so a stale/incorrect stored code doesn't let
+// anyone in. ----
 const ADMIN_CODE_STORAGE_KEY = 'dailys_admin_code';
 async function verifyAdminCode(code){
   try{
-    const res = await fetch('/api/verify-admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+    const res = await fetch('/api/verify-access', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
     const data = await res.json();
     return !!data.ok;
   }catch(e){ return false; }
