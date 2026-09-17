@@ -145,6 +145,9 @@
   .monthly-actions button:hover{ background:var(--win-accent-light); }
   .monthly-loc-group{ margin-bottom:26px; }
   .monthly-loc-title{ font-size:15px; font-weight:700; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--win-accent); }
+  .dept-section{ margin-bottom:34px; }
+  .dept-title{ font-size:19px; font-weight:800; margin:0 0 14px; padding-bottom:6px; border-bottom:3px solid var(--win-text); letter-spacing:.01em; }
+  .metric-name-cell{ display:flex; align-items:center; gap:6px; }
   table.monthly-table{ border-collapse:collapse; width:100%; background:var(--win-surface); border:1px solid var(--win-border);
     border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-1); }
   table.monthly-table th, table.monthly-table td{ border-bottom:1px solid var(--win-border); padding:10px 14px; font-size:12.5px; text-align:left; }
@@ -562,6 +565,10 @@ function newAttachId(){ return 'att-' + Date.now().toString(36) + Math.random().
 // step status): that's the whole point, replacing a manually-updated Google Sheet with something
 // the assigned person fills in themselves right on their daily page. ----
 let METRICS = [];
+// Shared department/category taxonomy - used by both the Metrics Admin form (to pick a
+// category) and the public Dashboard (to group and order sections). Anything typed outside
+// this list still works (falls into its own section, sorted after these).
+const METRIC_CATEGORIES = ['Profitability','Merchandising','Service KPIs','Finance','Payroll and time cards','Compliance & Customer Experience'];
 async function saveMetrics(){
   const ok = await storSet('metrics', JSON.stringify(METRICS), true);
   if(!ok) showToast('Not saved \u2014 admin code required');
@@ -1166,7 +1173,7 @@ async function renderMetricsPanel(dates){
   mine.forEach(m => {
     const entries = entriesByMetric[m.id];
     html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
-      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>`;
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>`;
     if(m.cadence === 'Weekly'){
       const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
       html += `<div style="display:flex;align-items:center;gap:8px;">
@@ -1927,6 +1934,11 @@ async function renderMetrics(){
         <option value="">Assign to\u2026</option>
         ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
       </select>
+      <select id="newMetricCategory" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Department\u2026</option>
+        ${METRIC_CATEGORIES.map(c => `<option value="${c}">${escapeAttr(c)}</option>`).join('')}
+      </select>
+      <input type="text" id="newMetricStoreLabel" placeholder="Store label (only if one person covers both, e.g. Bridgeland)..." style="width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
       <button class="mini-btn primary-mini" id="newMetricBtn">+ New metric</button>
     </div>
   `;
@@ -1960,8 +1972,8 @@ async function renderMetrics(){
 
     html += `<details class="proj-card" data-mid="${m.id}" style="padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
-        ${escapeHtml(m.name)}
-        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}</span>
+        ${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:400;">(${escapeHtml(m.storeLabel)})</span>` : ''}
+        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${m.category ? ' \u00b7 ' + escapeHtml(m.category) : ''}</span>
         ${nextGoalMissing ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Next month's goal not set</span>` : ''}
       </summary>
       <div style="padding:4px 14px 16px;">
@@ -1977,6 +1989,13 @@ async function renderMetrics(){
           </select>
           <input type="text" class="mt-unit" placeholder="Unit (e.g. hours, units)" value="${escapeAttr(m.unit||'')}" style="width:140px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
           <button class="mini-btn danger-mini mt-remove">Delete metric</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <select class="mt-category" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">Department\u2026</option>
+            ${METRIC_CATEGORIES.map(c => `<option value="${c}" ${m.category===c?'selected':''}>${escapeAttr(c)}</option>`).join('')}
+          </select>
+          <input type="text" class="mt-storelabel" placeholder="Store label (if one person covers both stores)" value="${escapeAttr(m.storeLabel||'')}" style="width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
           <input type="text" class="mt-calc" placeholder="How it's calculated..." value="${escapeAttr(m.calculation||'')}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
@@ -2006,10 +2025,12 @@ function wireMetricsAdminHandlers(view){
     const name = (document.getElementById('newMetricName').value || '').trim();
     const cadence = document.getElementById('newMetricCadence').value;
     const targetVal = document.getElementById('newMetricTarget').value;
+    const category = document.getElementById('newMetricCategory').value;
+    const storeLabel = (document.getElementById('newMetricStoreLabel').value || '').trim();
     if(!name) return;
     let assignedLoc = '', assignedEmp = null;
     if(targetVal){ const [l, eStr] = targetVal.split('::'); assignedLoc = l; assignedEmp = parseInt(eStr,10); }
-    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, unit: '', calculation: '', source: '', goals: {}, createdAt: isoDate(new Date()) });
+    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, category, storeLabel, unit: '', calculation: '', source: '', goals: {}, createdAt: isoDate(new Date()) });
     await saveMetrics();
     await renderMetrics();
   };
@@ -2026,6 +2047,8 @@ function wireMetricsAdminHandlers(view){
     bind('.mt-name', 'name');
     bind('.mt-cadence', 'cadence');
     bind('.mt-unit', 'unit');
+    bind('.mt-category', 'category');
+    bind('.mt-storelabel', 'storeLabel');
     bind('.mt-calc', 'calculation');
     bind('.mt-source', 'source');
 
@@ -2404,64 +2427,98 @@ async function renderDashboard(){
   }
 
   const targets = allRosterTargets();
-  const groups = {};
-  METRICS.forEach(m => { (groups[m.name] = groups[m.name] || []).push(m); });
 
-  for(const [name, metrics] of Object.entries(groups)){
-    html += `<div class="monthly-loc-group"><div class="monthly-loc-title">${escapeHtml(name)}</div>
-      <table class="monthly-table"><thead><tr><th>Store / who</th>`;
-    weeks.forEach(w => {
-      const wEnd = new Date(w); wEnd.setDate(wEnd.getDate()+4);
-      html += `<th class="num">Wk of ${w.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</th>`;
-    });
-    html += `<th class="num">Month to date</th><th class="num">Goal</th></tr></thead><tbody>`;
+  // Department (category) sections first, then metric-name groups (same-named metrics from
+  // different stores line up side by side) within each department - keeps the whole page
+  // scannable by department instead of one long flat list.
+  const DEPT_ORDER = METRIC_CATEGORIES;
+  const byDept = {};
+  METRICS.forEach(m => {
+    const dept = m.category && m.category.trim() ? m.category.trim() : 'Uncategorized';
+    (byDept[dept] = byDept[dept] || {});
+    (byDept[dept][m.name] = byDept[dept][m.name] || []).push(m);
+  });
+  const deptNames = Object.keys(byDept).sort((a,b) => {
+    const ia = DEPT_ORDER.indexOf(a), ib = DEPT_ORDER.indexOf(b);
+    if(ia !== -1 && ib !== -1) return ia - ib;
+    if(ia !== -1) return -1;
+    if(ib !== -1) return 1;
+    if(a === 'Uncategorized') return 1;
+    if(b === 'Uncategorized') return -1;
+    return a.localeCompare(b);
+  });
 
-    for(const m of metrics){
-      if(!m.goals) m.goals = {};
-      const entries = await loadMetricEntries(m.id);
-      const assignedLabel = targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp);
-      const goal = m.goals[goalMonthKey];
+  for(const dept of deptNames){
+    html += `<div class="dept-section"><div class="dept-title">${escapeHtml(dept)}</div>`;
+    const groups = byDept[dept];
 
-      html += `<tr><td>${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${m.unit ? ` <span style="color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}</td>`;
-
-      let monthDateStrs = [];
+    for(const [name, metrics] of Object.entries(groups)){
+      html += `<div class="monthly-loc-group"><div class="monthly-loc-title">${escapeHtml(name)}</div>
+        <table class="monthly-table"><thead><tr><th>Store / who</th>`;
       weeks.forEach(w => {
-        let wVal;
-        if(m.cadence === 'Weekly'){
-          const v = entries[isoDate(w)];
-          wVal = (v !== undefined && v !== '') ? parseFloat(v) : null;
-          monthDateStrs.push(isoDate(w));
-        } else {
-          let sum = 0, any = false;
-          for(let i=0;i<5;i++){
-            const d = new Date(w); d.setDate(d.getDate()+i);
-            const ds = isoDate(d);
-            monthDateStrs.push(ds);
-            const v = entries[ds];
-            if(v !== undefined && v !== ''){ const n = parseFloat(v); if(!isNaN(n)){ sum += n; any = true; } }
-          }
-          wVal = any ? sum : null;
-        }
-        html += `<td class="num">${wVal !== null && !isNaN(wVal) ? wVal : '\u2014'}</td>`;
+        html += `<th class="num">Wk of ${w.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</th>`;
       });
+      html += `<th class="num">Month to date</th><th class="num">Goal</th></tr></thead><tbody>`;
 
-      const mtd = sumInMonth(entries, monthDateStrs, dashboardMonthCursor);
-      html += `<td class="num"><b>${mtd !== null ? mtd : '\u2014'}</b></td>`;
-      html += `<td class="num">${goal ? escapeHtml(String(goal)) : '<span style="color:var(--kpi-risk);font-weight:600;">not set</span>'}</td>`;
-      html += `</tr>`;
+      for(const m of metrics){
+        if(!m.goals) m.goals = {};
+        const entries = await loadMetricEntries(m.id);
+        const assignedLabel = targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp);
+        const goal = m.goals[goalMonthKey];
+        const hasInfo = !!(m.calculation || m.source);
 
-      if(m.calculation || m.source){
-        html += `<tr><td colspan="${weeks.length+3}" style="font-size:11px;color:var(--win-text-secondary);padding:4px 14px 10px;">
-          ${m.calculation ? `<b>How it's calculated:</b> ${escapeHtml(m.calculation)}` : ''}${m.calculation && m.source ? ' \u00b7 ' : ''}${m.source ? `<b>Where to get it:</b> ${escapeHtml(m.source)}` : ''}
-        </td></tr>`;
+        html += `<tr><td><div class="metric-name-cell">${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${m.storeLabel ? ` <span style="color:var(--win-text-secondary);">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${hasInfo ? `<button class="info-btn dash-info-btn" data-mid="${m.id}" title="How it's calculated">ⓘ</button>` : ''}</div></td>`;
+
+        let monthDateStrs = [];
+        weeks.forEach(w => {
+          let wVal;
+          if(m.cadence === 'Weekly'){
+            const v = entries[isoDate(w)];
+            wVal = (v !== undefined && v !== '') ? parseFloat(v) : null;
+            monthDateStrs.push(isoDate(w));
+          } else {
+            let sum = 0, any = false;
+            for(let i=0;i<5;i++){
+              const d = new Date(w); d.setDate(d.getDate()+i);
+              const ds = isoDate(d);
+              monthDateStrs.push(ds);
+              const v = entries[ds];
+              if(v !== undefined && v !== ''){ const n = parseFloat(v); if(!isNaN(n)){ sum += n; any = true; } }
+            }
+            wVal = any ? sum : null;
+          }
+          html += `<td class="num">${wVal !== null && !isNaN(wVal) ? wVal : '—'}</td>`;
+        });
+
+        const mtd = sumInMonth(entries, monthDateStrs, dashboardMonthCursor);
+        html += `<td class="num"><b>${mtd !== null ? mtd : '—'}</b></td>`;
+        html += `<td class="num">${goal ? escapeHtml(String(goal)) : '<span style="color:var(--kpi-risk);font-weight:600;">not set</span>'}</td>`;
+        html += `</tr>`;
       }
-    }
 
-    html += `</tbody></table></div>`;
+      html += `</tbody></table></div>`;
+    }
+    html += `</div>`;
   }
 
   view.innerHTML = html;
   wireDashboardHandlers();
+}
+
+function openMetricCalcInfoModal(m){
+  document.getElementById('photoModalTitle').textContent = m.name + (m.storeLabel ? ' (' + m.storeLabel + ')' : '');
+  const body = document.getElementById('photoModalBody');
+  body.innerHTML = `
+    ${m.calculation ? `<p style="font-size:13px;line-height:1.5;margin:0 0 10px;"><b>How it's calculated:</b> ${escapeHtml(m.calculation)}</p>` : ''}
+    ${m.source ? `<p style="font-size:13px;line-height:1.5;margin:0;"><b>Where to get it:</b> ${escapeHtml(m.source)}</p>` : ''}
+  `;
+  document.getElementById('photoModalActions').innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.className = 'primary';
+  closeBtn.onclick = closePhotoModal;
+  document.getElementById('photoModalActions').appendChild(closeBtn);
+  document.getElementById('photoModal').classList.add('show');
 }
 
 function wireDashboardHandlers(){
@@ -2471,6 +2528,12 @@ function wireDashboardHandlers(){
   if(nextBtn) nextBtn.onclick = () => { dashboardMonthCursor = new Date(dashboardMonthCursor.getFullYear(), dashboardMonthCursor.getMonth()+1, 1); renderDashboard(); };
   const thisBtn = document.getElementById('dbThisMonthBtn');
   if(thisBtn) thisBtn.onclick = () => { dashboardMonthCursor = firstOfMonth(new Date()); renderDashboard(); };
+  document.querySelectorAll('.dash-info-btn').forEach(btn => {
+    btn.onclick = () => {
+      const m = METRICS.find(x => x.id === btn.dataset.mid);
+      if(m) openMetricCalcInfoModal(m);
+    };
+  });
 }
 
 function closeOtherPanels(except){
