@@ -656,6 +656,68 @@ function meetingOccursOn(meeting, date){
   if(meeting.cadence === 'One-time') return isoDate(date) === meeting.onDate;
   return false;
 }
+function newActionItemId(){ return 'ai-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newMeetingLinkId(){ return 'mlk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newMeetingEntryId(){ return 'ment-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+// Every open (not-done) action item logged across every past occurrence of a meeting -
+// this is how "carried over to review next time" works: nothing is copied anywhere, an
+// item just keeps showing up here, from whichever meeting it was first logged in, until
+// someone checks it done.
+function openActionItemsAcrossLog(notesLog){
+  const out = [];
+  (notesLog||[]).forEach(entry => {
+    (entry.actionItems||[]).forEach(ai => {
+      if(!ai.done) out.push({ item: ai, entryId: entry.id, fromDate: entry.date });
+    });
+  });
+  out.sort((a,b) => (a.fromDate||'').localeCompare(b.fromDate||''));
+  return out;
+}
+// A compact "how's this department doing" table shown at the top of a meeting - Daily
+// metrics show every entered value Mon-Fri so far this week, Weekly ones show this week's
+// single number, both against goal. Meant to replace someone manually re-typing numbers
+// into an agenda doc before the meeting starts.
+async function meetingMetricsSummaryHtml(category){
+  if(!category) return '';
+  const catMetrics = METRICS.filter(m => (m.category || '') === category);
+  if(catMetrics.length === 0){
+    return `<div class="empty-note" style="padding:6px 0;">No metrics tagged "${escapeHtml(category)}" yet.</div>`;
+  }
+  const monday = mondayOf(new Date());
+  const weekKey = isoDate(monday);
+  const weekdayDates = weekDates(monday).slice(0,5);
+  const thisMonthKey = monthKey(new Date());
+  const targets = allRosterTargets();
+  const rows = await Promise.all(catMetrics.map(async m => {
+    const entries = await loadMetricEntries(m.id);
+    const who = targets.find(x => x.locKey === m.assignedLoc && x.empIdx === m.assignedEmp);
+    const whoLabel = who ? who.label : 'Unassigned';
+    let valueHtml;
+    if(m.cadence === 'Weekly'){
+      const v = entries[weekKey];
+      valueHtml = (v !== undefined && v !== '') ? escapeHtml(String(v)) : '—';
+    } else {
+      const vals = weekdayDates.map(d => entries[isoDate(d)]).filter(v => v !== undefined && v !== '');
+      valueHtml = vals.length ? vals.map(v => escapeHtml(String(v))).join(', ') : '—';
+    }
+    const goal = (m.goals && m.goals[thisMonthKey]) ? escapeHtml(String(m.goals[thisMonthKey])) : '—';
+    return `<tr>
+      <td style="padding:4px 8px;font-size:12px;border-bottom:1px solid var(--win-border);">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="color:var(--win-text-secondary);">(${escapeHtml(m.storeLabel)})</span>` : ''}</td>
+      <td style="padding:4px 8px;font-size:11.5px;color:var(--win-text-secondary);border-bottom:1px solid var(--win-border);">${escapeHtml(whoLabel)}</td>
+      <td style="padding:4px 8px;font-size:12px;font-weight:700;border-bottom:1px solid var(--win-border);">${valueHtml}</td>
+      <td style="padding:4px 8px;font-size:11.5px;color:var(--win-text-secondary);border-bottom:1px solid var(--win-border);">${goal}</td>
+    </tr>`;
+  }));
+  return `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);">Metric</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);">Who</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);">This week</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);">Goal</th>
+    </tr></thead>
+    <tbody>${rows.join('')}</tbody>
+  </table>`;
+}
 async function storGet(key){
   return Object.prototype.hasOwnProperty.call(SERVER_STATE, key) ? SERVER_STATE[key] : null;
 }
@@ -1110,7 +1172,7 @@ async function renderMain(){
   });
 
   computeSummary(dates, countableTasks);
-  renderMeetingsPanel(dates);
+  await renderMeetingsPanel(dates);
   renderProjectsPanel();
   await renderMetricsPanel(dates);
 
@@ -1254,7 +1316,7 @@ async function renderMetricsPanel(dates){
   });
 }
 
-function renderMeetingsPanel(dates){
+async function renderMeetingsPanel(dates){
   const wrap = document.getElementById('meetingsPanelWrap');
   if(!wrap) return;
   const myKey = `${currentLoc}::${currentEmployee}`;
@@ -1268,14 +1330,20 @@ function renderMeetingsPanel(dates){
   });
   if(rows.length === 0){ wrap.innerHTML = ''; return; }
   rows.sort((a,b) => a.date - b.date);
+  const allTargets = allRosterTargets();
   const dowFmt = (d) => d.toLocaleDateString('en-US', {weekday:'short', month:'numeric', day:'numeric'});
   let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Meetings this week</div>`;
-  rows.forEach(({date, meeting}) => {
+  for(const {date, meeting} of rows){
+    const openItems = openActionItemsAcrossLog(meeting.notesLog);
+    const metricsHtml = meeting.metricCategory ? await meetingMetricsSummaryHtml(meeting.metricCategory) : '';
     html += `<div style="border:1px solid var(--win-border);border-radius:6px;padding:9px 12px;margin-bottom:6px;background:var(--win-surface);">
       <div style="font-size:12.5px;font-weight:600;">${escapeHtml(meeting.title||'Untitled meeting')} <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${dowFmt(date)}${meeting.time ? ' \u00b7 ' + escapeHtml(meeting.time) : ''} \u00b7 ${escapeHtml(meeting.type||'')}</span></div>
       ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;white-space:pre-line;">${escapeHtml(meeting.agenda)}</div>` : ''}
+      ${(meeting.links && meeting.links.length) ? `<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">${meeting.links.filter(l=>l.url).map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" class="attach-chip">\u{1F517} ${escapeHtml(l.label||l.url)}</a>`).join('')}</div>` : ''}
+      ${metricsHtml ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">${escapeHtml(meeting.metricCategory)} this week</div>${metricsHtml}</div>` : ''}
+      ${openItems.length ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">Open from last time</div>${openItems.map(({item, fromDate}) => `<div style="font-size:12px;padding:1px 0;">\u2022 ${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''}</div>`).join('')}</div>` : ''}
     </div>`;
-  });
+  }
   wrap.innerHTML = html;
 }
 
@@ -1552,21 +1620,29 @@ async function renderOnetimeReview(){
 // area is where the schedule, agenda bullets, and a running log of past meeting notes live. ----
 let meetingsShown = false;
 
+// Not-yet-saved rows for each meeting's "log this meeting" composer - action items typed in
+// before hitting "Log this meeting" live here in memory only, keyed by meeting id, so the
+// admin can add several before committing them all as one occurrence entry.
+let meetingDrafts = {};
+function getMeetingDraft(mid){
+  if(!meetingDrafts[mid]) meetingDrafts[mid] = { recordingUrl: '', notes: '', actionItems: [] };
+  return meetingDrafts[mid];
+}
+
 async function renderMeetings(){
   await refreshServerState();
   const view = document.getElementById('meetingsView');
 
-  const allTargets = [];
-  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
-    loc.data.forEach((emp, empIdx) => allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
-  });
+  const allTargets = allRosterTargets();
 
   let html = `
     <div class="monthly-header"><h1>Meetings</h1></div>
     <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 18px;">
       Recurring or one-time meetings with in-house teams or vendors. Anyone marked as an attendee
-      sees it on their own weekly view, a week ahead, as they page forward. Keep an agenda for
-      next time and a running log of notes from meetings already held.
+      sees it on their own weekly view, a week ahead, as they page forward. Each meeting can carry
+      reference links, a department's metrics to open with, and a log of past occurrences - notes,
+      the recording, and action items that stay visible (unchecked) until someone marks them done,
+      so nothing outstanding gets lost between meetings.
     </p>
     <div class="monthly-actions" style="margin-bottom:18px;">
       <button id="addMeetingBtn">+ Add meeting</button>
@@ -1577,16 +1653,21 @@ async function renderMeetings(){
     html += `<div class="empty-note">No meetings on file yet.</div>`;
   }
 
-  MEETINGS.forEach((m) => {
+  for(const m of MEETINGS){
     let whenLabel = '';
     if(m.cadence === 'Weekly') whenLabel = 'on ' + (m.dayOfWeek || '\u2014');
     else if(m.cadence === 'Monthly') whenLabel = '\u2014 day ' + (m.dayOfMonth || '\u2014') + ' of the month';
     else if(m.cadence === 'One-time') whenLabel = 'on ' + (m.onDate || '\u2014');
 
+    const openItems = openActionItemsAcrossLog(m.notesLog);
+    const metricsHtml = m.metricCategory ? await meetingMetricsSummaryHtml(m.metricCategory) : '';
+    const draft = getMeetingDraft(m.id);
+
     html += `<details class="setup-role" data-mid="${m.id}" style="margin-bottom:12px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
       <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
         ${escapeHtml(m.title || 'Untitled meeting')}
         <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.type || 'In-house')} \u00b7 ${escapeHtml(m.cadence || 'Weekly')} ${escapeHtml(whenLabel)}${m.time ? ' \u00b7 ' + escapeHtml(m.time) : ''}</span>
+        ${openItems.length ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">${openItems.length} open item${openItems.length===1?'':'s'}</span>` : ''}
       </summary>
       <div style="padding:6px 14px 16px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
@@ -1615,17 +1696,67 @@ async function renderMeetings(){
         <input type="text" class="m-external" placeholder="External / vendor attendees (free text)" value="${escapeAttr(m.externalAttendees||'')}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:8px;">
         <textarea class="m-agenda" placeholder="Agenda / bullet points for next meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:10px;">${escapeHtml(m.agenda||'')}</textarea>
 
-        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Notes from past meetings</label>
-        <div class="m-notes-log" style="margin-bottom:8px;">
-          ${(m.notesLog && m.notesLog.length) ? m.notesLog.slice().reverse().map((n) => `<div style="border-top:1px solid var(--win-border);padding:6px 0;font-size:12px;"><b>${escapeHtml(n.date)}</b><br>${escapeHtml(n.notes).replace(/\n/g,'<br>')}</div>`).join('') : '<div class="empty-note" style="padding:6px 0;">No notes logged yet.</div>'}
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Reference links (Google Sheets, docs, etc. pulled up during the meeting)</label>
+        <div class="m-links-list" style="margin-bottom:6px;">
+          ${(m.links||[]).map(lk => `<div class="m-link-row" data-lid="${lk.id}" style="display:flex;gap:6px;margin-bottom:5px;">
+            <input type="text" class="m-link-label" placeholder="Label (e.g. Metrics Dashboard 2026)" value="${escapeAttr(lk.label||'')}" style="width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <input type="text" class="m-link-url" placeholder="https://..." value="${escapeAttr(lk.url||'')}" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            ${lk.url ? `<a href="${escapeAttr(lk.url)}" target="_blank" rel="noopener" class="mini-btn" style="text-decoration:none;">Open</a>` : ''}
+            <button class="mini-btn danger-mini m-link-remove">Remove</button>
+          </div>`).join('')}
+        </div>
+        <button class="mini-btn m-link-add" style="margin-bottom:10px;">+ Add link</button>
+
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Department metrics shown at the start of this meeting</label>
+        <select class="m-metriccat" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;margin-bottom:8px;">
+          <option value="">None</option>
+          ${METRIC_CATEGORIES.map(c => `<option value="${c}" ${m.metricCategory===c?'selected':''}>${escapeAttr(c)}</option>`).join('')}
+        </select>
+        ${m.metricCategory ? `<div class="m-metrics-preview" style="border:1px solid var(--win-border);border-radius:6px;padding:6px 4px;margin-bottom:12px;">${metricsHtml}</div>` : ''}
+
+        ${openItems.length ? `
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Open action items to review (carried over until checked done)</label>
+        <div class="m-open-items" style="border:1px solid var(--win-border);border-radius:6px;padding:6px 10px;margin-bottom:12px;">
+          ${openItems.map(({item, entryId, fromDate}) => `<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;">
+            <input type="checkbox" class="m-item-toggle" data-entryid="${entryId}" data-itemid="${item.id}">
+            <span>${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''} <span style="color:var(--win-text-secondary);">(from ${escapeHtml(fromDate)})</span></span>
+          </label>`).join('')}
+        </div>` : ''}
+
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Past occurrences</label>
+        <div class="m-notes-log" style="margin-bottom:10px;">
+          ${(m.notesLog && m.notesLog.length) ? m.notesLog.slice().reverse().map((n) => `<div style="border-top:1px solid var(--win-border);padding:8px 0;font-size:12px;">
+            <b>${escapeHtml(n.date)}</b>${n.recordingUrl ? ` \u00b7 <a href="${escapeAttr(n.recordingUrl)}" target="_blank" rel="noopener">\u{1F3A5} Recording</a>` : ''}
+            ${n.notes ? `<div style="margin-top:4px;white-space:pre-line;">${escapeHtml(n.notes)}</div>` : ''}
+            ${(n.actionItems && n.actionItems.length) ? `<div style="margin-top:6px;">
+              ${n.actionItems.map(ai => `<label style="display:flex;align-items:center;gap:8px;padding:2px 0;${ai.done?'text-decoration:line-through;color:var(--win-text-secondary);':''}">
+                <input type="checkbox" class="m-item-toggle" data-entryid="${n.id}" data-itemid="${ai.id}" ${ai.done?'checked':''}>
+                <span>${escapeHtml(ai.text)}${ai.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===ai.assignedLoc&&x.empIdx===ai.assignedEmp)||{}).label||'')}</span>` : ''}</span>
+              </label>`).join('')}
+            </div>` : ''}
+          </div>`).join('') : '<div class="empty-note" style="padding:6px 0;">No occurrences logged yet.</div>'}
+        </div>
+
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Log this meeting</label>
+        <input type="text" class="m-new-recording" placeholder="Recording link (Zoom, Teams, Google Drive, Guidde...)" value="${escapeAttr(draft.recordingUrl)}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:6px;">
+        <textarea class="m-newnote" placeholder="Bullet points / notes from this meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:6px;">${escapeHtml(draft.notes)}</textarea>
+        <div class="m-draft-items" style="margin-bottom:6px;">
+          ${draft.actionItems.map((ai, ai_i) => `<div class="m-draft-item-row" data-ai="${ai_i}" style="display:flex;gap:6px;margin-bottom:5px;">
+            <input type="text" class="m-draft-item-text" placeholder="Action item / task..." value="${escapeAttr(ai.text)}" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <select class="m-draft-item-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+              <option value="">Unassigned</option>
+              ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${ai.assignedKey===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+            </select>
+            <button class="mini-btn danger-mini m-draft-item-remove">Remove</button>
+          </div>`).join('')}
         </div>
         <div style="display:flex;gap:8px;">
-          <textarea class="m-newnote" placeholder="Add notes from a meeting that just happened..." style="flex:1;min-height:44px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;"></textarea>
-          <button class="mini-btn primary-mini m-addnote">+ Log note</button>
+          <button class="mini-btn m-draft-item-add">+ Add action item</button>
+          <button class="mini-btn primary-mini m-addnote">Log this meeting</button>
         </div>
       </div>
     </details>`;
-  });
+  }
 
   view.innerHTML = html;
   wireMeetingsHandlers(view);
@@ -1633,7 +1764,7 @@ async function renderMeetings(){
 
 function wireMeetingsHandlers(view){
   document.getElementById('addMeetingBtn').onclick = async () => {
-    MEETINGS.push({ id: newMeetingId(), title: 'New meeting', type: 'In-house', cadence: 'Weekly', dayOfWeek: 'Monday', dayOfMonth: '', onDate: '', time: '', attendeeRoles: [], externalAttendees: '', agenda: '', notesLog: [] });
+    MEETINGS.push({ id: newMeetingId(), title: 'New meeting', type: 'In-house', cadence: 'Weekly', dayOfWeek: 'Monday', dayOfMonth: '', onDate: '', time: '', attendeeRoles: [], externalAttendees: '', agenda: '', links: [], metricCategory: '', notesLog: [] });
     await saveMeetingsList();
     await renderMeetings();
   };
@@ -1680,19 +1811,110 @@ function wireMeetingsHandlers(view){
       if(!confirm('Remove this meeting series? Its notes log goes with it.')) return;
       const i = MEETINGS.findIndex(x => x.id === mid);
       if(i > -1) MEETINGS.splice(i, 1);
+      delete meetingDrafts[mid];
       await saveMeetingsList();
+      await renderMeetings();
+    };
+
+    // Reference links: label/url inputs bind straight to the array; add/remove re-render.
+    card.querySelectorAll('.m-link-row').forEach(row => {
+      const lid = row.dataset.lid;
+      const labelEl = row.querySelector('.m-link-label');
+      const urlEl = row.querySelector('.m-link-url');
+      const save = async () => {
+        const m = findM(); if(!m) return;
+        const lk = (m.links||[]).find(x => x.id === lid); if(!lk) return;
+        lk.label = labelEl.value; lk.url = urlEl.value;
+        await saveMeetingsList();
+      };
+      if(labelEl) labelEl.onchange = save;
+      if(urlEl) urlEl.onchange = async () => { await save(); await renderMeetings(); }; // re-render so the Open link appears
+      const removeBtn = row.querySelector('.m-link-remove');
+      if(removeBtn) removeBtn.onclick = async () => {
+        const m = findM(); if(!m) return;
+        m.links = (m.links||[]).filter(x => x.id !== lid);
+        await saveMeetingsList();
+        await renderMeetings();
+      };
+    });
+    const linkAddBtn = card.querySelector('.m-link-add');
+    if(linkAddBtn) linkAddBtn.onclick = async () => {
+      const m = findM(); if(!m) return;
+      if(!m.links) m.links = [];
+      m.links.push({ id: newMeetingLinkId(), label: '', url: '' });
+      await saveMeetingsList();
+      await renderMeetings();
+    };
+
+    const metricCatEl = card.querySelector('.m-metriccat');
+    if(metricCatEl) metricCatEl.onchange = async (e) => {
+      const m = findM(); if(!m) return;
+      m.metricCategory = e.target.value;
+      await saveMeetingsList();
+      await renderMeetings();
+    };
+
+    // Open-item checkboxes appear both in the "review" summary and inside each logged
+    // occurrence - both share this same handler, toggling the item wherever it actually lives.
+    card.querySelectorAll('.m-item-toggle').forEach(cb => {
+      cb.onchange = async (e) => {
+        const m = findM(); if(!m) return;
+        const entry = (m.notesLog||[]).find(x => x.id === cb.dataset.entryid);
+        if(!entry) return;
+        const item = (entry.actionItems||[]).find(x => x.id === cb.dataset.itemid);
+        if(!item) return;
+        item.done = e.target.checked;
+        await saveMeetingsList();
+        await renderMeetings();
+      };
+    });
+
+    // Draft ("log this meeting") composer - kept in meetingDrafts until saved, so the admin
+    // can add several action items before committing them all as one occurrence entry.
+    const draft = getMeetingDraft(mid);
+    const recEl = card.querySelector('.m-new-recording');
+    if(recEl) recEl.onchange = (e) => { draft.recordingUrl = e.target.value; };
+    const noteEl = card.querySelector('.m-newnote');
+    if(noteEl) noteEl.onchange = (e) => { draft.notes = e.target.value; };
+
+    card.querySelectorAll('.m-draft-item-row').forEach(row => {
+      const idx = parseInt(row.dataset.ai, 10);
+      const textEl = row.querySelector('.m-draft-item-text');
+      const assignEl = row.querySelector('.m-draft-item-assign');
+      if(textEl) textEl.onchange = (e) => { if(draft.actionItems[idx]) draft.actionItems[idx].text = e.target.value; };
+      if(assignEl) assignEl.onchange = (e) => { if(draft.actionItems[idx]) draft.actionItems[idx].assignedKey = e.target.value; };
+      const removeBtn = row.querySelector('.m-draft-item-remove');
+      if(removeBtn) removeBtn.onclick = async () => {
+        draft.actionItems.splice(idx, 1);
+        await renderMeetings();
+      };
+    });
+    const addItemBtn = card.querySelector('.m-draft-item-add');
+    if(addItemBtn) addItemBtn.onclick = async () => {
+      draft.actionItems.push({ text: '', assignedKey: '' });
       await renderMeetings();
     };
 
     const addNoteBtn = card.querySelector('.m-addnote');
     if(addNoteBtn) addNoteBtn.onclick = async () => {
-      const ta = card.querySelector('.m-newnote');
-      const text = (ta.value || '').trim();
-      if(!text) return;
       const m = findM(); if(!m) return;
+      const recordingUrl = (card.querySelector('.m-new-recording')||{}).value || '';
+      const notes = (card.querySelector('.m-newnote')||{}).value || '';
+      const items = draft.actionItems
+        .map(ai => ({ ...ai, text: (ai.text||'').trim() }))
+        .filter(ai => ai.text)
+        .map(ai => {
+          const [locKey, empIdxStr] = (ai.assignedKey||'').split('::');
+          return {
+            id: newActionItemId(), text: ai.text, done: false,
+            assignedLoc: ai.assignedKey ? locKey : '', assignedEmp: ai.assignedKey ? parseInt(empIdxStr,10) : null
+          };
+        });
+      if(!recordingUrl.trim() && !notes.trim() && items.length === 0) return; // nothing to log
       if(!m.notesLog) m.notesLog = [];
-      m.notesLog.push({ date: isoDate(new Date()), notes: text });
+      m.notesLog.push({ id: newMeetingEntryId(), date: isoDate(new Date()), recordingUrl: recordingUrl.trim(), notes: notes.trim(), actionItems: items });
       await saveMeetingsList();
+      delete meetingDrafts[mid];
       await renderMeetings();
     };
   });
