@@ -238,6 +238,12 @@
   .metric-entry-btn{ display:block; margin:4px auto 0; border:1px solid var(--win-border-strong); background:#fff; border-radius:5px; width:22px;height:20px; cursor:pointer; font-size:11px; padding:0; }
   .metric-entry-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); }
   .metric-entry-btn.has-value{ border-color:var(--win-accent); background:var(--win-accent-light); }
+  /* Stands in for the C/I/O checkbox on a task whose completion IS entering a metric number -
+     unfilled looks like an outstanding to-do (accent outline), filled looks like a completed
+     task (solid green), same visual language as the checkbox it replaces. */
+  .metric-replaces-task{ display:block; width:auto; height:auto; margin:0 auto; padding:4px 7px; font-size:11px; font-weight:600; border-radius:6px; white-space:nowrap; border:1px solid var(--win-accent); color:var(--win-accent); background:#fff; }
+  .metric-replaces-task:hover{ background:var(--win-accent-light); }
+  .metric-replaces-task.has-value{ border-color:var(--c-complete); color:#fff; background:var(--c-complete); }
 </style>
 </head>
 <body>
@@ -582,6 +588,31 @@ async function loadMetricEntries(metricId){
 async function saveMetricEntries(metricId, obj){
   await storSet(metricEntriesKey(metricId), JSON.stringify(obj));
 }
+// Entering a metric's number IS the proof of work for any task linked to it via
+// linkedMetricId - no separate checkbox needed on top of it. Whenever a value is saved
+// (from the inline day-cell button or the My Metrics panel) this finds every task across
+// every role that points at this metric and marks it Complete for that date; clearing the
+// value un-marks it the same way, so the two stay in lockstep and nobody has to do both.
+async function syncLinkedTaskStatuses(metricId, dateStr, hasValue){
+  const jobs = [];
+  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
+    loc.data.forEach((emp, empIdx) => {
+      emp.tasks.forEach((t) => {
+        if(t.linkedMetricId === metricId){
+          jobs.push({ locKey, empIdx, taskId: t.id });
+        }
+      });
+    });
+  });
+  if(jobs.length === 0) return;
+  await Promise.all(jobs.map(async ({locKey, empIdx, taskId}) => {
+    const obj = await loadStatuses(locKey, empIdx, dateStr);
+    if(hasValue){ obj[taskId] = 'C'; } else { delete obj[taskId]; }
+    const key = statusKey(locKey, empIdx, dateStr);
+    statusCache[key] = obj;
+    await storSet(key, JSON.stringify(obj));
+  }));
+}
 
 // ---- Training suite. Entries (title, platform, type, url, who it's for, manager-only flag,
 // optional linked KPI) are staff-gated the same way roster/meetings/metrics are - owner OR
@@ -851,8 +882,10 @@ function openMetricEntryModal(metric, date, onSaved){
   saveBtn.onclick = async () => {
     const input = document.getElementById('metricEntryInput');
     const entries = await loadMetricEntries(metric.id);
-    if(input.value === ''){ delete entries[dateStr]; } else { entries[dateStr] = input.value; }
+    const hasValue = input.value !== '';
+    if(hasValue){ entries[dateStr] = input.value; } else { delete entries[dateStr]; }
     await saveMetricEntries(metric.id, entries);
+    await syncLinkedTaskStatuses(metric.id, dateStr, hasValue);
     closePhotoModal();
     if(onSaved) onSaved();
   };
@@ -1013,18 +1046,25 @@ async function renderMain(){
           return;
         }
         const val = dayStatuses[i][t.id] || '';
-        let metricBtnHtml = '';
-        if(linkedMetric && metricValidOnDate(linkedMetric, d)){
+        // A task linked to a metric is verified BY that metric's number, not by a separate
+        // checkbox - on days the metric is valid to log, the entry button IS the task's
+        // completion control (entering a value marks it Complete, clearing it un-marks it,
+        // via syncLinkedTaskStatuses). No C/I/O shown alongside it - that would just be the
+        // same completion tracked twice.
+        const metricGatesThisDay = linkedMetric && metricValidOnDate(linkedMetric, d);
+        if(metricGatesThisDay){
           const mEntries = linkedMetricEntries[linkedMetric.id] || {};
           const mVal = mEntries[isoDate(d)];
           const hasVal = mVal !== undefined && mVal !== '';
-          metricBtnHtml = `<button class="metric-entry-btn${hasVal ? ' has-value' : ''}" data-taskid="${t.id}" data-dayindex="${i}" data-metricid="${linkedMetric.id}" title="${hasVal ? escapeAttr(linkedMetric.name)+': '+escapeAttr(String(mVal)) : 'Enter '+escapeAttr(linkedMetric.name)}">${hasVal ? escapeHtml(String(mVal)) : '🔢'}</button>`;
-        }
-        html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
+          const metricBtnHtml = `<button class="metric-entry-btn metric-replaces-task${hasVal ? ' has-value' : ''}" data-taskid="${t.id}" data-dayindex="${i}" data-metricid="${linkedMetric.id}" title="${hasVal ? 'Complete — '+escapeAttr(linkedMetric.name)+': '+escapeAttr(String(mVal)) : 'Enter '+escapeAttr(linkedMetric.name)+' to complete this task'}">${hasVal ? '✓ '+escapeHtml(String(mVal)) : '\u{1F522} Enter'}</button>`;
+          html += `<td class="day-cell">${metricBtnHtml}</td>`;
+        } else {
+          html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
           <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C">C</button>
           <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I">I</button>
           <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O">O</button>
-        </div>${metricBtnHtml}</td>`;
+        </div></td>`;
+        }
       });
       html += '</tr>';
     });
@@ -1204,8 +1244,10 @@ async function renderMetricsPanel(dates){
       input.onchange = async () => {
         const entries = entriesByMetric[mid];
         const dk = input.dataset.datekey;
-        if(input.value === ''){ delete entries[dk]; } else { entries[dk] = input.value; }
+        const hasValue = input.value !== '';
+        if(hasValue){ entries[dk] = input.value; } else { delete entries[dk]; }
         await saveMetricEntries(mid, entries);
+        await syncLinkedTaskStatuses(mid, dk, hasValue);
         showToast('Saved');
       };
     });
