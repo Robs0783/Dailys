@@ -746,6 +746,99 @@ function unverifiedCompletedAcrossLog(notesLog){
   out.sort((a,b) => ((ACTION_ITEM_STATUS[a.item.id]||{}).doneAt||'').localeCompare((ACTION_ITEM_STATUS[b.item.id]||{}).doneAt||''));
   return out;
 }
+// The most recently logged occurrence of a meeting, with its bullet points and action items
+// (each item's live done/notes/links pulled from ACTION_ITEM_STATUS, not frozen at log time) -
+// this is the "review last time's items" data shown both inline (reviewSectionHtml) and on the
+// printable page (buildMeetingPrintHtml). Returns null if the meeting has never been logged.
+function lastMeetingReview(meeting){
+  const log = meeting.notesLog || [];
+  if(log.length === 0) return null;
+  const entry = log[log.length - 1]; // notesLog is pushed in chronological order
+  const targets = allRosterTargets();
+  const items = (entry.actionItems || []).map(ai => ({
+    text: ai.text,
+    deadline: ai.deadline || '',
+    who: (targets.find(x => x.locKey===ai.assignedLoc && x.empIdx===ai.assignedEmp)||{}).label || '',
+    done: actionItemDone(ai.id),
+    notes: actionItemNotes(ai.id),
+    links: actionItemLinks(ai.id)
+  }));
+  return { date: entry.date, notes: entry.notes || '', items };
+}
+function reviewItemsHtml(items, forPrint){
+  if(!items || items.length === 0) return `<div style="${forPrint?'color:#888;':''}font-size:${forPrint?'13px':'12.5px'};padding:4px 0;">No action items were logged from that meeting.</div>`;
+  return items.map(it => `<div style="padding:5px 0;border-top:1px solid ${forPrint?'#ddd':'var(--win-border)'};">
+    <div style="font-size:${forPrint?'13px':'12.5px'};${it.done?`text-decoration:line-through;color:${forPrint?'#888':'var(--win-text-secondary)'};`:''}">${it.done ? '☑' : '☐'} ${escapeHtml(it.text)}${it.who ? ` <span style="color:${forPrint?'#666':'var(--win-text-secondary)'};">— ${escapeHtml(it.who)}</span>` : ''}${it.deadline ? ` <span style="color:${forPrint?'#666':'var(--win-text-secondary)'};">· due ${escapeHtml(it.deadline)}</span>` : ''}</div>
+    ${it.notes ? `<div style="font-size:11.5px;color:${forPrint?'#666':'var(--win-text-secondary)'};margin-left:18px;margin-top:2px;">Note from assignee: ${escapeHtml(it.notes)}</div>` : ''}
+    ${it.links.length ? `<div style="margin-left:18px;margin-top:2px;">${it.links.map(lk => forPrint
+        ? `<a href="${escapeAttr(lk.url)}" style="font-size:11.5px;color:#333;margin-right:10px;">${escapeHtml(lk.label || lk.url)}</a>`
+        : `<a href="${escapeAttr(lk.url)}" target="_blank" rel="noopener" style="display:inline-block;font-size:11px;border:1px solid var(--win-border-strong);border-radius:5px;padding:2px 7px;margin:2px 4px 0 0;color:var(--win-accent);text-decoration:none;">${escapeHtml(lk.label || lk.url)}</a>`
+      ).join('')}</div>` : ''}
+  </div>`).join('');
+}
+// Inline "Review — last time's items" box shown right under the Agenda field on each meeting's
+// admin card.
+function reviewSectionHtml(meeting){
+  const rv = lastMeetingReview(meeting);
+  if(!rv) return `<div class="empty-note" style="padding:2px 0;">No previous occurrence logged yet.</div>`;
+  const bullets = bulletListHtml(rv.notes);
+  return `<div style="font-size:11px;color:var(--win-text-secondary);margin-bottom:4px;">From ${escapeHtml(rv.date)}</div>
+    ${bullets || `<div class="empty-note" style="padding:2px 0;">No bullet points were logged that time.</div>`}
+    <div style="margin-top:8px;">${reviewItemsHtml(rv.items, false)}</div>`;
+}
+// Builds a standalone printable HTML page for a meeting - date, attendees, the agenda you
+// entered, and the same "review last time's items" content shown inline. Works from either the
+// owner's Meetings admin card or an attendee's own "Meetings this week" panel, since it only
+// reads data every signed-in device already has (nothing here needs the admin code).
+function buildMeetingPrintHtml(meeting){
+  const targets = allRosterTargets();
+  const attendeeLabels = (meeting.attendeeRoles || []).map(key => {
+    const [locKey, empIdxStr] = key.split('::');
+    const empIdx = parseInt(empIdxStr, 10);
+    return (targets.find(x => x.locKey===locKey && x.empIdx===empIdx)||{}).label;
+  }).filter(Boolean);
+  if(meeting.externalAttendees) attendeeLabels.push(meeting.externalAttendees);
+
+  let whenLabel = '';
+  if(meeting.cadence === 'Weekly') whenLabel = 'Weekly on ' + (meeting.dayOfWeek || '—');
+  else if(meeting.cadence === 'Monthly') whenLabel = 'Monthly — day ' + (meeting.dayOfMonth || '—');
+  else if(meeting.cadence === 'One-time') whenLabel = 'One-time on ' + (meeting.onDate || '—');
+
+  const agendaHtml = bulletListHtml(meeting.agenda) || '<p style="color:#888;">No agenda items entered.</p>';
+  const rv = lastMeetingReview(meeting);
+  const reviewBullets = rv ? (bulletListHtml(rv.notes) || '<p style="color:#888;">No bullet points were logged that time.</p>') : '<p style="color:#888;">No previous occurrence logged yet.</p>';
+  const reviewItems = rv ? reviewItemsHtml(rv.items, true) : '';
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(meeting.title||'Meeting')} — Print</title>
+<style>
+  body{ font-family:'Segoe UI', Arial, sans-serif; color:#1a1a1a; max-width:720px; margin:28px auto; padding:0 18px; }
+  h1{ font-size:21px; margin:0 0 2px; }
+  .meta{ color:#666; font-size:13px; margin-bottom:20px; }
+  h2{ font-size:13.5px; text-transform:uppercase; letter-spacing:.04em; color:#555; border-bottom:1px solid #ddd; padding-bottom:5px; margin-top:26px; }
+  ol{ margin:6px 0 0 20px; padding:0; } li{ margin-bottom:4px; }
+  .print-btn{ margin-top:28px; padding:9px 18px; font-size:13px; cursor:pointer; }
+  @media print{ .print-btn{ display:none; } }
+</style></head><body>
+  <h1>${escapeHtml(meeting.title || 'Untitled meeting')}</h1>
+  <div class="meta">${escapeHtml(whenLabel)}${meeting.time ? ' · ' + escapeHtml(meeting.time) : ''} · ${escapeHtml(meeting.type||'')} · Printed ${escapeHtml(todayStr())}</div>
+  <h2>Attendees</h2>
+  <p>${attendeeLabels.length ? escapeHtml(attendeeLabels.join(', ')) : 'None listed'}</p>
+  <h2>Agenda</h2>
+  ${agendaHtml}
+  <h2>Review — items from last time${rv ? ' (' + escapeHtml(rv.date) + ')' : ''}</h2>
+  ${reviewBullets}
+  ${reviewItems}
+  <button class="print-btn" onclick="window.print()">Print this page</button>
+</body></html>`;
+}
+function openMeetingPrint(meetingId){
+  const m = MEETINGS.find(x => x.id === meetingId);
+  if(!m) return;
+  const html = buildMeetingPrintHtml(m);
+  const w = window.open('', '_blank');
+  if(!w){ showToast('Allow pop-ups to print this'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
 // Every open action item across EVERY meeting, assigned to one specific person - this is
 // what powers their own "My Action Items" work-plan panel.
 function myMeetingActionItems(locKey, empIdx){
@@ -956,6 +1049,15 @@ function escapeAttr(s){
 }
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// Turns a bullet-points textarea's raw value (one item per line) into a numbered 1,2,3...
+// vertical list for display - used for meeting agendas and meeting notes wherever they're
+// shown (the admin review section, the employee's weekly view, and the printable page).
+// Returns '' for empty input so callers can fall back to their own "nothing entered" message.
+function bulletListHtml(text){
+  const lines = String(text||'').split('\n').map(s => s.trim()).filter(Boolean);
+  if(lines.length === 0) return '';
+  return `<ol style="margin:4px 0 0 20px;padding:0;">${lines.map(l => `<li style="margin-bottom:3px;">${escapeHtml(l)}</li>`).join('')}</ol>`;
 }
 function getKpiForTask(loc, empIdx, taskId){
   try{
@@ -1626,14 +1728,20 @@ async function renderMeetingsPanel(dates){
     const openItems = openActionItemsAcrossLog(meeting.notesLog);
     const metricsHtml = meeting.metricCategory ? await meetingMetricsSummaryHtml(meeting.metricCategory) : '';
     html += `<div style="border:1px solid var(--win-border);border-radius:6px;padding:9px 12px;margin-bottom:6px;background:var(--win-surface);">
-      <div style="font-size:12.5px;font-weight:600;">${escapeHtml(meeting.title||'Untitled meeting')} <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${dowFmt(date)}${meeting.time ? ' \u00b7 ' + escapeHtml(meeting.time) : ''} \u00b7 ${escapeHtml(meeting.type||'')}</span></div>
-      ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;white-space:pre-line;">${escapeHtml(meeting.agenda)}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12.5px;font-weight:600;">${escapeHtml(meeting.title||'Untitled meeting')} <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${dowFmt(date)}${meeting.time ? ' \u00b7 ' + escapeHtml(meeting.time) : ''} \u00b7 ${escapeHtml(meeting.type||'')}</span></span>
+        <button class="mini-btn mp-print-btn" data-mid="${meeting.id}" style="margin-left:auto;">\u{1F5A8} Print</button>
+      </div>
+      ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;">${bulletListHtml(meeting.agenda)}</div>` : ''}
       ${(meeting.links && meeting.links.length) ? `<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">${meeting.links.filter(l=>l.url).map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" class="attach-chip">\u{1F517} ${escapeHtml(l.label||l.url)}</a>`).join('')}</div>` : ''}
       ${metricsHtml ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">${escapeHtml(meeting.metricCategory)} this week</div>${metricsHtml}</div>` : ''}
       ${openItems.length ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">Open from last time</div>${openItems.map(({item, fromDate}) => `<div style="font-size:12px;padding:1px 0;">\u2022 ${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''}${item.deadline ? ` <span style="color:var(--win-text-secondary);">\u00b7 due ${escapeHtml(item.deadline)}</span>` : ''}</div>`).join('')}</div>` : ''}
     </div>`;
   }
   wrap.innerHTML = html;
+  wrap.querySelectorAll('.mp-print-btn').forEach(btn => {
+    btn.onclick = () => openMeetingPrint(btn.dataset.mid);
+  });
 }
 
 async function renderOnetimePanel(){
@@ -1909,6 +2017,12 @@ async function renderOnetimeReview(){
 // area is where the schedule, agenda bullets, and a running log of past meeting notes live. ----
 let meetingsShown = false;
 
+// Which meeting cards are currently expanded - renderMeetings() rebuilds the whole view's HTML
+// on every edit (a checkbox, a saved field, anything), which would otherwise collapse every
+// <details> back closed each time. Re-applying this set after each render is what keeps a
+// meeting open while you work in it.
+let expandedMeetingIds = new Set();
+
 // Not-yet-saved rows for each meeting's "log this meeting" composer - action items typed in
 // before hitting "Log this meeting" live here in memory only, keyed by meeting id, so the
 // admin can add several before committing them all as one occurrence entry.
@@ -1953,7 +2067,7 @@ async function renderMeetings(){
     const metricsHtml = m.metricCategory ? await meetingMetricsSummaryHtml(m.metricCategory) : '';
     const draft = getMeetingDraft(m.id);
 
-    html += `<details class="setup-role" data-mid="${m.id}" style="margin-bottom:12px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+    html += `<details class="setup-role" data-mid="${m.id}" ${expandedMeetingIds.has(m.id) ? 'open' : ''} style="margin-bottom:12px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
       <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
         ${escapeHtml(m.title || 'Untitled meeting')}
         <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.type || 'In-house')} \u00b7 ${escapeHtml(m.cadence || 'Weekly')} ${escapeHtml(whenLabel)}${m.time ? ' \u00b7 ' + escapeHtml(m.time) : ''}</span>
@@ -1985,7 +2099,17 @@ async function renderMeetings(){
           ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.attendeeRoles||[]).includes(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
         </select>
         <input type="text" class="m-external" placeholder="External / vendor attendees (free text)" value="${escapeAttr(m.externalAttendees||'')}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:8px;">
-        <textarea class="m-agenda" placeholder="Agenda / bullet points for next meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:10px;">${escapeHtml(m.agenda||'')}</textarea>
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Agenda — one item per line, shows as a numbered 1, 2, 3... list</label>
+        <textarea class="m-agenda" placeholder="One agenda item per line..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:6px;">${escapeHtml(m.agenda||'')}</textarea>
+
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Review — last time's items (previous occurrence's bullet points, plus action items assigned then with any notes the assignee added when they completed their part)</label>
+        <div style="border:1px solid var(--win-border);border-radius:6px;padding:8px 10px;margin-bottom:12px;background:#FAFAFA;">
+          ${reviewSectionHtml(m)}
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" class="mini-btn m-print-btn">\u{1F5A8} Print / PDF (date, attendees, agenda, review)</button>
+        </div>
 
         <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Reference links (Google Sheets, docs, etc. pulled up during the meeting)</label>
         <div class="m-links-list" style="margin-bottom:6px;">
@@ -2044,7 +2168,7 @@ async function renderMeetings(){
         <div class="m-notes-log" style="margin-bottom:10px;">
           ${(m.notesLog && m.notesLog.length) ? m.notesLog.slice().reverse().map((n) => `<div style="border-top:1px solid var(--win-border);padding:8px 0;font-size:12px;">
             <b>${escapeHtml(n.date)}</b>${n.recordingUrl ? ` \u00b7 <a href="${escapeAttr(n.recordingUrl)}" target="_blank" rel="noopener">\u{1F3A5} Recording</a>` : ''}
-            ${n.notes ? `<div style="margin-top:4px;white-space:pre-line;">${escapeHtml(n.notes)}</div>` : ''}
+            ${n.notes ? `<div style="margin-top:4px;">${bulletListHtml(n.notes) || escapeHtml(n.notes)}</div>` : ''}
             ${(n.actionItems && n.actionItems.length) ? `<div style="margin-top:6px;">
               ${n.actionItems.map(ai => {
                 const done = actionItemDone(ai.id);
@@ -2067,7 +2191,7 @@ async function renderMeetings(){
 
         <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Log this meeting</label>
         <input type="text" class="m-new-recording" placeholder="Recording link (Zoom, Teams, Google Drive, Guidde...)" value="${escapeAttr(draft.recordingUrl)}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:6px;">
-        <textarea class="m-newnote" placeholder="Bullet points / notes from this meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:6px;">${escapeHtml(draft.notes)}</textarea>
+        <textarea class="m-newnote" placeholder="One bullet point per line..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:6px;">${escapeHtml(draft.notes)}</textarea>
         <div class="m-draft-items" style="margin-bottom:6px;">
           ${draft.actionItems.map((ai, ai_i) => `<div class="m-draft-item-row" data-ai="${ai_i}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
             <input type="text" class="m-draft-item-text" placeholder="Action item / task..." value="${escapeAttr(ai.text)}" style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
@@ -2101,6 +2225,13 @@ function wireMeetingsHandlers(view){
   view.querySelectorAll('details[data-mid]').forEach(card => {
     const mid = card.dataset.mid;
     const findM = () => MEETINGS.find(m => m.id === mid);
+
+    // Keep expandedMeetingIds in sync with manual open/close too, not just re-renders -
+    // this also fires right after we re-apply the "open" attribute on render, which is fine,
+    // it just re-adds the id that's already there.
+    card.addEventListener('toggle', () => {
+      if(card.open) expandedMeetingIds.add(mid); else expandedMeetingIds.delete(mid);
+    });
 
     const bind = (sel, prop, parse) => {
       const el = card.querySelector(sel);
@@ -2144,6 +2275,9 @@ function wireMeetingsHandlers(view){
       await saveMeetingsList();
       await renderMeetings();
     };
+
+    const printEl = card.querySelector('.m-print-btn');
+    if(printEl) printEl.onclick = () => openMeetingPrint(mid);
 
     // Reference links: label/url inputs bind straight to the array; add/remove re-render.
     card.querySelectorAll('.m-link-row').forEach(row => {
