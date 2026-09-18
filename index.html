@@ -315,6 +315,8 @@
 
       <div id="meetingsPanelWrap" style="margin-top:22px;"></div>
 
+      <div id="actionItemsPanelWrap" style="margin-top:22px;"></div>
+
       <div id="projectsPanelWrap" style="margin-top:22px;"></div>
 
       <div id="metricsPanelWrap" style="margin-top:22px;"></div>
@@ -521,6 +523,12 @@ let MEETINGS = [];
 let PROJECTS = [];
 let TRAINING = [];
 let TARGETS = [];
+// Whether a meeting action item is done, and any notes the assignee left about their work
+// on it, live in their OWN store key - deliberately NOT inside 'meetings' (which is staff-
+// gated). This is the same split used for metric entries vs metric definitions: staff define
+// the item (text/assignee/deadline), but checking it off and leaving a note is the assignee's
+// own legitimate write and needs to work without staff access, right from their work plan.
+let ACTION_ITEM_STATUS = {};
 async function refreshServerState(){
   try{
     const res = await fetch('/api/state');
@@ -547,6 +555,8 @@ async function refreshServerState(){
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
     try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
     catch(e){ console.error('Bad targets data, resetting', e); TARGETS = []; }
+    try{ ACTION_ITEM_STATUS = SERVER_STATE['action-item-status'] ? JSON.parse(SERVER_STATE['action-item-status']) : {}; }
+    catch(e){ console.error('Bad action item status data, resetting', e); ACTION_ITEM_STATUS = {}; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -659,18 +669,53 @@ function meetingOccursOn(meeting, date){
 function newActionItemId(){ return 'ai-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newMeetingLinkId(){ return 'mlk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newMeetingEntryId(){ return 'ment-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+// Done/notes for a meeting action item - see the comment on ACTION_ITEM_STATUS above for why
+// these live in their own non-gated store instead of inside the (staff-gated) meeting itself.
+async function saveActionItemStatus(){
+  await storSet('action-item-status', JSON.stringify(ACTION_ITEM_STATUS));
+}
+function actionItemDone(itemId){ return !!(ACTION_ITEM_STATUS[itemId] && ACTION_ITEM_STATUS[itemId].done); }
+function actionItemNotes(itemId){ return (ACTION_ITEM_STATUS[itemId] && ACTION_ITEM_STATUS[itemId].notes) || ''; }
+async function setActionItemDone(itemId, done){
+  if(!ACTION_ITEM_STATUS[itemId]) ACTION_ITEM_STATUS[itemId] = {};
+  ACTION_ITEM_STATUS[itemId].done = done;
+  ACTION_ITEM_STATUS[itemId].doneAt = done ? isoDate(new Date()) : '';
+  await saveActionItemStatus();
+}
+async function setActionItemNotes(itemId, notes){
+  if(!ACTION_ITEM_STATUS[itemId]) ACTION_ITEM_STATUS[itemId] = {};
+  ACTION_ITEM_STATUS[itemId].notes = notes;
+  await saveActionItemStatus();
+}
 // Every open (not-done) action item logged across every past occurrence of a meeting -
 // this is how "carried over to review next time" works: nothing is copied anywhere, an
 // item just keeps showing up here, from whichever meeting it was first logged in, until
-// someone checks it done.
+// someone checks it done. Sorted so the soonest deadline (and anything already overdue)
+// surfaces first, undated items last.
 function openActionItemsAcrossLog(notesLog){
   const out = [];
   (notesLog||[]).forEach(entry => {
     (entry.actionItems||[]).forEach(ai => {
-      if(!ai.done) out.push({ item: ai, entryId: entry.id, fromDate: entry.date });
+      if(!actionItemDone(ai.id)) out.push({ item: ai, entryId: entry.id, fromDate: entry.date });
     });
   });
-  out.sort((a,b) => (a.fromDate||'').localeCompare(b.fromDate||''));
+  out.sort((a,b) => (a.item.deadline||'9999-99-99').localeCompare(b.item.deadline||'9999-99-99'));
+  return out;
+}
+// Every open action item across EVERY meeting, assigned to one specific person - this is
+// what powers their own "My Action Items" work-plan panel.
+function myMeetingActionItems(locKey, empIdx){
+  const out = [];
+  MEETINGS.forEach(m => {
+    (m.notesLog||[]).forEach(entry => {
+      (entry.actionItems||[]).forEach(ai => {
+        if(ai.assignedLoc === locKey && ai.assignedEmp === empIdx && !actionItemDone(ai.id)){
+          out.push({ meeting: m, entry, item: ai });
+        }
+      });
+    });
+  });
+  out.sort((a,b) => (a.item.deadline||'9999-99-99').localeCompare(b.item.deadline||'9999-99-99'));
   return out;
 }
 // A compact "how's this department doing" table shown at the top of a meeting - Daily
@@ -1173,6 +1218,7 @@ async function renderMain(){
 
   computeSummary(dates, countableTasks);
   await renderMeetingsPanel(dates);
+  await renderActionItemsPanel();
   renderProjectsPanel();
   await renderMetricsPanel(dates);
 
@@ -1200,6 +1246,49 @@ function renderAttachmentChips(attachments){
     }
     return `<span class="attach-chip">\u{1F4CE} <a href="${a.dataUrl}" download="${escapeAttr(a.name || 'file')}">${escapeHtml(a.name || 'File')}</a></span>`;
   }).join('');
+}
+// ---- Employee-facing "My Action Items" work plan panel: every meeting action item
+// assigned to the employee currently being viewed, across every meeting, oldest deadline
+// first. This is the employee's own view of the same items staff assign and review from the
+// Meetings admin screen - checking one off or leaving a note here writes to the shared,
+// non-gated ACTION_ITEM_STATUS store, so it updates everywhere (including the meeting's own
+// "open items to review" list) without needing staff access. ----
+async function renderActionItemsPanel(){
+  const wrap = document.getElementById('actionItemsPanelWrap');
+  if(!wrap) return;
+  const items = myMeetingActionItems(currentLoc, currentEmployee);
+  if(items.length === 0){ wrap.innerHTML = ''; return; }
+  const today = isoDate(new Date());
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Action Items (from meetings)</div>`;
+  items.forEach(({meeting, item}) => {
+    const overdue = item.deadline && item.deadline < today;
+    const notes = actionItemNotes(item.id);
+    html += `<div class="task-card" data-itemid="${item.id}" style="padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:12.5px;font-weight:600;flex:1;min-width:180px;">${escapeHtml(item.text)}</span>
+        <span style="font-size:11px;color:var(--win-text-secondary);">${escapeHtml(meeting.title||'Meeting')}</span>
+        ${item.deadline ? `<span class="status-pill-sm" style="background:${overdue?'var(--kpi-bad)':'var(--kpi-risk)'};">${overdue?'Overdue — ':'Due '}${escapeHtml(item.deadline)}</span>` : ''}
+        <button class="mini-btn primary-mini ai-complete-btn">Mark complete</button>
+      </div>
+      <textarea class="ai-notes-input" placeholder="Notes on your work (optional)..." style="width:100%;min-height:36px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-top:8px;">${escapeHtml(notes)}</textarea>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('[data-itemid]').forEach(card => {
+    const itemId = card.dataset.itemid;
+    const completeBtn = card.querySelector('.ai-complete-btn');
+    if(completeBtn) completeBtn.onclick = async () => {
+      await setActionItemDone(itemId, true);
+      showToast('Marked complete');
+      await renderActionItemsPanel();
+    };
+    const notesEl = card.querySelector('.ai-notes-input');
+    if(notesEl) notesEl.onchange = async (e) => {
+      await setActionItemNotes(itemId, e.target.value);
+      showToast('Saved');
+    };
+  });
 }
 function renderProjectsPanel(){
   const wrap = document.getElementById('projectsPanelWrap');
@@ -1341,7 +1430,7 @@ async function renderMeetingsPanel(dates){
       ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;white-space:pre-line;">${escapeHtml(meeting.agenda)}</div>` : ''}
       ${(meeting.links && meeting.links.length) ? `<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">${meeting.links.filter(l=>l.url).map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" class="attach-chip">\u{1F517} ${escapeHtml(l.label||l.url)}</a>`).join('')}</div>` : ''}
       ${metricsHtml ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">${escapeHtml(meeting.metricCategory)} this week</div>${metricsHtml}</div>` : ''}
-      ${openItems.length ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">Open from last time</div>${openItems.map(({item, fromDate}) => `<div style="font-size:12px;padding:1px 0;">\u2022 ${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''}</div>`).join('')}</div>` : ''}
+      ${openItems.length ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">Open from last time</div>${openItems.map(({item, fromDate}) => `<div style="font-size:12px;padding:1px 0;">\u2022 ${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''}${item.deadline ? ` <span style="color:var(--win-text-secondary);">\u00b7 due ${escapeHtml(item.deadline)}</span>` : ''}</div>`).join('')}</div>` : ''}
     </div>`;
   }
   wrap.innerHTML = html;
@@ -1715,12 +1804,20 @@ async function renderMeetings(){
         ${m.metricCategory ? `<div class="m-metrics-preview" style="border:1px solid var(--win-border);border-radius:6px;padding:6px 4px;margin-bottom:12px;">${metricsHtml}</div>` : ''}
 
         ${openItems.length ? `
-        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Open action items to review (carried over until checked done)</label>
-        <div class="m-open-items" style="border:1px solid var(--win-border);border-radius:6px;padding:6px 10px;margin-bottom:12px;">
-          ${openItems.map(({item, entryId, fromDate}) => `<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;">
-            <input type="checkbox" class="m-item-toggle" data-entryid="${entryId}" data-itemid="${item.id}">
-            <span>${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''} <span style="color:var(--win-text-secondary);">(from ${escapeHtml(fromDate)})</span></span>
-          </label>`).join('')}
+        <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Open action items to review (carried over until checked done \u2014 assign/set a deadline right here)</label>
+        <div class="m-open-items" style="border:1px solid var(--win-border);border-radius:6px;padding:8px 10px;margin-bottom:12px;">
+          ${openItems.map(({item, entryId, fromDate}) => {
+            const overdue = item.deadline && item.deadline < isoDate(new Date());
+            return `<div class="m-openitem-row" data-entryid="${entryId}" data-itemid="${item.id}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid var(--win-border);">
+            <input type="checkbox" class="m-item-toggle" data-itemid="${item.id}">
+            <span style="flex:1;min-width:160px;font-size:12.5px;">${escapeHtml(item.text)} <span style="color:var(--win-text-secondary);">(from ${escapeHtml(fromDate)})</span></span>
+            <select class="m-openitem-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:5px;font-size:11.5px;">
+              <option value="">Unassigned</option>
+              ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(item.assignedLoc===x.locKey && item.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+            </select>
+            <input type="date" class="m-openitem-deadline" value="${escapeAttr(item.deadline||'')}" style="border:1px solid ${overdue?'#c00':'var(--win-border-strong)'};border-radius:6px;padding:5px;font-size:11.5px;">
+          </div>`;
+          }).join('')}
         </div>` : ''}
 
         <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Past occurrences</label>
@@ -1729,10 +1826,17 @@ async function renderMeetings(){
             <b>${escapeHtml(n.date)}</b>${n.recordingUrl ? ` \u00b7 <a href="${escapeAttr(n.recordingUrl)}" target="_blank" rel="noopener">\u{1F3A5} Recording</a>` : ''}
             ${n.notes ? `<div style="margin-top:4px;white-space:pre-line;">${escapeHtml(n.notes)}</div>` : ''}
             ${(n.actionItems && n.actionItems.length) ? `<div style="margin-top:6px;">
-              ${n.actionItems.map(ai => `<label style="display:flex;align-items:center;gap:8px;padding:2px 0;${ai.done?'text-decoration:line-through;color:var(--win-text-secondary);':''}">
-                <input type="checkbox" class="m-item-toggle" data-entryid="${n.id}" data-itemid="${ai.id}" ${ai.done?'checked':''}>
-                <span>${escapeHtml(ai.text)}${ai.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===ai.assignedLoc&&x.empIdx===ai.assignedEmp)||{}).label||'')}</span>` : ''}</span>
-              </label>`).join('')}
+              ${n.actionItems.map(ai => {
+                const done = actionItemDone(ai.id);
+                const assigneeNotes = actionItemNotes(ai.id);
+                return `<div style="padding:2px 0;${done?'color:var(--win-text-secondary);':''}">
+                <label style="display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" class="m-item-toggle" data-itemid="${ai.id}" ${done?'checked':''}>
+                  <span style="${done?'text-decoration:line-through;':''}">${escapeHtml(ai.text)}${ai.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===ai.assignedLoc&&x.empIdx===ai.assignedEmp)||{}).label||'')}</span>` : ''}${ai.deadline ? ` <span style="color:var(--win-text-secondary);">\u00b7 due ${escapeHtml(ai.deadline)}</span>` : ''}</span>
+                </label>
+                ${assigneeNotes ? `<div style="margin-left:26px;font-size:11.5px;color:var(--win-text-secondary);">Note from assignee: ${escapeHtml(assigneeNotes)}</div>` : ''}
+              </div>`;
+              }).join('')}
             </div>` : ''}
           </div>`).join('') : '<div class="empty-note" style="padding:6px 0;">No occurrences logged yet.</div>'}
         </div>
@@ -1741,12 +1845,13 @@ async function renderMeetings(){
         <input type="text" class="m-new-recording" placeholder="Recording link (Zoom, Teams, Google Drive, Guidde...)" value="${escapeAttr(draft.recordingUrl)}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:6px;">
         <textarea class="m-newnote" placeholder="Bullet points / notes from this meeting..." style="width:100%;min-height:60px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:6px;">${escapeHtml(draft.notes)}</textarea>
         <div class="m-draft-items" style="margin-bottom:6px;">
-          ${draft.actionItems.map((ai, ai_i) => `<div class="m-draft-item-row" data-ai="${ai_i}" style="display:flex;gap:6px;margin-bottom:5px;">
-            <input type="text" class="m-draft-item-text" placeholder="Action item / task..." value="${escapeAttr(ai.text)}" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          ${draft.actionItems.map((ai, ai_i) => `<div class="m-draft-item-row" data-ai="${ai_i}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+            <input type="text" class="m-draft-item-text" placeholder="Action item / task..." value="${escapeAttr(ai.text)}" style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
             <select class="m-draft-item-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
               <option value="">Unassigned</option>
               ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${ai.assignedKey===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
             </select>
+            <input type="date" class="m-draft-item-deadline" value="${escapeAttr(ai.deadline||'')}" title="Deadline" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
             <button class="mini-btn danger-mini m-draft-item-remove">Remove</button>
           </div>`).join('')}
         </div>
@@ -1855,17 +1960,39 @@ function wireMeetingsHandlers(view){
     };
 
     // Open-item checkboxes appear both in the "review" summary and inside each logged
-    // occurrence - both share this same handler, toggling the item wherever it actually lives.
+    // occurrence - done state lives in the separate non-gated status store (see
+    // ACTION_ITEM_STATUS above), so checking one off here works the same way it does from
+    // an employee's own work plan, and never needs the staff code.
     card.querySelectorAll('.m-item-toggle').forEach(cb => {
       cb.onchange = async (e) => {
-        const m = findM(); if(!m) return;
-        const entry = (m.notesLog||[]).find(x => x.id === cb.dataset.entryid);
-        if(!entry) return;
-        const item = (entry.actionItems||[]).find(x => x.id === cb.dataset.itemid);
-        if(!item) return;
-        item.done = e.target.checked;
-        await saveMeetingsList();
+        await setActionItemDone(cb.dataset.itemid, e.target.checked);
         await renderMeetings();
+      };
+    });
+
+    // Open items to review: assignee + deadline are structural (who/when), so editing them
+    // here is a staff action that saves back into the meeting itself.
+    card.querySelectorAll('.m-openitem-row').forEach(row => {
+      const entryId = row.dataset.entryid, itemId = row.dataset.itemid;
+      const findItem = () => {
+        const m = findM(); if(!m) return null;
+        const entry = (m.notesLog||[]).find(x => x.id === entryId); if(!entry) return null;
+        return (entry.actionItems||[]).find(x => x.id === itemId) || null;
+      };
+      const assignEl = row.querySelector('.m-openitem-assign');
+      if(assignEl) assignEl.onchange = async (e) => {
+        const item = findItem(); if(!item) return;
+        const [locKey, empIdxStr] = (e.target.value||'').split('::');
+        item.assignedLoc = e.target.value ? locKey : '';
+        item.assignedEmp = e.target.value ? parseInt(empIdxStr,10) : null;
+        await saveMeetingsList();
+      };
+      const deadlineEl = row.querySelector('.m-openitem-deadline');
+      if(deadlineEl) deadlineEl.onchange = async (e) => {
+        const item = findItem(); if(!item) return;
+        item.deadline = e.target.value;
+        await saveMeetingsList();
+        await renderMeetings(); // re-render so the overdue-red border updates
       };
     });
 
@@ -1881,8 +2008,10 @@ function wireMeetingsHandlers(view){
       const idx = parseInt(row.dataset.ai, 10);
       const textEl = row.querySelector('.m-draft-item-text');
       const assignEl = row.querySelector('.m-draft-item-assign');
+      const deadlineEl = row.querySelector('.m-draft-item-deadline');
       if(textEl) textEl.onchange = (e) => { if(draft.actionItems[idx]) draft.actionItems[idx].text = e.target.value; };
       if(assignEl) assignEl.onchange = (e) => { if(draft.actionItems[idx]) draft.actionItems[idx].assignedKey = e.target.value; };
+      if(deadlineEl) deadlineEl.onchange = (e) => { if(draft.actionItems[idx]) draft.actionItems[idx].deadline = e.target.value; };
       const removeBtn = row.querySelector('.m-draft-item-remove');
       if(removeBtn) removeBtn.onclick = async () => {
         draft.actionItems.splice(idx, 1);
@@ -1891,7 +2020,7 @@ function wireMeetingsHandlers(view){
     });
     const addItemBtn = card.querySelector('.m-draft-item-add');
     if(addItemBtn) addItemBtn.onclick = async () => {
-      draft.actionItems.push({ text: '', assignedKey: '' });
+      draft.actionItems.push({ text: '', assignedKey: '', deadline: '' });
       await renderMeetings();
     };
 
@@ -1906,7 +2035,7 @@ function wireMeetingsHandlers(view){
         .map(ai => {
           const [locKey, empIdxStr] = (ai.assignedKey||'').split('::');
           return {
-            id: newActionItemId(), text: ai.text, done: false,
+            id: newActionItemId(), text: ai.text, deadline: ai.deadline || '',
             assignedLoc: ai.assignedKey ? locKey : '', assignedEmp: ai.assignedKey ? parseInt(empIdxStr,10) : null
           };
         });
