@@ -357,6 +357,16 @@
 </div>
 <input type="file" accept="image/*" class="file-input" id="fileInput">
 
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal">
+    <h3 id="confirmModalTitle">Are you sure?</h3>
+    <div class="modal-actions">
+      <button type="button" id="confirmModalCancel">Cancel</button>
+      <button type="button" class="danger" id="confirmModalOk">Remove</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const DEFAULT_LOCATIONS = {
   bridgeland: { name: 'Bridgeland', short: 'B', data: [{"label": "Bridgeland Service Mgr.", "tasks": [{"text": "AM: Ck phones for Blinking VM -pw 2019   Writer", "cadence": "Daily"}, {"text": "AM: ARB Inspections: Verify no expiring", "cadence": "Daily"}, {"text": "AM: Delivery board priority/ Update w/Notes", "cadence": "Daily"}, {"text": "Audit reviews and verify they were sent to the customer follow up with Advisor", "cadence": "Daily"}, {"text": "Audit Customer pay RO'S and Labor Profit Analysis for both BL/CC", "cadence": "Daily"}, {"text": "Audit ASR reports for Required KPI Tracking", "cadence": "Daily"}, {"text": "xtime-box 5-address ageing items", "cadence": "Daily"}, {"text": "xtime approvals are complete", "cadence": "Daily"}, {"text": "RR Vendor Log : verify all work items complete", "cadence": "Daily"}, {"text": "RR: Service related steps : NO RED", "cadence": "Daily"}, {"text": "RR/ Off site Sublet updated ETA's", "cadence": "Daily"}, {"text": "all special ordered parts are contacted", "cadence": "Daily"}, {"text": "Wip has been reviewed-10 oldest ro's/pi/cashier", "cadence": "Daily"}, {"text": "Spot check writer Daily's", "cadence": "Daily"}, {"text": "Complete internals: Comment on Date in this row", "cadence": "Daily"}, {"text": "Metal Bin is Locked", "cadence": "Daily"}, {"text": "lot walk- all cars locked, Clear side of Building and Vehicles are parked correctly", "cadence": "Daily"}, {"text": "EOD:  Tec Hours Screen updated", "cadence": "Daily"}, {"text": "EOD: Pre invoice are turned into office", "cadence": "Daily"}, {"text": "EOD: 1 Micro-ensure all keys in vault", "cadence": "Daily"}, {"text": "EOD: Turn in Credit PO's and/or receipts", "cadence": "Daily"}, {"text": "Shop walk : clean/ paint needs etc communicated", "cadence": "Daily"}, {"text": "Policy: collect all from Kristen - TUE", "cadence": "Weekly"}, {"text": "Review perfomance and $$ tracking", "cadence": "Weekly"}, {"text": "1160 Schedule", "cadence": "Weekly"}, {"text": "Rapid Recon  Sublets", "cadence": "Weekly"}, {"text": "Master Schedule", "cadence": "Monthly"}]}, {"label": "Bridgeland Service Writer", "tasks": [{"text": "Cust Pay Ro Pending Approval completed box 3", "cadence": "Daily"}, {"text": "All vehicles are lined up on lot", "cadence": "Daily"}, {"text": "Tech Flagging completed", "cadence": "Daily"}, {"text": "All loaners are cleaned and parked", "cadence": "Daily"}, {"text": "All customers have been updated", "cadence": "Daily"}, {"text": "Pre Writes completed", "cadence": "Daily"}, {"text": "We Owes", "cadence": "Weekly"}, {"text": "We Owes RR", "cadence": "Weekly"}, {"text": "BL Parts Suite", "cadence": "Weekly"}, {"text": "Saturday Dispatch", "cadence": "Weekly"}, {"text": "Clean your Space", "cadence": "Weekly"}]}, {"label": "Bridgeland Parts Counter", "tasks": [{"text": "XTIME CLEAN -- ALL ROs PARTS QUOTED / ORDERED", "cadence": "Daily"}, {"text": "PO'S AND INVOICES - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "CREDIT CARD INVOICES  - BRING TO OFFICE END of DAY", "cadence": "Daily"}, {"text": "RETURNS - READY FOR VENDOR PU", "cadence": "Daily"}, {"text": "We Owes - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "SOP - SPREADSHEET UPDATED", "cadence": "Daily"}, {"text": "CORES- SCHED PU / PUs DONE", "cadence": "Daily"}, {"text": "SCRAP TIRES - PU SCHED", "cadence": "Daily"}, {"text": "PARTS WARRANTIES - START/PROCESS/SUBMIT", "cadence": "Daily"}, {"text": "UPDATE PARTS GOING BACK SPREADSHEET (THURSDAY)", "cadence": "Weekly"}, {"text": "NEG on HAND - (FRIDAY)", "cadence": "Weekly"}, {"text": "Oil Inventory / Oil Count (FRIDAY)", "cadence": "Weekly"}, {"text": "RESTOCK STOCK PARTS  (Fri / Sat)", "cadence": "Weekly"}, {"text": "Used Oil Tank  - THURSDAY - CHECK - Sched PU when 3/4 full", "cadence": "Weekly"}, {"text": "CLEANING - DUST / SWEEP / MOP / STRAIGHTEN SHELVES", "cadence": "Monthly"}, {"text": "PARTS ROOM BIN COUNT  (100% STOCK ITEMS)", "cadence": "Monthly"}, {"text": "UPDATE PART % SHEET - $$/RETURN/DEFECT", "cadence": "Monthly"}, {"text": "Quarterly Audit", "cadence": "Monthly"}, {"text": "Audit BL", "cadence": "Monthly"}, {"text": "Audit CC", "cadence": "Monthly"}, {"text": "THURSDAY", "cadence": "Monthly"}, {"text": "FRIDAY / SAT", "cadence": "Monthly"}]}, {"label": "Bridgeland Recon Manager", "tasks": [{"text": "Vehicle Check-Ins (Check Drop Box, Stage Vehicle, Move In RR)", "cadence": "Daily"}, {"text": "UVI first day photos completed", "cadence": "Daily"}, {"text": "Key In All Vehicles And Barcode Every Vehicle", "cadence": "Daily"}, {"text": "Unassign Emtpy Key Tags", "cadence": "Daily"}, {"text": "Set Detailers Up For The Day", "cadence": "Daily"}, {"text": "Set Washers Up For The Day", "cadence": "Daily"}, {"text": "Clean & Clear Out Recon Side of Lot", "cadence": "Daily"}, {"text": "(Titles) Make Sure In Correct Area/Step In Rapid With Notes", "cadence": "Daily"}, {"text": "VAUTO FEWER THAN 10 PHOTOS SWEEP", "cadence": "Daily"}, {"text": "Photo Vehicles", "cadence": "Daily"}, {"text": "Update Detailer's Log", "cadence": "Daily"}, {"text": "Unpublish: No Title, Offsite Sublets, Body Damage", "cadence": "Daily"}, {"text": "Scrub Rapid Recon Team Summary (Add Notes Onto Task)", "cadence": "Daily"}, {"text": "PM Walk Around- Check locks/Photo Bay/Lot Cleared/ Check w/ Sales & Service", "cadence": "Daily"}, {"text": "UVeye Report - Email list of UVEye vehicles that are needed for next day", "cadence": "Daily"}, {"text": "Weekly Garrett", "cadence": "Daily"}, {"text": "Key Audit for Recon team/Checking 4+ days", "cadence": "Daily"}, {"text": "BL Gather Supply List (Monday - Bob)", "cadence": "Daily"}, {"text": "Quality Check For Frontline Vehicles (Walk Frontline Vehicles)", "cadence": "Daily"}, {"text": "Lot Audit", "cadence": "Daily"}]}, {"label": "Bridgeland Sales Manager #2", "tasks": [{"text": "Review Photos of Inventory/ Confirm QUALITY/ MINIMUM Photos per unit met.", "cadence": "Daily"}, {"text": "social media posting Confirm/ Sales associates posting", "cadence": "Daily"}, {"text": "Review Prev Day appraisals for accuracy/ drive notes (Both locations).", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Review Pricing in ProfitTime/ Make adjustment for Alignment", "cadence": "Daily"}, {"text": "VAUTO Check missing CG Tags (Needs Attention) Mon/Wed/Fri", "cadence": "Daily"}, {"text": "VAUTO: vehicle descriptions generated.", "cadence": "Daily"}, {"text": "Review vehicles in Sold Status", "cadence": "Weekly"}, {"text": "Friday! Merchandising/ ws suite/ vauto/ 3rd party matching", "cadence": "Weekly"}, {"text": "FRIDAY! Update Metrics SPRDSHT for Monday meeting.", "cadence": "Weekly"}]}, {"label": "Bridgeland Finance / Tom", "tasks": [{"text": "A.M. Showoom Compliance", "cadence": "Daily"}, {"text": "Delivered Deals Statused", "cadence": "Daily"}, {"text": "Sold Units Submitted", "cadence": "Daily"}, {"text": "CIT Log", "cadence": "Daily"}, {"text": "Deliverd Deals turned in", "cadence": "Daily"}, {"text": "P.M. Credit Apps turned in", "cadence": "Daily"}, {"text": "Missing list Google doc review", "cadence": "Daily"}, {"text": "Dead Deals Filed -MON", "cadence": "Weekly"}, {"text": "License Plates Order Review", "cadence": "Weekly"}, {"text": "CIT notes updated Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Compliance rating -Drop in reports sheet -MON", "cadence": "Weekly"}, {"text": "Task", "cadence": "Monthly"}, {"text": "Business Office Gutted/Dead Deals", "cadence": "Monthly"}, {"text": "One Time (Not counted in %)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales GM", "tasks": [{"text": "Verify MPG log (Match to DMS)", "cadence": "Daily"}, {"text": "Verify managers/ Reps complete CRM tasks", "cadence": "Daily"}, {"text": "Policy log updated to the Day", "cadence": "Daily"}, {"text": "Review CIT (over 4 days)", "cadence": "Daily"}, {"text": "Birdeye: Address negative reviews", "cadence": "Daily"}, {"text": "No photo list reviewed", "cadence": "Daily"}, {"text": "RR: Review Color Trigger Report", "cadence": "Daily"}, {"text": "Missing List/ trade titles chased  Return buys (arbitration)", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "UVI first day completed", "cadence": "Daily"}, {"text": "Pay Sheets Gone over with sales reps Before final", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}, {"text": "Bonus components/ unit tracking reviewed with all", "cadence": "Weekly"}, {"text": "Birdseye Reviewed . Negative reviews/ Tracking", "cadence": "Weekly"}, {"text": "Policy tied out to GL", "cadence": "Weekly"}, {"text": "Social media Vehicles chosen . payments Ran", "cadence": "Weekly"}, {"text": "Lot Re-merchandised", "cadence": "Weekly"}, {"text": "Desk compliance inspection/ food/Clutter (Enter in AE48)", "cadence": "Monthly"}, {"text": "Master schedule completed 1 week prior to M.E. (Enter in AE49)", "cadence": "Monthly"}, {"text": "Review deal audit (Enter in AE50)", "cadence": "Monthly"}]}, {"label": "Bridgeland Sales  Kyle", "tasks": [{"text": "AM Sold Row Check : all tagged and matching DMS", "cadence": "Daily"}, {"text": "EOD Digital Delivery Board /", "cadence": "Daily"}, {"text": "Facebook Posting verify previous day done", "cadence": "Daily"}, {"text": "EOD: Sale pending (Profittime) against actual DMS deals", "cadence": "Daily"}, {"text": "EOD: VAuto Appraisal - Manager appraisals finalized", "cadence": "Daily"}, {"text": "Key report : 4 day max rule /", "cadence": "Weekly"}, {"text": "lot re-arrangement (oldest on points / Makes models paired", "cadence": "Weekly"}, {"text": "Review unapproved / undelivered Credit pulls", "cadence": "Weekly"}]}] },
@@ -445,6 +455,34 @@ function showToast(msg){
   t.textContent = msg; t.classList.add('show');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(()=> t.classList.remove('show'), 1300);
+}
+
+// In-app replacement for the browser's native confirm(). Native confirm()/alert() dialogs can
+// get permanently, silently blocked by the browser after repeated popups (Chrome's own "Prevent
+// this page from creating additional dialogs" behavior) - once that happens, confirm() just
+// returns false instantly with no dialog and no error, so a delete button looks like it's doing
+// nothing at all. This draws an in-page modal instead, so it can't be blocked that way, and
+// returns a Promise<boolean> so call sites just swap `if(!confirm(x))` for `if(!await appConfirm(x))`.
+function appConfirm(message, okLabel){
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('confirmModal');
+    document.getElementById('confirmModalTitle').textContent = message;
+    const okBtn = document.getElementById('confirmModalOk');
+    const cancelBtn = document.getElementById('confirmModalCancel');
+    okBtn.textContent = okLabel || 'Remove';
+    const cleanup = (result) => {
+      backdrop.classList.remove('show');
+      okBtn.onclick = null; cancelBtn.onclick = null; backdrop.onclick = null;
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    };
+    const onKey = (e) => { if(e.key === 'Escape') cleanup(false); };
+    okBtn.onclick = () => cleanup(true);
+    cancelBtn.onclick = () => cleanup(false);
+    backdrop.onclick = (e) => { if(e.target === backdrop) cleanup(false); };
+    document.addEventListener('keydown', onKey);
+    backdrop.classList.add('show');
+  });
 }
 
 // ---- Owner/manager access gate. Employees can open the app, check off their own tasks, and
@@ -553,6 +591,16 @@ async function refreshServerState(){
     catch(e){ console.error('Bad projects data, resetting', e); PROJECTS = []; }
     try{ METRICS = SERVER_STATE['metrics'] ? JSON.parse(SERVER_STATE['metrics']) : []; }
     catch(e){ console.error('Bad metrics data, resetting', e); METRICS = []; }
+    // Old metrics only ever had a single `category` string - fold it into the new `categories`
+    // array (a metric can now carry more than one department) so nothing already saved loses
+    // its tag. `category` itself is no longer written, just read here for one-time migration.
+    METRICS.forEach(m => { if(!m.categories) m.categories = m.category ? [m.category] : []; });
+    if(SERVER_STATE['metric-categories']){
+      try{ METRIC_CATEGORIES = JSON.parse(SERVER_STATE['metric-categories']); }
+      catch(e){ console.error('Bad metric categories data, using defaults', e); METRIC_CATEGORIES = DEFAULT_METRIC_CATEGORIES.slice(); }
+    } else {
+      METRIC_CATEGORIES = DEFAULT_METRIC_CATEGORIES.slice();
+    }
     try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
     try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
@@ -562,6 +610,10 @@ async function refreshServerState(){
     try{ OWNER_TASKS = SERVER_STATE['owner-tasks'] ? JSON.parse(SERVER_STATE['owner-tasks']) : []; }
     catch(e){ console.error('Bad owner tasks data, resetting', e); OWNER_TASKS = []; }
     OWNER_SELF = SERVER_STATE['owner-self'] || '';
+    try{ OWNER_RECURRING_TASKS = SERVER_STATE['owner-recurring-tasks'] ? JSON.parse(SERVER_STATE['owner-recurring-tasks']) : []; }
+    catch(e){ console.error('Bad owner recurring tasks data, resetting', e); OWNER_RECURRING_TASKS = []; }
+    try{ OWNER_RECURRING_STATUS = SERVER_STATE['owner-recurring-status'] ? JSON.parse(SERVER_STATE['owner-recurring-status']) : {}; }
+    catch(e){ console.error('Bad owner recurring status data, resetting', e); OWNER_RECURRING_STATUS = {}; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -589,7 +641,35 @@ let METRICS = [];
 // Shared department/category taxonomy - used by both the Metrics Admin form (to pick a
 // category) and the public Dashboard (to group and order sections). Anything typed outside
 // this list still works (falls into its own section, sorted after these).
-const METRIC_CATEGORIES = ['Profitability','Merchandising','Service KPIs','Finance','Payroll and time cards','Compliance & Customer Experience'];
+const DEFAULT_METRIC_CATEGORIES = ['Profitability','Merchandising','Service KPIs','Finance','Payroll and time cards','Compliance & Customer Experience'];
+// Departments are editable (add/rename/remove) from the Metrics Admin screen and persisted
+// under their own staff-gated key - same admin-only protection as the metrics themselves. A
+// metric can now be tagged under more than one of these at once (see m.categories below),
+// since real KPIs often get reported by more than one department (e.g. a financial number
+// that Service enters some weeks and Sales enters others).
+let METRIC_CATEGORIES = DEFAULT_METRIC_CATEGORIES.slice();
+async function saveMetricCategories(){
+  const ok = await storSet('metric-categories', JSON.stringify(METRIC_CATEGORIES), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+// Renaming or removing a department must not silently orphan metrics/meetings still tagged
+// with the old name - this keeps everything in lockstep with one call.
+async function renameMetricCategory(oldName, newName){
+  METRICS.forEach(m => {
+    if(!m.categories) return;
+    const i = m.categories.indexOf(oldName);
+    if(i > -1) m.categories[i] = newName;
+  });
+  MEETINGS.forEach(m => { if(m.metricCategory === oldName) m.metricCategory = newName; });
+  await saveMetrics();
+  await saveMeetingsList();
+}
+async function removeMetricCategory(name){
+  METRICS.forEach(m => { if(m.categories) m.categories = m.categories.filter(c => c !== name); });
+  MEETINGS.forEach(m => { if(m.metricCategory === name) m.metricCategory = ''; });
+  await saveMetrics();
+  await saveMeetingsList();
+}
 async function saveMetrics(){
   const ok = await storSet('metrics', JSON.stringify(METRICS), true);
   if(!ok) showToast('Not saved \u2014 admin code required');
@@ -982,13 +1062,35 @@ async function saveOwnerTasks(){
 async function saveOwnerSelf(){
   await storSet('owner-self', OWNER_SELF);
 }
+// Rob's own recurring Daily/Weekly/Monthly checklist - deliberately separate from the roster's
+// C/I/O system (not tied to a roster role, so removing/reassigning roles never touches it) and
+// separate from the one-off OWNER_TASKS list above (this is for things that repeat on a
+// schedule, not a one-time to-do). Same complete/incomplete/off idea as every employee's task
+// list, just scoped to one person and stored under its own keys.
+let OWNER_RECURRING_TASKS = [];
+let OWNER_RECURRING_STATUS = {}; // { [taskId]: { [periodKey]: 'C'|'I'|'O' } }
+function newOwnerRecurringId(){ return 'ortk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+async function saveOwnerRecurringTasks(){
+  await storSet('owner-recurring-tasks', JSON.stringify(OWNER_RECURRING_TASKS));
+}
+async function saveOwnerRecurringStatus(){
+  await storSet('owner-recurring-status', JSON.stringify(OWNER_RECURRING_STATUS));
+}
+// Which period a cadence's status is tracked against, as of right now - a fresh key each new
+// day/week/month means everything naturally resets without any cleanup job.
+function ownerRecurringPeriodKey(cadence){
+  const now = new Date();
+  if(cadence === 'Weekly') return isoDate(mondayOf(now));
+  if(cadence === 'Monthly') return monthKey(now);
+  return isoDate(now); // Daily
+}
 // A compact "how's this department doing" table shown at the top of a meeting - Daily
 // metrics show every entered value Mon-Fri so far this week, Weekly ones show this week's
 // single number, both against goal. Meant to replace someone manually re-typing numbers
 // into an agenda doc before the meeting starts.
 async function meetingMetricsSummaryHtml(category){
   if(!category) return '';
-  const catMetrics = METRICS.filter(m => (m.category || '') === category);
+  const catMetrics = METRICS.filter(m => (m.categories||[]).includes(category));
   if(catMetrics.length === 0){
     return `<div class="empty-note" style="padding:6px 0;">No metrics tagged "${escapeHtml(category)}" yet.</div>`;
   }
@@ -1323,6 +1425,7 @@ function renderNav(){
   const nav = document.getElementById('navList');
   nav.innerHTML = '';
   LOCATIONS[currentLoc].data.forEach((emp, idx) => {
+    if(emp.archived) return; // removed role - not pickable, but its own history stays intact
     const item = document.createElement('div');
     item.className = 'nav-item' + (idx === currentEmployee ? ' active' : '');
     item.innerHTML = `
@@ -1799,7 +1902,7 @@ async function renderOnetimePanel(){
       };
     }
     row.querySelector('[data-action="delete"]').onclick = async () => {
-      if(!confirm('Remove this one-time task?')) return;
+      if(!await appConfirm('Remove this one-time task?')) return;
       list.splice(i,1);
       await saveOnetimeList(currentLoc, currentEmployee, list);
       renderOnetimePanel();
@@ -1941,10 +2044,7 @@ async function renderOnetimeReview(){
   const view = document.getElementById('onetimeReviewView');
   await refreshServerState();
 
-  const allTargets = [];
-  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
-    loc.data.forEach((emp, empIdx) => allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
-  });
+  const activeTargets = dropdownTargets();
 
   let html = `
     <div class="monthly-header"><h1>One-Time Tasks</h1></div>
@@ -1957,7 +2057,7 @@ async function renderOnetimeReview(){
     <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;">
       <select id="otAssignTarget" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="">Assign to\u2026</option>
-        ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+        ${activeTargets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
       </select>
       <input type="text" id="otAssignText" placeholder="Describe the task..." style="flex:1;min-width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
       <button class="mini-btn primary-mini" id="otAssignBtn">Assign</button>
@@ -2096,7 +2196,7 @@ async function renderMeetings(){
         </div>
         <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Attendees (internal \u2014 shows on their weekly view; ctrl/cmd-click for multiple)</label>
         <select class="m-attendees" multiple size="4" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;margin-bottom:8px;">
-          ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.attendeeRoles||[]).includes(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+          ${dropdownTargets(m.attendeeRoles||[]).map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.attendeeRoles||[]).includes(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
         </select>
         <input type="text" class="m-external" placeholder="External / vendor attendees (free text)" value="${escapeAttr(m.externalAttendees||'')}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;margin-bottom:8px;">
         <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Agenda — one item per line, shows as a numbered 1, 2, 3... list</label>
@@ -2139,7 +2239,7 @@ async function renderMeetings(){
             <span style="flex:1;min-width:160px;font-size:12.5px;">${escapeHtml(item.text)} <span style="color:var(--win-text-secondary);">(from ${escapeHtml(fromDate)})</span></span>
             <select class="m-openitem-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:5px;font-size:11.5px;">
               <option value="">Unassigned</option>
-              ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(item.assignedLoc===x.locKey && item.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+              ${dropdownTargets(item.assignedLoc ? (item.assignedLoc+'::'+item.assignedEmp) : null).map(x => `<option value="${x.locKey}::${x.empIdx}" ${(item.assignedLoc===x.locKey && item.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
             </select>
             <input type="date" class="m-openitem-deadline" value="${escapeAttr(item.deadline||'')}" style="border:1px solid ${overdue?'#c00':'var(--win-border-strong)'};border-radius:6px;padding:5px;font-size:11.5px;">
           </div>`;
@@ -2197,7 +2297,7 @@ async function renderMeetings(){
             <input type="text" class="m-draft-item-text" placeholder="Action item / task..." value="${escapeAttr(ai.text)}" style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
             <select class="m-draft-item-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
               <option value="">Unassigned</option>
-              ${allTargets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${ai.assignedKey===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+              ${dropdownTargets(ai.assignedKey).map(x => `<option value="${x.locKey}::${x.empIdx}" ${ai.assignedKey===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
             </select>
             <input type="date" class="m-draft-item-deadline" value="${escapeAttr(ai.deadline||'')}" title="Deadline" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
             <button class="mini-btn danger-mini m-draft-item-remove">Remove</button>
@@ -2268,7 +2368,7 @@ function wireMeetingsHandlers(view){
 
     const removeEl = card.querySelector('.m-remove');
     if(removeEl) removeEl.onclick = async () => {
-      if(!confirm('Remove this meeting series? Its notes log goes with it.')) return;
+      if(!await appConfirm('Remove this meeting series? Its notes log goes with it.')) return;
       const i = MEETINGS.findIndex(x => x.id === mid);
       if(i > -1) MEETINGS.splice(i, 1);
       delete meetingDrafts[mid];
@@ -2429,9 +2529,34 @@ let ownerBoardShown = false;
 function allRosterTargets(){
   const out = [];
   Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
-    loc.data.forEach((emp, empIdx) => out.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` }));
+    loc.data.forEach((emp, empIdx) => out.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}`, archived: !!emp.archived }));
   });
   return out;
+}
+// Same as allRosterTargets() but leaves out removed roles - use this for populating any
+// "assign to" / "attendee" dropdown so a removed role can't be picked for NEW work. Existing
+// assignments made before a role was removed keep resolving fine through allRosterTargets()
+// itself (which still includes everyone), so nothing already on the books breaks or goes
+// "Unassigned" - see dropdownTargets() below for showing an already-picked removed role too.
+function activeRosterTargets(){
+  return allRosterTargets().filter(x => !x.archived);
+}
+// Builds the option list for one "assign to"/attendee dropdown: every active role, PLUS
+// whichever already-selected value(s) are a removed role, so an existing pick doesn't just
+// silently vanish from the UI - it stays visible, labeled (Removed), until someone changes it.
+// selectedKeys is a single "loc::idx" string, an array of them (multi-selects), or null/empty.
+function dropdownTargets(selectedKeys){
+  const active = activeRosterTargets();
+  const activeKeys = new Set(active.map(x => x.locKey + '::' + x.empIdx));
+  const wanted = Array.isArray(selectedKeys) ? selectedKeys : (selectedKeys ? [selectedKeys] : []);
+  const full = allRosterTargets();
+  const extras = [];
+  wanted.forEach(k => {
+    if(!k || activeKeys.has(k) || extras.some(e => (e.locKey+'::'+e.empIdx) === k)) return;
+    const found = full.find(x => (x.locKey+'::'+x.empIdx) === k);
+    if(found) extras.push({ ...found, label: found.label + ' (Removed)' });
+  });
+  return [...active, ...extras];
 }
 
 async function renderProjects(){
@@ -2481,7 +2606,7 @@ async function renderProjects(){
         <div class="p-steps">`;
 
     (p.steps||[]).forEach(s => {
-      const targetOpts = targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(s.assignedLoc===x.locKey && s.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('');
+      const targetOpts = dropdownTargets(s.assignedLoc ? (s.assignedLoc+'::'+s.assignedEmp) : null).map(x => `<option value="${x.locKey}::${x.empIdx}" ${(s.assignedLoc===x.locKey && s.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('');
       html += `<div class="proj-step-row" data-sid="${s.id}">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <input type="text" class="s-title" value="${escapeAttr(s.title)}" placeholder="Step / task" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
@@ -2547,7 +2672,7 @@ function wireProjectsHandlers(view){
 
     const removeBtn = card.querySelector('.p-remove');
     if(removeBtn) removeBtn.onclick = async () => {
-      if(!confirm('Delete this project and all its steps? This cannot be undone.')) return;
+      if(!await appConfirm('Delete this project and all its steps? This cannot be undone.', 'Delete')) return;
       const i = PROJECTS.findIndex(p => p.id === pid);
       if(i > -1) PROJECTS.splice(i, 1);
       await saveProjects();
@@ -2591,7 +2716,7 @@ function wireProjectsHandlers(view){
 
       const removeS = row.querySelector('.s-remove');
       if(removeS) removeS.onclick = async () => {
-        if(!confirm('Remove this step?')) return;
+        if(!await appConfirm('Remove this step?')) return;
         const p = findP(); if(!p) return;
         const i = (p.steps||[]).findIndex(s => s.id === sid);
         if(i > -1) p.steps.splice(i, 1);
@@ -2672,7 +2797,7 @@ async function renderOwnerBoard(){
       <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);">Which roster line is you?</label>
       <select id="ownerSelfSelect" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:5px;font-size:12px;">
         <option value="">— Select —</option>
-        ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${OWNER_SELF===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+        ${dropdownTargets(OWNER_SELF).map(x => `<option value="${x.locKey}::${x.empIdx}" ${OWNER_SELF===(x.locKey+'::'+x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
       </select>
     </div>
   `;
@@ -2742,7 +2867,39 @@ async function renderOwnerBoard(){
     </tr>`).join('')}</tbody>
   </table>` : '', 'Every meeting is logged.');
 
+  const recurringGroup = (cadence, label) => {
+    const periodKey = ownerRecurringPeriodKey(cadence);
+    const tasks = OWNER_RECURRING_TASKS.filter(t => t.cadence === cadence);
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:11.5px;font-weight:700;color:var(--win-text-secondary);margin-bottom:4px;">${label}</div>
+      <div class="task-card" style="padding:4px;">
+        ${tasks.length === 0 ? `<div class="empty-note">No ${label.toLowerCase()} tasks yet.</div>` : tasks.map(t => {
+          const val = (OWNER_RECURRING_STATUS[t.id] || {})[periodKey] || '';
+          return `<div class="onetime-row" data-ortid="${t.id}" style="display:flex;align-items:center;gap:8px;">
+            <span class="onetime-text" style="flex:1;">${escapeHtml(t.text)}</span>
+            <div class="seg-group" data-ortid="${t.id}" style="display:flex;gap:4px;">
+              <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C">C</button>
+              <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I">I</button>
+              <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O">O</button>
+            </div>
+            <button class="mini-btn danger-mini ort-remove">Remove</button>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <input type="text" class="ort-input" data-cadence="${cadence}" placeholder="Add a ${label.toLowerCase()} task..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+        <button class="mini-btn ort-add" data-cadence="${cadence}">+ Add</button>
+      </div>
+    </div>`;
+  };
+
   html += `
+    <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">My Daily / Weekly / Monthly tasks</div>
+    <p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 10px;">Your own recurring checklist, same C (complete) / I (incomplete) / O (off) tracking as everyone else's tasks — Daily resets each day, Weekly each Monday, Monthly each 1st.</p>
+    ${recurringGroup('Daily', 'Daily')}
+    ${recurringGroup('Weekly', 'Weekly')}
+    ${recurringGroup('Monthly', 'Monthly')}
+
     <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">My personal tasks</div>
     <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
       <input type="text" id="ownerTaskInput" placeholder="Describe a task for yourself..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;">
@@ -2783,6 +2940,45 @@ async function renderOwnerBoard(){
       const itemId = btn.closest('[data-itemid]').dataset.itemid;
       await setActionItemVerified(itemId, true);
       showToast('Verified');
+      await renderOwnerBoard();
+    };
+  });
+
+  view.querySelectorAll('.ort-add').forEach(btn => {
+    btn.onclick = async () => {
+      const cadence = btn.dataset.cadence;
+      const input = view.querySelector(`.ort-input[data-cadence="${cadence}"]`);
+      const text = (input.value||'').trim();
+      if(!text) return;
+      OWNER_RECURRING_TASKS.push({ id: newOwnerRecurringId(), text, cadence });
+      await saveOwnerRecurringTasks();
+      showToast('Added');
+      await renderOwnerBoard();
+    };
+  });
+  view.querySelectorAll('.seg-group[data-ortid]').forEach(seg => {
+    const tid = seg.dataset.ortid;
+    seg.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const t = OWNER_RECURRING_TASKS.find(x => x.id === tid); if(!t) return;
+        const periodKey = ownerRecurringPeriodKey(t.cadence);
+        const current = (OWNER_RECURRING_STATUS[tid] || {})[periodKey] || '';
+        const newVal = current === btn.dataset.val ? '' : btn.dataset.val;
+        if(!OWNER_RECURRING_STATUS[tid]) OWNER_RECURRING_STATUS[tid] = {};
+        if(newVal) OWNER_RECURRING_STATUS[tid][periodKey] = newVal; else delete OWNER_RECURRING_STATUS[tid][periodKey];
+        await saveOwnerRecurringStatus();
+        seg.querySelectorAll('.seg-btn').forEach(b => b.className = 'seg-btn');
+        if(newVal) btn.classList.add('sel-'+newVal);
+      };
+    });
+  });
+  view.querySelectorAll('.onetime-row[data-ortid] .ort-remove').forEach(btn => {
+    btn.onclick = async () => {
+      const row = btn.closest('[data-ortid]');
+      const tid = row.dataset.ortid;
+      if(!await appConfirm('Remove this task? Past check-ins for it are kept but will no longer be shown.')) return;
+      OWNER_RECURRING_TASKS = OWNER_RECURRING_TASKS.filter(x => x.id !== tid);
+      await saveOwnerRecurringTasks();
       await renderOwnerBoard();
     };
   });
@@ -2868,6 +3064,22 @@ async function renderMetrics(){
       Metrics Dashboard. Set next month's goal before the month starts - it's flagged below if
       it's still missing.
     </p>
+
+    <details id="deptManagerDetails" ${deptManagerExpanded ? 'open' : ''} style="margin-bottom:18px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Manage departments (${METRIC_CATEGORIES.length})</summary>
+      <div style="padding:4px 12px 12px;">
+        <p style="font-size:11.5px;color:var(--win-text-secondary);margin:0 0 8px;">Rename or remove a department - every metric tagged with it updates automatically. A metric can be tagged under more than one department at once, so overlap (e.g. a number both Service and Finance report on) is expected.</p>
+        ${METRIC_CATEGORIES.map((c,i) => `<div class="dept-row" data-idx="${i}" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input type="text" class="dept-name" value="${escapeAttr(c)}" style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn danger-mini dept-remove">Remove</button>
+        </div>`).join('')}
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="newDeptName" placeholder="New department name..." style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn primary-mini" id="newDeptBtn">+ Add department</button>
+        </div>
+      </div>
+    </details>
+
     <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
       <input type="text" id="newMetricName" placeholder="Metric name (e.g. Delivered Units)..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
       <select id="newMetricCadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
@@ -2876,11 +3088,11 @@ async function renderMetrics(){
       </select>
       <select id="newMetricTarget" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="">Assign to\u2026</option>
-        ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+        ${dropdownTargets().map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
       </select>
       <select id="newMetricCategory" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
-        <option value="">Department\u2026</option>
-        ${METRIC_CATEGORIES.map(c => `<option value="${c}">${escapeAttr(c)}</option>`).join('')}
+        <option value="">Department (optional \u2014 tag more after creating)\u2026</option>
+        ${METRIC_CATEGORIES.map(c => `<option value="${escapeAttr(c)}">${escapeAttr(c)}</option>`).join('')}
       </select>
       <input type="text" id="newMetricStoreLabel" placeholder="Store label (only if one person covers both, e.g. Bridgeland)..." style="width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
       <button class="mini-btn primary-mini" id="newMetricBtn">+ New metric</button>
@@ -2917,7 +3129,7 @@ async function renderMetrics(){
     html += `<details class="proj-card" data-mid="${m.id}" style="padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
         ${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:400;">(${escapeHtml(m.storeLabel)})</span>` : ''}
-        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${m.category ? ' \u00b7 ' + escapeHtml(m.category) : ''}</span>
+        <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.cadence)} \u00b7 ${assignedLabel ? escapeHtml(assignedLabel.label) : 'Unassigned'}${(m.categories&&m.categories.length) ? ' \u00b7 ' + escapeHtml(m.categories.join(', ')) : ''}</span>
         ${nextGoalMissing ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Next month's goal not set</span>` : ''}
       </summary>
       <div style="padding:4px 14px 16px;">
@@ -2929,16 +3141,18 @@ async function renderMetrics(){
           </select>
           <select class="mt-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
             <option value="">Unassigned</option>
-            ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.assignedLoc===x.locKey && m.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
+            ${dropdownTargets(m.assignedLoc ? (m.assignedLoc+'::'+m.assignedEmp) : null).map(x => `<option value="${x.locKey}::${x.empIdx}" ${(m.assignedLoc===x.locKey && m.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('')}
           </select>
           <input type="text" class="mt-unit" placeholder="Unit (e.g. hours, units)" value="${escapeAttr(m.unit||'')}" style="width:140px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
           <button class="mini-btn danger-mini mt-remove">Delete metric</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-          <select class="mt-category" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
-            <option value="">Department\u2026</option>
-            ${METRIC_CATEGORIES.map(c => `<option value="${c}" ${m.category===c?'selected':''}>${escapeAttr(c)}</option>`).join('')}
-          </select>
+        <div style="margin-bottom:10px;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Departments (check every one this metric should show up under):</span>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+            ${METRIC_CATEGORIES.map(c => `<label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+              <input type="checkbox" class="mt-cat-check" value="${escapeAttr(c)}" ${(m.categories||[]).includes(c)?'checked':''}> ${escapeHtml(c)}
+            </label>`).join('')}
+          </div>
           <input type="text" class="mt-storelabel" placeholder="Store label (if one person covers both stores)" value="${escapeAttr(m.storeLabel||'')}" style="width:260px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
@@ -2964,6 +3178,46 @@ async function renderMetrics(){
 }
 
 function wireMetricsAdminHandlers(view){
+  const deptDetails = document.getElementById('deptManagerDetails');
+  if(deptDetails) deptDetails.addEventListener('toggle', () => { deptManagerExpanded = deptDetails.open; });
+
+  view.querySelectorAll('.dept-row').forEach(row => {
+    const idx = parseInt(row.dataset.idx, 10);
+    const nameEl = row.querySelector('.dept-name');
+    nameEl.onchange = async (e) => {
+      const newName = (e.target.value || '').trim();
+      if(!newName || newName === METRIC_CATEGORIES[idx]) { e.target.value = METRIC_CATEGORIES[idx]; return; }
+      if(METRIC_CATEGORIES.includes(newName)){ showToast('That department already exists'); e.target.value = METRIC_CATEGORIES[idx]; return; }
+      const oldName = METRIC_CATEGORIES[idx];
+      METRIC_CATEGORIES[idx] = newName;
+      await saveMetricCategories();
+      await renameMetricCategory(oldName, newName);
+      await renderMetrics();
+    };
+    row.querySelector('.dept-remove').onclick = async () => {
+      const name = METRIC_CATEGORIES[idx];
+      const inUse = METRICS.filter(m => (m.categories||[]).includes(name)).length;
+      const msg = inUse
+        ? `Remove "${name}"? It's currently tagged on ${inUse} metric${inUse===1?'':'s'} — they'll keep any other departments they're tagged with, they just lose this one. Any meeting set to review it switches to no department selected.`
+        : `Remove "${name}"?`;
+      if(!await appConfirm(msg, 'Remove')) return;
+      METRIC_CATEGORIES.splice(idx, 1);
+      await saveMetricCategories();
+      await removeMetricCategory(name);
+      await renderMetrics();
+    };
+  });
+  const newDeptBtn = document.getElementById('newDeptBtn');
+  if(newDeptBtn) newDeptBtn.onclick = async () => {
+    const input = document.getElementById('newDeptName');
+    const name = (input.value || '').trim();
+    if(!name) return;
+    if(METRIC_CATEGORIES.includes(name)){ showToast('That department already exists'); return; }
+    METRIC_CATEGORIES.push(name);
+    await saveMetricCategories();
+    await renderMetrics();
+  };
+
   const newBtn = document.getElementById('newMetricBtn');
   if(newBtn) newBtn.onclick = async () => {
     const name = (document.getElementById('newMetricName').value || '').trim();
@@ -2974,7 +3228,7 @@ function wireMetricsAdminHandlers(view){
     if(!name) return;
     let assignedLoc = '', assignedEmp = null;
     if(targetVal){ const [l, eStr] = targetVal.split('::'); assignedLoc = l; assignedEmp = parseInt(eStr,10); }
-    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, category, storeLabel, unit: '', calculation: '', source: '', goals: {}, createdAt: isoDate(new Date()) });
+    METRICS.push({ id: newMetricId(), name, cadence, assignedLoc, assignedEmp, categories: category ? [category] : [], storeLabel, unit: '', calculation: '', source: '', goals: {}, createdAt: isoDate(new Date()) });
     await saveMetrics();
     await renderMetrics();
   };
@@ -2991,10 +3245,18 @@ function wireMetricsAdminHandlers(view){
     bind('.mt-name', 'name');
     bind('.mt-cadence', 'cadence');
     bind('.mt-unit', 'unit');
-    bind('.mt-category', 'category');
     bind('.mt-storelabel', 'storeLabel');
     bind('.mt-calc', 'calculation');
     bind('.mt-source', 'source');
+
+    card.querySelectorAll('.mt-cat-check').forEach(cb => {
+      cb.onchange = async () => {
+        const m = findM(); if(!m) return;
+        const checked = Array.from(card.querySelectorAll('.mt-cat-check')).filter(x => x.checked).map(x => x.value);
+        m.categories = checked;
+        await saveMetrics();
+      };
+    });
 
     card.querySelectorAll('.mt-goal').forEach(el => {
       el.onchange = async (e) => {
@@ -3016,7 +3278,7 @@ function wireMetricsAdminHandlers(view){
 
     const removeBtn = card.querySelector('.mt-remove');
     if(removeBtn) removeBtn.onclick = async () => {
-      if(!confirm('Delete this metric? Its recorded history stays on the server but will no longer be shown anywhere.')) return;
+      if(!await appConfirm('Delete this metric? Its recorded history stays on the server but will no longer be shown anywhere.', 'Delete')) return;
       const i = METRICS.findIndex(m => m.id === mid);
       if(i > -1) METRICS.splice(i,1);
       await saveMetrics();
@@ -3138,7 +3400,7 @@ function wireTrainingAdminHandlers(view){
     const removeBtn = row.querySelector('.tr-remove');
     if(removeBtn) removeBtn.onclick = async () => {
       if(!isOwnerAdmin()){ showToast('Owner access required to delete training'); return; }
-      if(!confirm('Delete this training video?')) return;
+      if(!await appConfirm('Delete this training video?', 'Delete')) return;
       const i = TRAINING.findIndex(t => t.id === tid);
       if(i > -1) TRAINING.splice(i,1);
       await saveTraining();
@@ -3218,7 +3480,7 @@ async function renderTargets(){
     <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
       <select id="newTgtEmp" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="">Employee…</option>
-        ${targets.map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
+        ${dropdownTargets().map(x => `<option value="${x.locKey}::${x.empIdx}">${escapeAttr(x.label)}</option>`).join('')}
       </select>
       <select id="newTgtMetric" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="">Metric…</option>
@@ -3291,7 +3553,7 @@ function wireTargetsHandlers(view){
     if(tolEl) tolEl.onchange = async (e) => { const tg = findTg(); if(tg){ tg.tolerance = e.target.value; await saveTargets(); } };
     const removeBtn = row.querySelector('.tg-remove');
     if(removeBtn) removeBtn.onclick = async () => {
-      if(!confirm('Remove this target?')) return;
+      if(!await appConfirm('Remove this target?')) return;
       const i = TARGETS.findIndex(t => t.id === tgid);
       if(i > -1) TARGETS.splice(i,1);
       await saveTargets();
@@ -3374,13 +3636,18 @@ async function renderDashboard(){
 
   // Department (category) sections first, then metric-name groups (same-named metrics from
   // different stores line up side by side) within each department - keeps the whole page
-  // scannable by department instead of one long flat list.
+  // scannable by department instead of one long flat list. A metric tagged under more than
+  // one department (e.g. a number Finance and Service both care about) shows up in each of
+  // those sections - it's not copied, just listed twice, so entering it once still updates
+  // both views.
   const DEPT_ORDER = METRIC_CATEGORIES;
   const byDept = {};
   METRICS.forEach(m => {
-    const dept = m.category && m.category.trim() ? m.category.trim() : 'Uncategorized';
-    (byDept[dept] = byDept[dept] || {});
-    (byDept[dept][m.name] = byDept[dept][m.name] || []).push(m);
+    const depts = (m.categories && m.categories.length) ? m.categories : ['Uncategorized'];
+    depts.forEach(dept => {
+      (byDept[dept] = byDept[dept] || {});
+      (byDept[dept][m.name] = byDept[dept][m.name] || []).push(m);
+    });
   });
   const deptNames = Object.keys(byDept).sort((a,b) => {
     const ia = DEPT_ORDER.indexOf(a), ib = DEPT_ORDER.indexOf(b);
@@ -3603,7 +3870,7 @@ document.getElementById('trainingLibraryToggleBtn').onclick = async () => {
 
 document.getElementById('adminToggleBtn').onclick = async () => {
   if(isStaff()){
-    if(confirm('Lock access again?')) lockAdmin();
+    if(await appConfirm('Lock access again?', 'Lock')) lockAdmin();
   } else {
     await promptAdminUnlock();
   }
@@ -3613,6 +3880,8 @@ document.getElementById('adminToggleBtn').onclick = async () => {
 // how-to notes + training video links). Everything here writes straight to the shared
 // roster, so it's the same list every employee's daily view reads from. ----
 let setupShown = false;
+let expandedRoleKeys = new Set(); // keeps a role's card open across re-renders, same fix as meetings
+let deptManagerExpanded = false; // keeps "Manage departments" open across renderMetrics() re-renders
 
 async function reassignTask(taskId, fromLoc, fromEmpIdx, toLoc, toEmpIdx){
   const fromTasks = LOCATIONS[fromLoc].data[fromEmpIdx].tasks;
@@ -3635,7 +3904,7 @@ async function removeTask(taskId, loc, empIdx){
   const tasks = LOCATIONS[loc].data[empIdx].tasks;
   const i = tasks.findIndex(t => t.id === taskId);
   if(i === -1) return;
-  if(!confirm('Remove this task? Past check-ins for it are kept but will no longer be shown.')) return;
+  if(!await appConfirm('Remove this task? Past check-ins for it are kept but will no longer be shown.')) return;
   tasks.splice(i,1);
   await saveRoster();
   await renderSetup();
@@ -3645,12 +3914,7 @@ async function renderSetup(){
   await refreshServerState();
   const view = document.getElementById('setupView');
 
-  const allTargets = [];
-  Object.entries(LOCATIONS).forEach(([locKey, loc]) => {
-    loc.data.forEach((emp, empIdx) => {
-      allTargets.push({ locKey, empIdx, label: `${loc.name} \u2014 ${emp.label}` });
-    });
-  });
+  const allTargets = activeRosterTargets();
   const CADENCES = ['Daily','Specific Days','Weekly','Saturday','Sunday','Monthly','Quarterly','As Needed','Awareness'];
   const DOW_OPTS = [['Mon','Mon'],['Tue','Tue'],['Wed','Wed'],['Thu','Thu'],['Fri','Fri'],['Sat','Sat'],['Sun','Sun']];
 
@@ -3674,9 +3938,11 @@ async function renderSetup(){
       </div>`;
 
     loc.data.forEach((emp, empIdx) => {
-      html += `<details class="setup-role" style="margin-bottom:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+      if(emp.archived) return; // shown in the "Removed roles" section below instead
+      html += `<details class="setup-role" data-loc="${locKey}" data-emp="${empIdx}" ${expandedRoleKeys.has(locKey+'::'+empIdx) ? 'open' : ''} style="margin-bottom:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
         <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">${escapeHtml(emp.label)} <span style="font-weight:400;color:var(--win-text-secondary);">(${emp.tasks.length} tasks)</span></summary>
-        <div style="padding:2px 14px 14px;">`;
+        <div style="padding:2px 14px 14px;">
+        <div style="margin-bottom:10px;"><button class="mini-btn danger-mini role-remove">Remove role</button></div>`;
 
       emp.tasks.forEach((t) => {
         const cadOpts = CADENCES.map(c => `<option value="${c}" ${t.cadence===c?'selected':''}>${c}</option>`).join('');
@@ -3730,10 +3996,30 @@ async function renderSetup(){
       html += `</div></details>`;
     });
 
+    const removedHere = loc.data.map((emp,empIdx)=>({emp,empIdx})).filter(x => x.emp.archived);
+    if(removedHere.length){
+      html += `<details class="setup-removed-roles" style="margin-top:6px;">
+        <summary style="cursor:pointer;font-size:12px;color:var(--win-text-secondary);padding:6px 2px;">Removed roles (${removedHere.length})</summary>
+        <div style="padding:6px 2px;">
+          ${removedHere.map(({emp,empIdx}) => `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid var(--win-border);font-size:12.5px;">
+            <span style="flex:1;color:var(--win-text-secondary);">${escapeHtml(emp.label)}</span>
+            <button class="mini-btn role-restore" data-loc="${locKey}" data-emp="${empIdx}">Restore</button>
+          </div>`).join('')}
+        </div>
+      </details>`;
+    }
+
     html += `</div>`;
   });
 
   view.innerHTML = html;
+
+  view.querySelectorAll('.setup-role').forEach(card => {
+    const key = card.dataset.loc + '::' + card.dataset.emp;
+    card.addEventListener('toggle', () => {
+      if(card.open) expandedRoleKeys.add(key); else expandedRoleKeys.delete(key);
+    });
+  });
 
   view.querySelectorAll('.add-role-btn').forEach(btn => {
     btn.onclick = async () => {
@@ -3741,6 +4027,28 @@ async function renderSetup(){
       const name = (input.value || '').trim();
       if(!name) return;
       LOCATIONS[btn.dataset.loc].data.push({ label: name, tasks: [] });
+      await saveRoster();
+      await renderSetup();
+    };
+  });
+
+  view.querySelectorAll('.role-remove').forEach(btn => {
+    btn.onclick = async () => {
+      const card = btn.closest('.setup-role');
+      const locKey = card.dataset.loc, empIdx = parseInt(card.dataset.emp, 10);
+      const emp = LOCATIONS[locKey].data[empIdx];
+      if(!await appConfirm(`Remove "${emp.label}"? It disappears from the roster and every assignment dropdown right away. Anything already assigned to them (past metrics, action items, meeting attendance) keeps showing their name so history stays intact — nothing is deleted, and you can restore the role later from "Removed roles" at the bottom of this location.`, 'Remove')) return;
+      emp.archived = true;
+      expandedRoleKeys.delete(locKey+'::'+empIdx);
+      await saveRoster();
+      await renderSetup();
+    };
+  });
+
+  view.querySelectorAll('.role-restore').forEach(btn => {
+    btn.onclick = async () => {
+      const locKey = btn.dataset.loc, empIdx = parseInt(btn.dataset.emp, 10);
+      LOCATIONS[locKey].data[empIdx].archived = false;
       await saveRoster();
       await renderSetup();
     };
