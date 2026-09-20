@@ -39,7 +39,7 @@ function codeTier(code) {
 // (the owner's private work plan) is deliberately NOT in this set; it stays ungated the same
 // way it always has (employees assigned to a step still need to update it), but is only ever
 // shown in the UI to the owner, never to managers.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets']);
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories']);
 
 function loadStore() {
   try {
