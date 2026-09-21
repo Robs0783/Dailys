@@ -261,6 +261,7 @@
       <button class="tb-btn admin-only" id="setupToggleBtn">Setup</button>
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
+      <button class="tb-btn admin-only" id="vendorMeetingsToggleBtn">Vendor Meetings</button>
       <button class="tb-btn owner-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
@@ -312,6 +313,8 @@
         <div class="summary-stat" id="summaryStat"></div>
       </div>
 
+      <div id="metricsPanelWrap" style="margin-bottom:22px;"></div>
+
       <div id="tableWrap"></div>
 
       <div id="meetingsPanelWrap" style="margin-top:22px;"></div>
@@ -319,8 +322,6 @@
       <div id="actionItemsPanelWrap" style="margin-top:22px;"></div>
 
       <div id="projectsPanelWrap" style="margin-top:22px;"></div>
-
-      <div id="metricsPanelWrap" style="margin-top:22px;"></div>
 
       <div id="onetimeWrap" style="display:none; margin-top:22px;">
         <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">One-Time Tasks</div>
@@ -336,6 +337,7 @@
     <div class="monthly-view" id="setupView"></div>
     <div class="monthly-view" id="onetimeReviewView"></div>
     <div class="monthly-view" id="meetingsView"></div>
+    <div class="monthly-view" id="vendorMeetingsView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="ownerBoardView"></div>
     <div class="monthly-view" id="metricsView"></div>
@@ -589,6 +591,13 @@ async function refreshServerState(){
     catch(e){ console.error('Bad meetings data, resetting', e); MEETINGS = []; }
     try{ PROJECTS = SERVER_STATE['projects'] ? JSON.parse(SERVER_STATE['projects']) : []; }
     catch(e){ console.error('Bad projects data, resetting', e); PROJECTS = []; }
+    // Old project steps only ever had a single assignedLoc/assignedEmp - fold it into the new
+    // `assignees` array (a step can now be assigned to more than one person) so nothing already
+    // saved loses its assignment. assignedLoc/assignedEmp are no longer written, just read here
+    // for one-time migration.
+    PROJECTS.forEach(p => (p.steps||[]).forEach(s => {
+      if(!s.assignees) s.assignees = (s.assignedLoc && s.assignedEmp !== null && s.assignedEmp !== undefined) ? [s.assignedLoc+'::'+s.assignedEmp] : [];
+    }));
     try{ METRICS = SERVER_STATE['metrics'] ? JSON.parse(SERVER_STATE['metrics']) : []; }
     catch(e){ console.error('Bad metrics data, resetting', e); METRICS = []; }
     // Old metrics only ever had a single `category` string - fold it into the new `categories`
@@ -616,6 +625,14 @@ async function refreshServerState(){
       catch(e){ console.error('Bad departments data, using defaults', e); DEPARTMENTS = DEFAULT_DEPARTMENTS.slice(); }
     } else {
       DEPARTMENTS = DEFAULT_DEPARTMENTS.slice();
+    }
+    try{ VENDOR_MEETINGS = SERVER_STATE['vendor-meetings'] ? JSON.parse(SERVER_STATE['vendor-meetings']) : []; }
+    catch(e){ console.error('Bad vendor meetings data, resetting', e); VENDOR_MEETINGS = []; }
+    if(SERVER_STATE['vendor-meeting-categories']){
+      try{ VENDOR_MEETING_CATEGORIES = JSON.parse(SERVER_STATE['vendor-meeting-categories']); }
+      catch(e){ console.error('Bad vendor meeting categories data, using defaults', e); VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice(); }
+    } else {
+      VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice();
     }
     try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
@@ -647,6 +664,69 @@ async function saveProjects(){
 function newProjectId(){ return 'proj-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newStepId(){ return 'step-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newAttachId(){ return 'att-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ---- Vendor/outside-company meeting schedule. Separate from the internal recurring Meetings
+// (Service, Sales, Month-End Recap, etc.) - this is for one-off regular check-ins with vendors,
+// ad reps, lenders, and other outside companies. Each company keeps a running list of meeting
+// dates (add the following one whenever you know it, mark a date complete whenever that meeting
+// happens - the two aren't tied together, so you can queue up the next date before wrapping up
+// the current one, same as Rob already does on paper). "Next" for a company is just its earliest
+// not-yet-completed date. Admin-only, same gating as Meetings/Metrics. ----
+let VENDOR_MEETINGS = []; // [{ id, company, category, notes, meetings: [{id,date,status,completedAt,notes}], createdAt }]
+const DEFAULT_VENDOR_MEETING_CATEGORIES = ['Advertising/Marketing','Technology/Software','Finance/Lending','Vendors & Parts','Insurance','Professional Services','Other'];
+let VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice();
+async function saveVendorMeetings(){
+  const ok = await storSet('vendor-meetings', JSON.stringify(VENDOR_MEETINGS), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+async function saveVendorMeetingCategories(){
+  const ok = await storSet('vendor-meeting-categories', JSON.stringify(VENDOR_MEETING_CATEGORIES), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+async function renameVendorMeetingCategory(oldName, newName){
+  VENDOR_MEETINGS.forEach(c => { if(c.category === oldName) c.category = newName; });
+  await saveVendorMeetings();
+}
+async function removeVendorMeetingCategory(name){
+  VENDOR_MEETINGS.forEach(c => { if(c.category === name) c.category = ''; });
+  await saveVendorMeetings();
+}
+function newVendorId(){ return 'vendor-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newVendorMeetingId(){ return 'vm-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+// Earliest not-yet-completed date on a company's list - what shows as its "Next meeting".
+function nextVendorMeetingDate(company){
+  const open = (company.meetings||[]).filter(m => m.status !== 'Completed' && m.date);
+  if(!open.length) return null;
+  return open.reduce((a,b) => (a.date < b.date ? a : b));
+}
+// Every company's next meeting, soonest first - feeds the Owner Board "Upcoming vendor
+// meetings" section.
+function upcomingVendorMeetings(){
+  const out = [];
+  VENDOR_MEETINGS.forEach(c => {
+    const next = nextVendorMeetingDate(c);
+    if(next) out.push({ company: c, meeting: next });
+  });
+  out.sort((a,b) => a.meeting.date.localeCompare(b.meeting.date));
+  return out;
+}
+// Every company's meeting dates, flattened into one list (each entry keeps a back-reference
+// to its company) - used to build the "By Day" agenda view and the Owner Board list.
+function allVendorMeetingEntries(){
+  const out = [];
+  VENDOR_MEETINGS.forEach(c => (c.meetings||[]).forEach(m => out.push({ company: c, meeting: m })));
+  return out;
+}
+// Roster display names for whoever's invited to a given meeting date - "attendees" holds
+// "loc::empIdx" keys the same way step/metric assignments do.
+function vendorAttendeeLabels(meeting){
+  const targets = allRosterTargets();
+  return (meeting.attendees||[]).map(k => {
+    const [locKey, empIdxStr] = k.split('::');
+    const t = targets.find(x => x.locKey===locKey && x.empIdx===parseInt(empIdxStr,10));
+    return t ? t.label : null;
+  }).filter(Boolean);
+}
 
 // ---- KPI Metrics tracker. Metric DEFINITIONS (name, cadence, who's assigned, unit/target) are
 // admin-only, same as the roster and meetings - so this is gated server-side like those. The
@@ -1702,10 +1782,10 @@ async function renderMain(){
   });
 
   computeSummary(dates, countableTasks);
+  await renderMetricsPanel(dates);
   await renderMeetingsPanel(dates);
   await renderActionItemsPanel();
   renderProjectsPanel();
-  await renderMetricsPanel(dates);
 
   // Every role gets a One-Time Tasks panel (for ad-hoc things assigned outside the
   // regular daily/weekly/monthly list) - checking one off leaves it visible with a
@@ -1812,7 +1892,7 @@ function renderProjectsPanel(){
   PROJECTS.forEach(p => {
     if(p.status === 'Completed') return;
     (p.steps||[]).forEach(s => {
-      if(`${s.assignedLoc}::${s.assignedEmp}` === myKey){
+      if((s.assignees||[]).includes(myKey)){
         rows.push({ project: p, step: s });
       }
     });
@@ -1853,11 +1933,53 @@ function renderProjectsPanel(){
   });
 }
 
-// ---- Employee-facing inline metrics entry: daily metrics get Mon-Fri boxes for the week being
-// viewed (no Saturday/Sunday - the dealership is closed Sunday and daily metrics are only kept
-// Mon-Fri), weekly metrics get a single box for the week (meant to be filled in on Thursday).
-// Full metric definitions (create/edit/remove, who's assigned) live in the admin-only panel
-// below (see renderMetrics). ----
+// ---- Business-day helpers (Mon-Sat; closed Sunday only) shared by the MTD auto-sum and the
+// month-end pace projection below. ----
+function businessDaysInMonth(monthDate){
+  const n = daysInMonthOf(monthDate);
+  let count = 0;
+  for(let day=1; day<=n; day++){
+    if(new Date(monthDate.getFullYear(), monthDate.getMonth(), day).getDay() !== 0) count++;
+  }
+  return count;
+}
+function businessDaysElapsed(monthDate, throughDate){
+  if(throughDate.getFullYear() !== monthDate.getFullYear() || throughDate.getMonth() !== monthDate.getMonth()) return businessDaysInMonth(monthDate);
+  let count = 0;
+  for(let day=1; day<=throughDate.getDate(); day++){
+    if(new Date(monthDate.getFullYear(), monthDate.getMonth(), day).getDay() !== 0) count++;
+  }
+  return count;
+}
+// Auto month-to-date total for a metric flagged mtdAuto - sums every entry that falls in the
+// given month, regardless of weekday (so it lines up with whatever days the metric is actually
+// entered on). An owner-set mtdOverrides value for that month wins over the auto sum, so a bad
+// calc can be corrected without touching the underlying daily entries.
+function metricMtdValue(m, entries, monthDate){
+  const mk = monthKey(monthDate);
+  if(m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '') return parseFloat(m.mtdOverrides[mk]) || 0;
+  const total = sumInMonth(entries, Object.keys(entries), monthDate);
+  return total === null ? 0 : total;
+}
+// Pace projection for a metric flagged showPace: per-business-day average so far this month,
+// and what that average would add up to by month end if the pace holds (Mon-Sat, closed Sunday).
+function metricPaceStats(m, entries, monthDate){
+  const mtd = metricMtdValue(m, entries, monthDate);
+  const elapsed = businessDaysElapsed(monthDate, new Date());
+  const totalDays = businessDaysInMonth(monthDate);
+  const perDayAvg = elapsed > 0 ? mtd / elapsed : 0;
+  const projected = perDayAvg * totalDays;
+  return { mtd, elapsed, totalDays, perDayAvg, projected };
+}
+
+// ---- Employee-facing inline metrics entry: shown at the very top of the page so daily numbers
+// are the first thing an employee sees. Daily metrics get Mon-Sat boxes for the week being
+// viewed (the dealership is closed Sunday only), weekly metrics get a single box for the week
+// (meant to be filled in on Thursday). Metrics flagged mtdAuto show a running month-to-date
+// total calculated from the entries themselves (owner can override it from here if there's a
+// calc error); metrics flagged showPace also show the per-day average and a projected month-end
+// total at the current pace. Full metric definitions (create/edit/remove, who's assigned) live
+// in the admin-only panel below (see renderMetrics). ----
 async function renderMetricsPanel(dates){
   const wrap = document.getElementById('metricsPanelWrap');
   if(!wrap) return;
@@ -1865,14 +1987,16 @@ async function renderMetricsPanel(dates){
   const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.status !== 'review' && !m.archived);
   if(mine.length === 0){ wrap.innerHTML = ''; return; }
 
-  const weekdayDates = dates.slice(0,5); // Mon-Fri
+  const weekdayDates = dates.slice(0,6); // Mon-Sat
   const weekKey = isoDate(dates[0]); // Monday of the displayed week, used as the key for weekly entries
-  const dow = ['Mon','Tue','Wed','Thu','Fri'];
+  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const monthCursor = firstOfMonth(new Date());
+  const owner = isOwnerAdmin();
 
   const entriesByMetric = {};
   await Promise.all(mine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
 
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Metrics</div>
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Daily Metrics</div>
     <div class="task-card" style="padding:10px 12px;">`;
 
   mine.forEach(m => {
@@ -1891,11 +2015,22 @@ async function renderMetricsPanel(dates){
         const dk = isoDate(d);
         const val = entries[dk] !== undefined ? entries[dk] : '';
         html += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <span style="font-size:10.5px;color:var(--win-text-secondary);">${dow[i]}</span>
+          <span style="font-size:10.5px;color:var(--win-text-secondary);text-align:center;line-height:1.25;">${dow[i]}<br><span style="font-size:9.5px;">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></span>
           <input type="number" step="any" class="metric-input" data-datekey="${dk}" value="${escapeAttr(val)}" style="width:70px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 7px;font-size:12.5px;text-align:center;">
         </div>`;
       });
       html += `</div>`;
+
+      if(m.mtdAuto){
+        const stats = metricPaceStats(m, entries, monthCursor);
+        const mk = monthKey(monthCursor);
+        const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
+        html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
+          <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
+          ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
+          ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
+        </div>`;
+      }
     }
     html += `</div>`;
   });
@@ -1914,46 +2049,84 @@ async function renderMetricsPanel(dates){
         await saveMetricEntries(mid, entries);
         await syncLinkedTaskStatuses(mid, dk, hasValue);
         showToast('Saved');
+        renderMetricsPanel(dates);
       };
     });
   });
+
+  wrap.querySelectorAll('.mtd-override-btn').forEach(btn => {
+    btn.onclick = () => {
+      const m = mine.find(x => x.id === btn.dataset.mid);
+      if(!m) return;
+      openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderMetricsPanel(dates));
+    };
+  });
+}
+function openMtdOverrideModal(m, entries, monthCursor, onSaved){
+  const mk = monthKey(monthCursor);
+  const autoTotal = sumInMonth(entries, Object.keys(entries), monthCursor) || 0;
+  const current = (m.mtdOverrides && m.mtdOverrides[mk] !== undefined) ? m.mtdOverrides[mk] : '';
+  document.getElementById('photoModalTitle').textContent = m.name + ' \u2014 fix ' + fmtMonthLabel(monthCursor) + ' MTD';
+  const body = document.getElementById('photoModalBody');
+  body.innerHTML = `
+    <p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 10px;">Auto-calculated from daily entries: <b>${autoTotal}</b>. Enter a corrected month-to-date total below, or leave blank to go back to the auto-calculated number.</p>
+    <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px;">Corrected MTD total</label>
+    <input type="number" step="any" id="mtdOverrideInput" value="${escapeAttr(current)}" placeholder="${autoTotal}" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:14px;box-sizing:border-box;">
+  `;
+  document.getElementById('photoModalActions').innerHTML = '';
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save';
+  saveBtn.className = 'primary';
+  saveBtn.onclick = async () => {
+    const input = document.getElementById('mtdOverrideInput');
+    if(!m.mtdOverrides) m.mtdOverrides = {};
+    if(input.value.trim() === ''){ delete m.mtdOverrides[mk]; } else { m.mtdOverrides[mk] = input.value.trim(); }
+    await saveMetrics();
+    closePhotoModal();
+    if(onSaved) onSaved();
+  };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Cancel';
+  closeBtn.onclick = closePhotoModal;
+  document.getElementById('photoModalActions').appendChild(closeBtn);
+  document.getElementById('photoModalActions').appendChild(saveBtn);
+  document.getElementById('photoModal').classList.add('show');
+  setTimeout(() => { const inp = document.getElementById('mtdOverrideInput'); if(inp) inp.focus(); }, 0);
 }
 
+// Condensed for the employee-facing page: a day-by-day strip with just each meeting's name
+// (and time, if set) listed under its day - no agenda, links, linked-metric summary, or open
+// action items here (those still have their own full detail in the print view and, for action
+// items, their own panel below). Click a meeting to open the same print/detail view the old
+// full card linked to.
 async function renderMeetingsPanel(dates){
   const wrap = document.getElementById('meetingsPanelWrap');
   if(!wrap) return;
   const myKey = `${currentLoc}::${currentEmployee}`;
-  const rows = [];
-  dates.forEach((d) => {
+  const byDay = dates.map(d => ({ date: d, meetings: [] }));
+  dates.forEach((d, i) => {
     MEETINGS.forEach(m => {
       if((m.attendeeRoles||[]).includes(myKey) && meetingOccursOn(m, d)){
-        rows.push({ date: d, meeting: m });
+        byDay[i].meetings.push(m);
       }
     });
   });
-  if(rows.length === 0){ wrap.innerHTML = ''; return; }
-  rows.sort((a,b) => a.date - b.date);
-  const allTargets = allRosterTargets();
-  const dowFmt = (d) => d.toLocaleDateString('en-US', {weekday:'short', month:'numeric', day:'numeric'});
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Meetings this week</div>`;
-  for(const {date, meeting} of rows){
-    const openItems = openActionItemsAcrossLog(meeting.notesLog);
-    const metricsHtml = meeting.metricCategory ? await meetingMetricsSummaryHtml(meeting.metricCategory) : '';
-    html += `<div style="border:1px solid var(--win-border);border-radius:6px;padding:9px 12px;margin-bottom:6px;background:var(--win-surface);">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:12.5px;font-weight:600;">${escapeHtml(meeting.title||'Untitled meeting')} <span style="font-weight:400;color:var(--win-text-secondary);">\u00b7 ${dowFmt(date)}${meeting.time ? ' \u00b7 ' + escapeHtml(meeting.time) : ''} \u00b7 ${escapeHtml(meeting.type||'')}</span></span>
-        <button class="mini-btn mp-print-btn" data-mid="${meeting.id}" style="margin-left:auto;">\u{1F5A8} Print</button>
-      </div>
-      ${meeting.agenda ? `<div style="font-size:12px;color:var(--win-text-secondary);margin-top:4px;">${bulletListHtml(meeting.agenda)}</div>` : ''}
-      ${(meeting.links && meeting.links.length) ? `<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">${meeting.links.filter(l=>l.url).map(l => `<a href="${escapeAttr(l.url)}" target="_blank" rel="noopener" class="attach-chip">\u{1F517} ${escapeHtml(l.label||l.url)}</a>`).join('')}</div>` : ''}
-      ${metricsHtml ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">${escapeHtml(meeting.metricCategory)} this week</div>${metricsHtml}</div>` : ''}
-      ${reviewMetricsSectionHtml(meeting.metricCategory, false)}
-      ${openItems.length ? `<div style="margin-top:8px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--win-text-secondary);margin-bottom:2px;">Open from last time</div>${openItems.map(({item, fromDate}) => `<div style="font-size:12px;padding:1px 0;">\u2022 ${escapeHtml(item.text)}${item.assignedLoc ? ` <span style="color:var(--win-text-secondary);">\u2014 ${escapeHtml((allTargets.find(x=>x.locKey===item.assignedLoc&&x.empIdx===item.assignedEmp)||{}).label||'')}</span>` : ''}${item.deadline ? ` <span style="color:var(--win-text-secondary);">\u00b7 due ${escapeHtml(item.deadline)}</span>` : ''}</div>`).join('')}</div>` : ''}
+  if(!byDay.some(b => b.meetings.length > 0)){ wrap.innerHTML = ''; return; }
+  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Meetings this week</div>
+    <div class="task-card" style="padding:10px 12px;">
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">`;
+  byDay.forEach((b, i) => {
+    if(b.meetings.length === 0) return;
+    html += `<div style="min-width:130px;flex:1;">
+      <div style="font-size:11px;font-weight:700;color:var(--win-text-secondary);margin-bottom:5px;">${dow[i]} <span style="font-weight:400;">${b.date.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></div>
+      ${b.meetings.map(m => `<div class="mp-meeting-chip" data-mid="${m.id}" title="View details" style="font-size:12px;padding:5px 9px;border:1px solid var(--win-border);border-radius:6px;margin-bottom:5px;cursor:pointer;background:var(--win-surface);">${escapeHtml(m.title||'Untitled meeting')}${m.time ? ` <span style="color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.time)}</span>` : ''}</div>`).join('')}
     </div>`;
-  }
+  });
+  html += `</div></div>`;
   wrap.innerHTML = html;
-  wrap.querySelectorAll('.mp-print-btn').forEach(btn => {
-    btn.onclick = () => openMeetingPrint(btn.dataset.mid);
+  wrap.querySelectorAll('.mp-meeting-chip').forEach(chip => {
+    chip.onclick = () => openMeetingPrint(chip.dataset.mid);
   });
 }
 
@@ -2226,6 +2399,7 @@ async function renderOnetimeReview(){
 // own weekly view a week ahead as they page forward through the week-nav above. This admin
 // area is where the schedule, agenda bullets, and a running log of past meeting notes live. ----
 let meetingsShown = false;
+let vendorMeetingsShown = false;
 
 // Which meeting cards are currently expanded - renderMeetings() rebuilds the whole view's HTML
 // on every edit (a checkbox, a saved field, anything), which would otherwise collapse every
@@ -2679,6 +2853,323 @@ function wireMeetingsHandlers(view){
   });
 }
 
+// ---- Vendor Meetings admin screen. One card per vendor/outside company, each holding its own
+// list of meeting dates (Scheduled or Completed). Add the following meeting's date whenever you
+// know it - no need to wait until the current one is marked complete - and mark a date complete
+// whenever that meeting actually happens. "Next" on the card and on the Owner Board is always
+// just the earliest Scheduled date. ----
+let vmCatManagerExpanded = false; // keeps "Manage categories" open across renderVendorMeetings() re-renders
+let vendorMeetingsViewTab = 'day'; // 'day' (agenda, grouped by date) or 'company' (edit view)
+let vmCompletedExpanded = false; // keeps "Completed" open across renderVendorMeetings() re-renders
+
+async function renderVendorMeetings(){
+  await refreshServerState();
+  const view = document.getElementById('vendorMeetingsView');
+
+  let html = `
+    <div class="monthly-header"><h1>Vendor Meetings</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Regular check-ins with vendors, ad reps, lenders, and other outside companies — separate
+      from your internal department Meetings. Add a meeting date as soon as you know it (even
+      before the current one has happened), and mark each one complete once it's done. The
+      earliest open date on each company is what shows as its "Next meeting," including on the
+      Owner Board.
+    </p>
+
+    <details id="vmCatManagerDetails" ${vmCatManagerExpanded ? 'open' : ''} style="max-width:520px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);margin-bottom:16px;">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Manage categories (${VENDOR_MEETING_CATEGORIES.length})</summary>
+      <div style="padding:4px 12px 12px;">
+        <p style="font-size:11.5px;color:var(--win-text-secondary);margin:0 0 8px;">What kind of company this is — rename or remove any time, no rebuild needed.</p>
+        ${VENDOR_MEETING_CATEGORIES.map((c,i) => `<div class="vm-cat-row" data-idx="${i}" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input type="text" class="vm-cat-name" value="${escapeAttr(c)}" style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn danger-mini vm-cat-remove">Remove</button>
+        </div>`).join('')}
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="newVmCatName" placeholder="New category name..." style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn primary-mini" id="newVmCatBtn">+ Add category</button>
+        </div>
+      </div>
+    </details>
+
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <input type="text" id="newVendorName" placeholder="Company name..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <select id="newVendorCategory" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Category…</option>
+        ${VENDOR_MEETING_CATEGORIES.map(c => `<option value="${escapeAttr(c)}">${escapeAttr(c)}</option>`).join('')}
+      </select>
+      <button class="mini-btn primary-mini" id="newVendorBtn">+ Add company</button>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="mini-btn ${vendorMeetingsViewTab==='day'?'primary-mini':''}" id="vmTabDay">By Day</button>
+      <button class="mini-btn ${vendorMeetingsViewTab==='company'?'primary-mini':''}" id="vmTabCompany">By Company</button>
+    </div>
+  `;
+
+  if(VENDOR_MEETINGS.length === 0){
+    html += `<div class="empty-note">No vendor/outside companies set up yet.</div>`;
+    view.innerHTML = html;
+    wireVendorMeetingsHandlers(view);
+    return;
+  }
+
+  if(vendorMeetingsViewTab === 'day'){
+    const entries = allVendorMeetingEntries();
+    const scheduled = entries.filter(e => e.meeting.status !== 'Completed' && e.meeting.date)
+      .sort((a,b) => a.meeting.date.localeCompare(b.meeting.date));
+    const completed = entries.filter(e => e.meeting.status === 'Completed')
+      .sort((a,b) => (b.meeting.completedAt||'').localeCompare(a.meeting.completedAt||''));
+
+    const byDate = {};
+    scheduled.forEach(e => { (byDate[e.meeting.date] = byDate[e.meeting.date] || []).push(e); });
+    const dateKeys = Object.keys(byDate).sort();
+
+    if(!dateKeys.length){
+      html += `<div class="empty-note">No vendor meetings scheduled.</div>`;
+    }
+    dateKeys.forEach(dk => {
+      const dObj = new Date(dk + 'T00:00:00');
+      const label = isNaN(dObj) ? dk : dObj.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric', year:'numeric' });
+      html += `<div class="dept-section"><div class="dept-title">${escapeHtml(label)}</div>`;
+      byDate[dk].forEach(({company, meeting}) => {
+        const attendeeLabels = vendorAttendeeLabels(meeting);
+        html += `<div class="task-card" data-cid="${company.id}" data-mid="${meeting.id}" style="padding:10px 12px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;flex:1;min-width:160px;">${escapeHtml(company.company)}</span>
+            ${company.category ? `<span style="font-size:11px;color:var(--win-text-secondary);">${escapeHtml(company.category)}</span>` : ''}
+            <button class="mini-btn vmday-complete-btn">Mark complete</button>
+          </div>
+          ${attendeeLabels.length ? `<div style="margin-top:4px;font-size:11.5px;color:var(--win-text-secondary);">Attendees: ${attendeeLabels.map(escapeHtml).join(', ')}</div>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    html += `<details id="vmCompletedDetails" ${vmCompletedExpanded ? 'open' : ''} style="margin-top:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Completed (${completed.length})</summary>
+      <div style="padding:4px 14px 14px;">
+        ${completed.length ? completed.map(({company, meeting}) => `<div style="font-size:12px;color:var(--win-text-secondary);padding:4px 0;border-top:1px solid var(--win-border);">${escapeHtml(company.company)} — met ${escapeHtml(meeting.date)}${meeting.completedAt ? ', logged ' + escapeHtml(meeting.completedAt) : ''}</div>`).join('') : '<div class="empty-note">No completed vendor meetings yet.</div>'}
+      </div>
+    </details>`;
+
+    view.innerHTML = html;
+    wireVendorMeetingsHandlers(view);
+    return;
+  }
+
+  const sorted = VENDOR_MEETINGS.slice().sort((a,b) => {
+    const na = nextVendorMeetingDate(a), nb = nextVendorMeetingDate(b);
+    if(na && nb) return na.date.localeCompare(nb.date);
+    if(na) return -1;
+    if(nb) return 1;
+    return (a.company||'').localeCompare(b.company||'');
+  });
+
+  sorted.forEach(c => {
+    const next = nextVendorMeetingDate(c);
+    const meetings = (c.meetings||[]).slice().sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    html += `<details class="vendor-card" data-cid="${c.id}" style="padding:0;margin-bottom:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+      <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">
+        ${escapeHtml(c.company)}
+        <span style="font-weight:400;color:var(--win-text-secondary);">${c.category ? '· ' + escapeHtml(c.category) + ' ' : ''}· ${next ? 'Next: ' + escapeHtml(next.date) : 'No meeting scheduled'}</span>
+      </summary>
+      <div style="padding:4px 14px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" class="vm-company-name" value="${escapeAttr(c.company)}" placeholder="Company name" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="vm-company-cat" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">No category</option>
+            ${VENDOR_MEETING_CATEGORIES.map(cat => `<option value="${escapeAttr(cat)}" ${c.category===cat?'selected':''}>${escapeAttr(cat)}</option>`).join('')}
+          </select>
+          <button class="mini-btn danger-mini vendor-remove">Delete company</button>
+        </div>
+        <textarea class="vm-company-notes" placeholder="Notes (contact name, what these meetings cover, etc.)..." style="width:100%;min-height:40px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:12px;">${escapeHtml(c.notes||'')}</textarea>
+
+        <div class="vm-meeting-list">`;
+
+    meetings.forEach(mtg => {
+      const done = mtg.status === 'Completed';
+      const attendeeKeys = mtg.attendees || [];
+      const attendeeChecks = dropdownTargets(attendeeKeys).map(x => {
+        const key = x.locKey + '::' + x.empIdx;
+        return `<label style="display:flex;align-items:center;gap:4px;font-size:11.5px;">
+          <input type="checkbox" class="vm-attendee-check" value="${key}" ${attendeeKeys.includes(key)?'checked':''}> ${escapeAttr(x.label)}
+        </label>`;
+      }).join('');
+      html += `<div class="vm-date-row" data-mid="${mtg.id}" style="padding:8px;border:1px solid var(--win-border);border-radius:6px;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" class="vm-date-input" value="${escapeAttr(mtg.date||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+          <span class="status-pill-sm" style="background:${done?'var(--kpi-good)':'var(--kpi-risk)'};">${done ? 'Completed' + (mtg.completedAt ? ' ' + escapeHtml(mtg.completedAt) : '') : 'Scheduled'}</span>
+          ${!done ? `<button class="mini-btn vm-complete-btn">Mark complete</button>` : ''}
+          <button class="mini-btn danger-mini vm-date-remove">Remove</button>
+        </div>
+        <div style="margin-top:6px;">
+          <span style="font-size:11px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:3px;">Attendees (anyone from your team invited to this one):</span>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">${attendeeChecks || '<span style="font-size:11px;color:var(--win-text-secondary);">No roster roles yet</span>'}</div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="date" class="add-vm-date-input" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+          <button class="mini-btn primary-mini add-vm-date-btn">+ Add meeting date</button>
+        </div>
+      </div>
+    </details>`;
+  });
+
+  view.innerHTML = html;
+  wireVendorMeetingsHandlers(view);
+}
+
+function wireVendorMeetingsHandlers(view){
+  const tabDay = document.getElementById('vmTabDay');
+  if(tabDay) tabDay.onclick = async () => { vendorMeetingsViewTab = 'day'; await renderVendorMeetings(); };
+  const tabCompany = document.getElementById('vmTabCompany');
+  if(tabCompany) tabCompany.onclick = async () => { vendorMeetingsViewTab = 'company'; await renderVendorMeetings(); };
+
+  const completedDetails = document.getElementById('vmCompletedDetails');
+  if(completedDetails) completedDetails.addEventListener('toggle', () => { vmCompletedExpanded = completedDetails.open; });
+
+  view.querySelectorAll('.vmday-complete-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const row = btn.closest('[data-cid]');
+      const c = VENDOR_MEETINGS.find(x => x.id === row.dataset.cid);
+      const m = c && (c.meetings||[]).find(x => x.id === row.dataset.mid);
+      if(!m) return;
+      m.status = 'Completed';
+      m.completedAt = isoDate(new Date());
+      await saveVendorMeetings();
+      await renderVendorMeetings();
+    };
+  });
+
+  const catDetails = document.getElementById('vmCatManagerDetails');
+  if(catDetails) catDetails.addEventListener('toggle', () => { vmCatManagerExpanded = catDetails.open; });
+
+  view.querySelectorAll('.vm-cat-row').forEach(row => {
+    const idx = parseInt(row.dataset.idx, 10);
+    row.querySelector('.vm-cat-name').onchange = async (e) => {
+      const newName = (e.target.value || '').trim();
+      if(!newName || newName === VENDOR_MEETING_CATEGORIES[idx]) { e.target.value = VENDOR_MEETING_CATEGORIES[idx]; return; }
+      if(VENDOR_MEETING_CATEGORIES.includes(newName)){ showToast('That category already exists'); e.target.value = VENDOR_MEETING_CATEGORIES[idx]; return; }
+      const oldName = VENDOR_MEETING_CATEGORIES[idx];
+      VENDOR_MEETING_CATEGORIES[idx] = newName;
+      await saveVendorMeetingCategories();
+      await renameVendorMeetingCategory(oldName, newName);
+      await renderVendorMeetings();
+    };
+    row.querySelector('.vm-cat-remove').onclick = async () => {
+      const name = VENDOR_MEETING_CATEGORIES[idx];
+      const inUse = VENDOR_MEETINGS.filter(c => c.category === name).length;
+      const msg = inUse
+        ? `Remove "${name}"? ${inUse} compan${inUse===1?'y':'ies'} tagged with it will show "No category" until reassigned.`
+        : `Remove "${name}"?`;
+      if(!await appConfirm(msg, 'Remove')) return;
+      VENDOR_MEETING_CATEGORIES.splice(idx, 1);
+      await saveVendorMeetingCategories();
+      await removeVendorMeetingCategory(name);
+      await renderVendorMeetings();
+    };
+  });
+  const newVmCatBtn = document.getElementById('newVmCatBtn');
+  if(newVmCatBtn) newVmCatBtn.onclick = async () => {
+    const input = document.getElementById('newVmCatName');
+    const name = (input.value || '').trim();
+    if(!name) return;
+    if(VENDOR_MEETING_CATEGORIES.includes(name)){ showToast('That category already exists'); return; }
+    VENDOR_MEETING_CATEGORIES.push(name);
+    await saveVendorMeetingCategories();
+    await renderVendorMeetings();
+  };
+
+  const newVendorBtn = document.getElementById('newVendorBtn');
+  if(newVendorBtn) newVendorBtn.onclick = async () => {
+    const name = (document.getElementById('newVendorName').value || '').trim();
+    const category = document.getElementById('newVendorCategory').value;
+    if(!name) return;
+    VENDOR_MEETINGS.push({ id: newVendorId(), company: name, category, notes: '', meetings: [], createdAt: isoDate(new Date()) });
+    await saveVendorMeetings();
+    await renderVendorMeetings();
+  };
+
+  view.querySelectorAll('.vendor-card').forEach(card => {
+    const cid = card.dataset.cid;
+    const findC = () => VENDOR_MEETINGS.find(c => c.id === cid);
+
+    const bindC = (sel, prop) => {
+      const el = card.querySelector(sel);
+      if(!el) return;
+      el.onchange = async (e) => { const c = findC(); if(!c) return; c[prop] = e.target.value; await saveVendorMeetings(); };
+    };
+    bindC('.vm-company-name', 'company');
+    bindC('.vm-company-cat', 'category');
+    bindC('.vm-company-notes', 'notes');
+
+    const removeBtn = card.querySelector('.vendor-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      const c = findC(); if(!c) return;
+      if(!await appConfirm(`Delete "${c.company}" and its whole meeting history? This cannot be undone.`, 'Delete')) return;
+      const i = VENDOR_MEETINGS.findIndex(x => x.id === cid);
+      if(i > -1) VENDOR_MEETINGS.splice(i, 1);
+      await saveVendorMeetings();
+      await renderVendorMeetings();
+    };
+
+    const addDateBtn = card.querySelector('.add-vm-date-btn');
+    if(addDateBtn) addDateBtn.onclick = async () => {
+      const input = card.querySelector('.add-vm-date-input');
+      const date = input.value;
+      if(!date) return;
+      const c = findC(); if(!c) return;
+      if(!c.meetings) c.meetings = [];
+      c.meetings.push({ id: newVendorMeetingId(), date, status: 'Scheduled', completedAt: '', notes: '', attendees: [] });
+      await saveVendorMeetings();
+      await renderVendorMeetings();
+    };
+
+    card.querySelectorAll('.vm-date-row').forEach(row => {
+      const mid = row.dataset.mid;
+      const findM = () => { const c = findC(); return c && (c.meetings||[]).find(m => m.id === mid); };
+
+      const dateInput = row.querySelector('.vm-date-input');
+      if(dateInput) dateInput.onchange = async (e) => {
+        const m = findM(); if(!m) return;
+        m.date = e.target.value;
+        await saveVendorMeetings();
+        await renderVendorMeetings();
+      };
+
+      const completeBtn = row.querySelector('.vm-complete-btn');
+      if(completeBtn) completeBtn.onclick = async () => {
+        const m = findM(); if(!m) return;
+        m.status = 'Completed';
+        m.completedAt = isoDate(new Date());
+        await saveVendorMeetings();
+        await renderVendorMeetings();
+      };
+
+      row.querySelectorAll('.vm-attendee-check').forEach(cb => {
+        cb.onchange = async () => {
+          const m = findM(); if(!m) return;
+          m.attendees = Array.from(row.querySelectorAll('.vm-attendee-check:checked')).map(el => el.value);
+          await saveVendorMeetings();
+        };
+      });
+
+      const removeDateBtn = row.querySelector('.vm-date-remove');
+      if(removeDateBtn) removeDateBtn.onclick = async () => {
+        if(!await appConfirm('Remove this meeting date?')) return;
+        const c = findC(); if(!c) return;
+        const i = (c.meetings||[]).findIndex(m => m.id === mid);
+        if(i > -1) c.meetings.splice(i, 1);
+        await saveVendorMeetings();
+        await renderVendorMeetings();
+      };
+    });
+  });
+}
+
 // ---- Project Planner (owner-only). Projects with steps assigned to specific employees,
 // deadlines, status, and attachments (a pasted Google Drive/file link, or an uploaded file
 // stored as a data URL). Employees see just their own assigned steps inline in their daily
@@ -2729,9 +3220,9 @@ async function renderProjects(){
     <div class="monthly-header"><h1>Project Planner</h1></div>
     <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
       Projects that need specific employees to do particular things by a deadline. Add steps,
-      assign each to someone on the roster, set a due date, and attach a file or a Google Drive
-      link. Assigned employees see their own steps on their daily page and can update status \u2014
-      full editing stays here.
+      assign each to one or more people on the roster, set a due date, and attach a file or a
+      Google Drive link. Every assigned employee sees the step on their own daily page and can
+      update status \u2014 full editing stays here.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:18px;">
       <input type="text" id="newProjName" placeholder="New project name..." style="flex:1;max-width:360px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
@@ -2767,13 +3258,16 @@ async function renderProjects(){
         <div class="p-steps">`;
 
     (p.steps||[]).forEach(s => {
-      const targetOpts = dropdownTargets(s.assignedLoc ? (s.assignedLoc+'::'+s.assignedEmp) : null).map(x => `<option value="${x.locKey}::${x.empIdx}" ${(s.assignedLoc===x.locKey && s.assignedEmp===x.empIdx)?'selected':''}>${escapeAttr(x.label)}</option>`).join('');
+      const assigneeKeys = s.assignees || [];
+      const assigneeChecks = dropdownTargets(assigneeKeys).map(x => {
+        const key = x.locKey + '::' + x.empIdx;
+        return `<label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+          <input type="checkbox" class="s-assignee-check" value="${key}" ${assigneeKeys.includes(key)?'checked':''}> ${escapeAttr(x.label)}
+        </label>`;
+      }).join('');
       html += `<div class="proj-step-row" data-sid="${s.id}">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <input type="text" class="s-title" value="${escapeAttr(s.title)}" placeholder="Step / task" style="flex:1;min-width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
-          <select class="s-assign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
-            <option value="">Unassigned</option>${targetOpts}
-          </select>
           <input type="date" class="s-due" value="${escapeAttr(s.dueDate||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
           <select class="s-status" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
             <option value="Not Started" ${s.status==='Not Started'?'selected':''}>Not Started</option>
@@ -2781,6 +3275,10 @@ async function renderProjects(){
             <option value="Done" ${s.status==='Done'?'selected':''}>Done</option>
           </select>
           <button class="mini-btn danger-mini s-remove">Remove</button>
+        </div>
+        <div style="margin-top:6px;">
+          <span style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Assigned to (check everyone who should see and work this step):</span>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">${assigneeChecks || '<span style="font-size:11.5px;color:var(--win-text-secondary);">No roster roles yet</span>'}</div>
         </div>
         <textarea class="s-notes" placeholder="Notes for this step..." style="width:100%;min-height:36px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-top:6px;">${escapeHtml(s.notes||'')}</textarea>
         <div class="s-attachments" style="margin-top:6px;">${renderAttachmentChips(s.attachments)}</div>
@@ -2847,7 +3345,7 @@ function wireProjectsHandlers(view){
       if(!title) return;
       const p = findP(); if(!p) return;
       if(!p.steps) p.steps = [];
-      p.steps.push({ id: newStepId(), title, assignedLoc: '', assignedEmp: null, dueDate: '', status: 'Not Started', notes: '', attachments: [] });
+      p.steps.push({ id: newStepId(), title, assignees: [], dueDate: '', status: 'Not Started', notes: '', attachments: [] });
       await saveProjects();
       await renderProjects();
     };
@@ -2866,14 +3364,13 @@ function wireProjectsHandlers(view){
       bindS('.s-status', 'status');
       bindS('.s-notes', 'notes');
 
-      const assignEl = row.querySelector('.s-assign');
-      if(assignEl) assignEl.onchange = async (e) => {
-        const s = findS(); if(!s) return;
-        const val = e.target.value;
-        if(!val){ s.assignedLoc = ''; s.assignedEmp = null; }
-        else { const [locKey, empIdxStr] = val.split('::'); s.assignedLoc = locKey; s.assignedEmp = parseInt(empIdxStr, 10); }
-        await saveProjects();
-      };
+      row.querySelectorAll('.s-assignee-check').forEach(cb => {
+        cb.onchange = async () => {
+          const s = findS(); if(!s) return;
+          s.assignees = Array.from(row.querySelectorAll('.s-assignee-check:checked')).map(el => el.value);
+          await saveProjects();
+        };
+      });
 
       const removeS = row.querySelector('.s-remove');
       if(removeS) removeS.onclick = async () => {
@@ -2952,7 +3449,8 @@ async function renderOwnerBoard(){
     <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 10px;">
       Everything that needs your attention in one place: what's assigned to you, completed work
       still waiting on your sign-off, everything overdue across the team, metrics and meetings
-      that have gone quiet, and your own personal task list.
+      that have gone quiet, progress on every active project, what's next on the vendor meeting
+      schedule, and your own personal task list.
     </p>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <label style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);">Which roster line is you?</label>
@@ -3028,6 +3526,50 @@ async function renderOwnerBoard(){
     </tr>`).join('')}</tbody>
   </table>` : '', 'Every meeting is logged.');
 
+  const activeProjects = PROJECTS.filter(p => p.status !== 'Completed');
+  html += section('Projects', activeProjects.length ? activeProjects.map(p => {
+    const steps = p.steps || [];
+    const doneSteps = steps.filter(s => s.status === 'Done');
+    const total = steps.length;
+    const doneCount = doneSteps.length;
+    const pct = total ? Math.round((doneCount/total)*100) : 0;
+    const od = p.deadline && p.deadline < today;
+    return `<div class="task-card" style="padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;flex:1;min-width:180px;">${escapeHtml(p.name)}</span>
+        <span class="status-pill-sm" style="background:${p.status==='On Hold'?'var(--kpi-risk)':'var(--kpi-good)'};">${escapeHtml(p.status||'Active')}</span>
+        ${p.deadline ? `<span class="status-pill-sm" style="background:${od?'var(--kpi-bad)':'var(--kpi-risk)'};">${od?'Overdue — ':'Due '}${escapeHtml(p.deadline)}</span>` : ''}
+        <span style="font-size:11.5px;color:var(--win-text-secondary);">${doneCount}/${total} steps done</span>
+      </div>
+      <div style="height:6px;border-radius:3px;background:var(--win-border);margin-top:8px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:var(--win-accent);"></div>
+      </div>
+      ${doneSteps.length ? `<div style="margin-top:8px;font-size:11.5px;color:var(--win-text-secondary);">Completed: ${doneSteps.map(s=>escapeHtml(s.title)).join(', ')}</div>` : ''}
+    </div>`;
+  }).join('') : '', 'No active projects.');
+
+  const upcomingVM = upcomingVendorMeetings();
+  html += section('Upcoming vendor meetings', upcomingVM.length ? `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+    <thead><tr>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);">Company</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);">Category</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);">Next meeting</th>
+      <th style="text-align:left;padding:4px 8px;font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);">Attendees</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${upcomingVM.map(({company, meeting}) => {
+      const od = meeting.date < today;
+      const attendeeLabels = vendorAttendeeLabels(meeting);
+      return `<tr style="border-top:1px solid var(--win-border);" data-cid="${company.id}" data-mid="${meeting.id}">
+        <td style="padding:5px 8px;">${escapeHtml(company.company)}</td>
+        <td style="padding:5px 8px;color:var(--win-text-secondary);">${escapeHtml(company.category||'')}</td>
+        <td style="padding:5px 8px;"><span class="status-pill-sm" style="background:${od?'var(--kpi-bad)':'var(--kpi-risk)'};">${escapeHtml(meeting.date)}</span></td>
+        <td style="padding:5px 8px;color:var(--win-text-secondary);">${attendeeLabels.length ? escapeHtml(attendeeLabels.join(', ')) : '—'}</td>
+        <td style="padding:5px 8px;"><button class="mini-btn ob-vm-complete-btn">Mark complete</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>` : '', 'No vendor meetings scheduled.');
+
   const recurringGroup = (cadence, label) => {
     const periodKey = ownerRecurringPeriodKey(cadence);
     const tasks = OWNER_RECURRING_TASKS.filter(t => t.cadence === cadence);
@@ -3101,6 +3643,20 @@ async function renderOwnerBoard(){
       const itemId = btn.closest('[data-itemid]').dataset.itemid;
       await setActionItemVerified(itemId, true);
       showToast('Verified');
+      await renderOwnerBoard();
+    };
+  });
+
+  view.querySelectorAll('.ob-vm-complete-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const row = btn.closest('[data-cid]');
+      const c = VENDOR_MEETINGS.find(x => x.id === row.dataset.cid);
+      const m = c && (c.meetings||[]).find(x => x.id === row.dataset.mid);
+      if(!m) return;
+      m.status = 'Completed';
+      m.completedAt = isoDate(new Date());
+      await saveVendorMeetings();
+      showToast('Marked complete');
       await renderOwnerBoard();
     };
   });
@@ -3961,6 +4517,32 @@ async function financialsVisualHtml(){
   return html;
 }
 
+// Visual tab, second section: month-to-date / per-day-average / projected-month-end cards for
+// any metric flagged showPace (currently Sold/Spotted/Delivered for Kyle and Lou) - the same
+// pace numbers shown inline on their own daily-entry page, gathered in one place for a manager
+// or owner to scan.
+async function paceVisualHtml(){
+  const paceMetrics = METRICS.filter(m => m.showPace && m.status !== 'review' && !m.archived);
+  if(paceMetrics.length === 0) return '';
+  const monthCursor = firstOfMonth(new Date());
+  const targets = allRosterTargets();
+  let html = '';
+  for(const m of paceMetrics){
+    const entries = await loadMetricEntries(m.id);
+    const stats = metricPaceStats(m, entries, monthCursor);
+    const who = (targets.find(x => x.locKey===m.assignedLoc && x.empIdx===m.assignedEmp)||{}).label || 'Unassigned';
+    html += `<div style="border:1px solid var(--win-border);border-radius:8px;padding:14px;margin-bottom:12px;background:var(--win-surface);">
+      <div style="font-weight:700;font-size:13.5px;margin-bottom:8px;">${escapeHtml(m.name)} <span style="font-weight:400;color:var(--win-text-secondary);">— ${escapeHtml(who)}</span></div>
+      <div style="display:flex;gap:26px;flex-wrap:wrap;">
+        <div><div style="font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);margin-bottom:2px;">Month to date</div><div style="font-weight:700;font-size:17px;">${stats.mtd}</div></div>
+        <div><div style="font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);margin-bottom:2px;">Per-day avg</div><div style="font-weight:700;font-size:17px;">${stats.perDayAvg.toFixed(1)}</div></div>
+        <div><div style="font-size:10.5px;text-transform:uppercase;color:var(--win-text-secondary);margin-bottom:2px;">Projected month-end at pace</div><div style="font-weight:700;font-size:17px;">${Math.round(stats.projected)}</div></div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
 function weeksTouchingMonth(monthDate){
   const n = daysInMonthOf(monthDate);
   const seen = {};
@@ -4021,6 +4603,11 @@ async function renderDashboard(){
   if(dashboardTab === 'Visual'){
     html += `<p style="font-size:12.5px;color:var(--win-text-secondary);max-width:760px;margin:0 0 14px;">Monthly trend and store-vs-store comparison for metrics tagged "Dealership financials." Tag more metrics with that category from the Metrics admin page to see them here.</p>`;
     html += await financialsVisualHtml();
+    const paceHtml = await paceVisualHtml();
+    if(paceHtml){
+      html += `<div style="font-weight:700;font-size:14px;margin:22px 0 10px;">Sales Pace</div>`;
+      html += paceHtml;
+    }
     view.innerHTML = html;
     wireDashboardHandlers();
     return;
@@ -4157,6 +4744,7 @@ function closeOtherPanels(except){
   if(except !== 'setup' && setupShown){ setupShown = false; document.getElementById('setupToggleBtn').classList.remove('active'); document.getElementById('setupView').classList.remove('show'); }
   if(except !== 'onetime' && onetimeReviewShown){ onetimeReviewShown = false; document.getElementById('onetimeToggleBtn').classList.remove('active'); document.getElementById('onetimeReviewView').classList.remove('show'); }
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
+  if(except !== 'vendormeetings' && vendorMeetingsShown){ vendorMeetingsShown = false; document.getElementById('vendorMeetingsToggleBtn').classList.remove('active'); document.getElementById('vendorMeetingsView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
@@ -4166,7 +4754,7 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -4203,6 +4791,16 @@ document.getElementById('meetingsToggleBtn').onclick = async () => {
   document.getElementById('meetingsView').classList.toggle('show', meetingsShown);
   updatePanelVisibility();
   if(meetingsShown) await renderMeetings();
+};
+
+document.getElementById('vendorMeetingsToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('vendormeetings');
+  vendorMeetingsShown = !vendorMeetingsShown;
+  document.getElementById('vendorMeetingsToggleBtn').classList.toggle('active', vendorMeetingsShown);
+  document.getElementById('vendorMeetingsView').classList.toggle('show', vendorMeetingsShown);
+  updatePanelVisibility();
+  if(vendorMeetingsShown) await renderVendorMeetings();
 };
 
 document.getElementById('projectsToggleBtn').onclick = async () => {
@@ -4345,12 +4943,28 @@ async function renderSetup(){
         <button class="mini-btn primary-mini add-role-btn" data-loc="${locKey}">+ Add role</button>
       </div>`;
 
-    loc.data.forEach((emp, empIdx) => {
-      if(emp.archived) return; // shown in the "Removed roles" section below instead
+    // Roles line up by department first (so e.g. every Service role in one location groups
+    // together), then keep their original order within the same department - stable sort, so
+    // this never reshuffles two roles that are already in the same department relative to each
+    // other. Roles with no department set sort to the end, in original order.
+    const deptOrderIdx = (dept) => { const i = DEPARTMENTS.indexOf(dept); return i === -1 ? DEPARTMENTS.length : i; };
+    const visibleRoles = loc.data
+      .map((emp, empIdx) => ({ emp, empIdx }))
+      .filter(x => !x.emp.archived)
+      .sort((a, b) => deptOrderIdx(a.emp.department) - deptOrderIdx(b.emp.department));
+
+    visibleRoles.forEach(({ emp, empIdx }) => {
+      const deptOpts = DEPARTMENTS.map(d => `<option value="${escapeAttr(d)}" ${emp.department===d?'selected':''}>${escapeAttr(d)}</option>`).join('');
       html += `<details class="setup-role" data-loc="${locKey}" data-emp="${empIdx}" ${expandedRoleKeys.has(locKey+'::'+empIdx) ? 'open' : ''} style="margin-bottom:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
-        <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">${escapeHtml(emp.label)} <span style="font-weight:400;color:var(--win-text-secondary);">(${emp.tasks.length} tasks)</span></summary>
+        <summary style="cursor:pointer;padding:10px 14px;font-weight:600;font-size:13px;">${escapeHtml(emp.label)}${emp.name ? ` <span style="font-weight:400;">— ${escapeHtml(emp.name)}</span>` : ''} <span style="font-weight:400;color:var(--win-text-secondary);">${emp.department ? `· ${escapeHtml(emp.department)} ` : ''}(${emp.tasks.length} tasks)</span></summary>
         <div style="padding:2px 14px 14px;">
-        <div style="margin-bottom:10px;"><button class="mini-btn danger-mini role-remove">Remove role</button></div>`;
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <input type="text" class="st-role-name" placeholder="Person's name..." value="${escapeAttr(emp.name||'')}" style="width:200px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <select class="st-role-dept" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+            <option value="">Department…</option>${deptOpts}
+          </select>
+          <button class="mini-btn danger-mini role-remove">Remove role</button>
+        </div>`;
 
       emp.tasks.forEach((t) => {
         const cadOpts = CADENCES.map(c => `<option value="${c}" ${t.cadence===c?'selected':''}>${c}</option>`).join('');
@@ -4427,6 +5041,26 @@ async function renderSetup(){
     card.addEventListener('toggle', () => {
       if(card.open) expandedRoleKeys.add(key); else expandedRoleKeys.delete(key);
     });
+  });
+
+  view.querySelectorAll('.st-role-name').forEach(input => {
+    input.onchange = async (e) => {
+      const card = input.closest('.setup-role');
+      const locKey = card.dataset.loc, empIdx = parseInt(card.dataset.emp, 10);
+      LOCATIONS[locKey].data[empIdx].name = e.target.value.trim();
+      await saveRoster();
+      await renderSetup();
+    };
+  });
+
+  view.querySelectorAll('.st-role-dept').forEach(select => {
+    select.onchange = async (e) => {
+      const card = select.closest('.setup-role');
+      const locKey = card.dataset.loc, empIdx = parseInt(card.dataset.emp, 10);
+      LOCATIONS[locKey].data[empIdx].department = e.target.value;
+      await saveRoster();
+      await renderSetup();
+    };
   });
 
   view.querySelectorAll('.add-role-btn').forEach(btn => {
