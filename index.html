@@ -331,6 +331,8 @@
         </div>
         <div class="task-card" id="onetimeList" style="padding:4px;"></div>
       </div>
+
+      <div id="weeklyMetricsPanelWrap" style="margin-top:22px;"></div>
     </div>
 
     <div class="monthly-view" id="monthlyView"></div>
@@ -422,7 +424,7 @@ async function saveRoster(){
 
 let currentLoc = 'bridgeland';
 let currentEmployee = 0;
-let weekStart = mondayOf(new Date());
+let weekStart = defaultWeekStart();
 let statusCache = {};   // dayKey -> array of statuses
 let onetimeListCache = {}; // "loc:facilityIdx" -> array of one-time task objects
 
@@ -433,6 +435,19 @@ function mondayOf(d){
   dt.setDate(dt.getDate() + diff);
   dt.setHours(0,0,0,0);
   return dt;
+}
+// The week the board opens to. Monday-Sunday still anchors everything (weekly metrics are keyed
+// off "Monday of the week," and the Mon-Sat business-day math for MTD/pace needs a real
+// calendar week) - but opening the board on a Saturday or Sunday, when the current week is
+// basically over, jumps straight to next week's Mon-Sun instead of showing the week that's
+// ending. "This week" behaves the same way for consistency.
+function defaultWeekStart(){
+  const today = new Date();
+  const monday = mondayOf(today);
+  if(today.getDay() === 0 || today.getDay() === 6){ // Sun or Sat
+    monday.setDate(monday.getDate() + 7);
+  }
+  return monday;
 }
 function isoDate(d){ return d.toISOString().slice(0,10); }
 function weekDates(monday){
@@ -1793,6 +1808,8 @@ async function renderMain(){
   const otWrap = document.getElementById('onetimeWrap');
   otWrap.style.display = '';
   await renderOnetimePanel();
+
+  await renderWeeklyMetricsPanel(dates);
 }
 
 // ---- Employee-facing inline "My Projects" panel: any step assigned to the employee
@@ -1984,11 +2001,13 @@ async function renderMetricsPanel(dates){
   const wrap = document.getElementById('metricsPanelWrap');
   if(!wrap) return;
   const myKey = `${currentLoc}::${currentEmployee}`;
-  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.status !== 'review' && !m.archived);
+  // Daily cadence only up here - Weekly-cadence metrics have their own panel further down the
+  // page (renderWeeklyMetricsPanel), so a metric like "Appraisal Recon" (a weekly number) never
+  // shows up mixed in under the "Daily Metrics" heading.
+  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence !== 'Weekly' && m.status !== 'review' && !m.archived);
   if(mine.length === 0){ wrap.innerHTML = ''; return; }
 
   const weekdayDates = dates.slice(0,6); // Mon-Sat
-  const weekKey = isoDate(dates[0]); // Monday of the displayed week, used as the key for weekly entries
   const dow = ['Mon','Tue','Wed','Thu','Fri','Sat'];
   const monthCursor = firstOfMonth(new Date());
   const owner = isOwnerAdmin();
@@ -2002,35 +2021,27 @@ async function renderMetricsPanel(dates){
   mine.forEach(m => {
     const entries = entriesByMetric[m.id];
     html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
-      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>`;
-    if(m.cadence === 'Weekly'){
-      const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
-      html += `<div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11.5px;color:var(--win-text-secondary);min-width:110px;">This week (enter Thu):</span>
-        <input type="number" step="any" class="metric-input" data-datekey="${weekKey}" value="${escapeAttr(val)}" style="width:110px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">`;
+    weekdayDates.forEach((d,i) => {
+      const dk = isoDate(d);
+      const val = entries[dk] !== undefined ? entries[dk] : '';
+      html += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <span style="font-size:10.5px;color:var(--win-text-secondary);text-align:center;line-height:1.25;">${dow[i]}<br><span style="font-size:9.5px;">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></span>
+        <input type="number" step="any" class="metric-input" data-datekey="${dk}" value="${escapeAttr(val)}" style="width:70px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 7px;font-size:12.5px;text-align:center;">
       </div>`;
-    } else {
-      html += `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
-      weekdayDates.forEach((d,i) => {
-        const dk = isoDate(d);
-        const val = entries[dk] !== undefined ? entries[dk] : '';
-        html += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <span style="font-size:10.5px;color:var(--win-text-secondary);text-align:center;line-height:1.25;">${dow[i]}<br><span style="font-size:9.5px;">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></span>
-          <input type="number" step="any" class="metric-input" data-datekey="${dk}" value="${escapeAttr(val)}" style="width:70px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 7px;font-size:12.5px;text-align:center;">
-        </div>`;
-      });
-      html += `</div>`;
+    });
+    html += `</div>`;
 
-      if(m.mtdAuto){
-        const stats = metricPaceStats(m, entries, monthCursor);
-        const mk = monthKey(monthCursor);
-        const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
-        html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
-          <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
-          ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
-          ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
-        </div>`;
-      }
+    if(m.mtdAuto){
+      const stats = metricPaceStats(m, entries, monthCursor);
+      const mk = monthKey(monthCursor);
+      const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
+      html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
+        <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
+        ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
+        ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
+      </div>`;
     }
     html += `</div>`;
   });
@@ -2059,6 +2070,76 @@ async function renderMetricsPanel(dates){
       const m = mine.find(x => x.id === btn.dataset.mid);
       if(!m) return;
       openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderMetricsPanel(dates));
+    };
+  });
+}
+// Weekly-cadence metrics get their own panel at the very bottom of the page, separate from the
+// Daily Metrics panel up top - a weekly number like "Appraisal Recon" used to show up mixed in
+// under "Daily Metrics" even though it's only meant to be entered once a week. Always visible
+// (not hidden outside Thursday) so someone who misses Thursday can still catch up the next day.
+async function renderWeeklyMetricsPanel(dates){
+  const wrap = document.getElementById('weeklyMetricsPanelWrap');
+  if(!wrap) return;
+  const myKey = `${currentLoc}::${currentEmployee}`;
+  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence === 'Weekly' && m.status !== 'review' && !m.archived);
+  if(mine.length === 0){ wrap.innerHTML = ''; return; }
+
+  const weekKey = isoDate(dates[0]); // Monday of the displayed week, used as the key for weekly entries
+  const monthCursor = firstOfMonth(new Date());
+  const owner = isOwnerAdmin();
+
+  const entriesByMetric = {};
+  await Promise.all(mine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
+
+  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Enter weekly metrics below</div>
+    <div class="task-card" style="padding:10px 12px;">`;
+
+  mine.forEach(m => {
+    const entries = entriesByMetric[m.id];
+    const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
+    html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11.5px;color:var(--win-text-secondary);min-width:110px;">This week (due Thu):</span>
+        <input type="number" step="any" class="metric-input" data-datekey="${weekKey}" value="${escapeAttr(val)}" style="width:110px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+      </div>`;
+    if(m.mtdAuto){
+      const stats = metricPaceStats(m, entries, monthCursor);
+      const mk = monthKey(monthCursor);
+      const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
+      html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
+        <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
+        ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
+        ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
+      </div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.metric-row').forEach(row => {
+    const mid = row.dataset.mid;
+    row.querySelectorAll('.metric-input').forEach(input => {
+      input.onchange = async () => {
+        const entries = entriesByMetric[mid];
+        const dk = input.dataset.datekey;
+        const hasValue = input.value !== '';
+        if(hasValue){ entries[dk] = input.value; } else { delete entries[dk]; }
+        await saveMetricEntries(mid, entries);
+        await syncLinkedTaskStatuses(mid, dk, hasValue);
+        showToast('Saved');
+        renderWeeklyMetricsPanel(dates);
+      };
+    });
+  });
+
+  wrap.querySelectorAll('.mtd-override-btn').forEach(btn => {
+    btn.onclick = () => {
+      const m = mine.find(x => x.id === btn.dataset.mid);
+      if(!m) return;
+      openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderWeeklyMetricsPanel(dates));
     };
   });
 }
@@ -2273,7 +2354,7 @@ async function renderAll(){
 
 document.getElementById('prevWeek').onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderAll(); };
 document.getElementById('nextWeek').onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderAll(); };
-document.getElementById('todayBtn').onclick = () => { weekStart = mondayOf(new Date()); renderAll(); };
+document.getElementById('todayBtn').onclick = () => { weekStart = defaultWeekStart(); renderAll(); };
 document.getElementById('photoModal').addEventListener('click', (e) => { if(e.target.id === 'photoModal') closePhotoModal(); });
 
 // ---- Export / Import (backup, sharing between devices, and pulling in KPI mappings from Task Workflow Mapper) ----
