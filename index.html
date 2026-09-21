@@ -262,7 +262,7 @@
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
       <button class="tb-btn admin-only" id="vendorMeetingsToggleBtn">Vendor Meetings</button>
-      <button class="tb-btn owner-only" id="projectsToggleBtn">Projects</button>
+      <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
       <button class="tb-btn admin-only" id="trainingToggleBtn">Training Admin</button>
@@ -542,8 +542,8 @@ async function requireStaff(){
   if(isStaff()) return true;
   return await promptAdminUnlock();
 }
-// Owner-only actions (Projects planner, Export/Import): only the owner code works, even if a
-// manager code is already unlocked - prompts again and tells the manager plainly if so.
+// Owner-only actions (Export/Import, deleting a project/step/note): only the owner code works,
+// even if a manager code is already unlocked - prompts again and tells the manager plainly if so.
 async function requireOwner(){
   if(isOwnerAdmin()) return true;
   if(!isStaff()){
@@ -610,9 +610,12 @@ async function refreshServerState(){
     // `assignees` array (a step can now be assigned to more than one person) so nothing already
     // saved loses its assignment. assignedLoc/assignedEmp are no longer written, just read here
     // for one-time migration.
-    PROJECTS.forEach(p => (p.steps||[]).forEach(s => {
-      if(!s.assignees) s.assignees = (s.assignedLoc && s.assignedEmp !== null && s.assignedEmp !== undefined) ? [s.assignedLoc+'::'+s.assignedEmp] : [];
-    }));
+    PROJECTS.forEach(p => {
+      (p.steps||[]).forEach(s => {
+        if(!s.assignees) s.assignees = (s.assignedLoc && s.assignedEmp !== null && s.assignedEmp !== undefined) ? [s.assignedLoc+'::'+s.assignedEmp] : [];
+      });
+      if(!p.notes) p.notes = [];
+    });
     try{ METRICS = SERVER_STATE['metrics'] ? JSON.parse(SERVER_STATE['metrics']) : []; }
     catch(e){ console.error('Bad metrics data, resetting', e); METRICS = []; }
     // Old metrics only ever had a single `category` string - fold it into the new `categories`
@@ -679,6 +682,16 @@ async function saveProjects(){
 function newProjectId(){ return 'proj-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newStepId(){ return 'step-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function newAttachId(){ return 'att-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newNoteId(){ return 'note-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+// Formats a project note's ISO timestamp as a short local date + time, e.g. "9/21 2:14 PM".
+function formatNoteTimestamp(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  const datePart = `${d.getMonth()+1}/${d.getDate()}`;
+  const timePart = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${datePart} ${timePart}`;
+}
 
 // ---- Vendor/outside-company meeting schedule. Separate from the internal recurring Meetings
 // (Service, Sales, Month-End Recap, etc.) - this is for one-off regular check-ins with vendors,
@@ -3251,11 +3264,12 @@ function wireVendorMeetingsHandlers(view){
   });
 }
 
-// ---- Project Planner (owner-only). Projects with steps assigned to specific employees,
-// deadlines, status, and attachments (a pasted Google Drive/file link, or an uploaded file
-// stored as a data URL). Employees see just their own assigned steps inline in their daily
-// view (see renderProjectsPanel above) and can update status there - everything else here
-// (creating projects, adding/removing steps, reassigning, deleting) is admin-only. ----
+// ---- Project Planner (any staff - owner or manager). Projects with steps assigned to specific
+// employees, deadlines, status, notes, and attachments (a pasted Google Drive/file link, or an
+// uploaded file stored as a data URL). Employees see just their own assigned steps inline in
+// their daily view (see renderProjectsPanel above) and can update status there. Any manager or
+// owner can create/edit projects and steps, reassign, and post project notes; only the owner
+// code can delete a project, a step, or a note (owner-only class, same trick used elsewhere). ----
 let projectsShown = false;
 let ownerBoardShown = false;
 
@@ -3303,7 +3317,8 @@ async function renderProjects(){
       Projects that need specific employees to do particular things by a deadline. Add steps,
       assign each to one or more people on the roster, set a due date, and attach a file or a
       Google Drive link. Every assigned employee sees the step on their own daily page and can
-      update status \u2014 full editing stays here.
+      update status \u2014 full editing stays here. Any manager or owner can add steps, notes,
+      and assignees \u2014 only the owner code can delete a project or a step.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:18px;">
       <input type="text" id="newProjName" placeholder="New project name..." style="flex:1;max-width:360px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
@@ -3332,17 +3347,38 @@ async function renderProjects(){
             <option value="Completed" ${p.status==='Completed'?'selected':''}>Completed</option>
           </select>
           <input type="date" class="p-deadline" value="${escapeAttr(p.deadline||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
-          <button class="mini-btn danger-mini p-remove">Delete project</button>
+          <button class="mini-btn danger-mini p-remove owner-only">Delete project</button>
         </div>
         <textarea class="p-desc" placeholder="Project description..." style="width:100%;min-height:48px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:12px;">${escapeHtml(p.description||'')}</textarea>
+
+        <div class="proj-notes" style="border:1px solid var(--win-border);border-radius:8px;padding:10px 12px;margin-bottom:14px;background:rgba(0,0,0,.02);">
+          <div style="font-size:11.5px;font-weight:700;color:var(--win-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Project notes — managers and owner can post updates here as the project moves along</div>
+          <div class="proj-notes-list" style="display:flex;flex-direction:column;gap:8px;${(p.notes||[]).length ? 'margin-bottom:10px;' : ''}">
+            ${(p.notes||[]).slice().reverse().map(n => `
+              <div class="proj-note-row" data-nid="${n.id}" style="font-size:12px;border-left:2px solid var(--win-accent);padding:2px 0 2px 8px;">
+                <div style="color:var(--win-text-secondary);font-size:11px;display:flex;justify-content:space-between;gap:8px;">
+                  <span>${escapeHtml(n.author || 'Staff')} · ${escapeHtml(formatNoteTimestamp(n.addedAt))}</span>
+                  <button class="mini-btn danger-mini pn-remove owner-only" style="padding:1px 7px;font-size:10.5px;">Delete</button>
+                </div>
+                <div style="margin-top:2px;white-space:pre-wrap;">${escapeHtml(n.text)}</div>
+              </div>`).join('') || '<div class="empty-note" style="font-size:11.5px;">No notes yet.</div>'}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" class="pn-author" placeholder="Your name" style="width:150px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <input type="text" class="pn-text" placeholder="Add a note about this project..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
+            <button class="mini-btn primary-mini pn-add">+ Add note</button>
+          </div>
+        </div>
 
         <div class="p-steps">`;
 
     (p.steps||[]).forEach(s => {
       const assigneeKeys = s.assignees || [];
-      const assigneeChecks = dropdownTargets(assigneeKeys).map(x => {
+      const assigneeOptions = dropdownTargets(assigneeKeys);
+      const selectedLabels = assigneeOptions.filter(x => assigneeKeys.includes(x.locKey+'::'+x.empIdx)).map(x => x.label);
+      const assigneeChecks = assigneeOptions.map(x => {
         const key = x.locKey + '::' + x.empIdx;
-        return `<label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+        return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;">
           <input type="checkbox" class="s-assignee-check" value="${key}" ${assigneeKeys.includes(key)?'checked':''}> ${escapeAttr(x.label)}
         </label>`;
       }).join('');
@@ -3355,12 +3391,17 @@ async function renderProjects(){
             <option value="In Progress" ${s.status==='In Progress'?'selected':''}>In Progress</option>
             <option value="Done" ${s.status==='Done'?'selected':''}>Done</option>
           </select>
-          <button class="mini-btn danger-mini s-remove">Remove</button>
+          <button class="mini-btn danger-mini s-remove owner-only">Remove</button>
         </div>
-        <div style="margin-top:6px;">
-          <span style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);display:block;margin-bottom:4px;">Assigned to (check everyone who should see and work this step):</span>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">${assigneeChecks || '<span style="font-size:11.5px;color:var(--win-text-secondary);">No roster roles yet</span>'}</div>
-        </div>
+        <details class="assignee-dd" style="margin-top:6px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;">
+          <summary style="cursor:pointer;font-size:11.5px;">
+            <span style="font-weight:600;color:var(--win-text-secondary);">Assigned to:</span>
+            <span class="assignee-dd-summary">${escapeHtml(selectedLabels.length ? selectedLabels.join(', ') : 'Select assignees...')}</span>
+          </summary>
+          <div style="max-height:220px;overflow-y:auto;padding-top:6px;margin-top:6px;border-top:1px solid var(--win-border);">
+            ${assigneeChecks || '<span style="font-size:11.5px;color:var(--win-text-secondary);">No roster roles yet</span>'}
+          </div>
+        </details>
         <textarea class="s-notes" placeholder="Notes for this step..." style="width:100%;min-height:36px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-top:6px;">${escapeHtml(s.notes||'')}</textarea>
         <div class="s-attachments" style="margin-top:6px;">${renderAttachmentChips(s.attachments)}</div>
         <div style="display:flex;gap:8px;margin-top:6px;">
@@ -3412,12 +3453,41 @@ function wireProjectsHandlers(view){
 
     const removeBtn = card.querySelector('.p-remove');
     if(removeBtn) removeBtn.onclick = async () => {
+      if(!isOwnerAdmin()){ showToast('Owner access required to delete a project'); return; }
       if(!await appConfirm('Delete this project and all its steps? This cannot be undone.', 'Delete')) return;
       const i = PROJECTS.findIndex(p => p.id === pid);
       if(i > -1) PROJECTS.splice(i, 1);
       await saveProjects();
       await renderProjects();
     };
+
+    const addNoteBtn = card.querySelector('.pn-add');
+    if(addNoteBtn) addNoteBtn.onclick = async () => {
+      const authorInput = card.querySelector('.pn-author');
+      const textInput = card.querySelector('.pn-text');
+      const text = (textInput.value || '').trim();
+      if(!text) return;
+      const author = (authorInput.value || '').trim();
+      const p = findP(); if(!p) return;
+      if(!p.notes) p.notes = [];
+      p.notes.push({ id: newNoteId(), text, author, addedAt: new Date().toISOString() });
+      await saveProjects();
+      await renderProjects();
+    };
+
+    card.querySelectorAll('.proj-note-row').forEach(row => {
+      const nid = row.dataset.nid;
+      const removeNote = row.querySelector('.pn-remove');
+      if(removeNote) removeNote.onclick = async () => {
+        if(!isOwnerAdmin()){ showToast('Owner access required to delete a note'); return; }
+        if(!await appConfirm('Delete this note?')) return;
+        const p = findP(); if(!p) return;
+        const i = (p.notes||[]).findIndex(n => n.id === nid);
+        if(i > -1) p.notes.splice(i, 1);
+        await saveProjects();
+        await renderProjects();
+      };
+    });
 
     const addStepBtn = card.querySelector('.add-step-btn');
     if(addStepBtn) addStepBtn.onclick = async () => {
@@ -3445,16 +3515,23 @@ function wireProjectsHandlers(view){
       bindS('.s-status', 'status');
       bindS('.s-notes', 'notes');
 
+      const assigneeSummary = row.querySelector('.assignee-dd-summary');
       row.querySelectorAll('.s-assignee-check').forEach(cb => {
         cb.onchange = async () => {
           const s = findS(); if(!s) return;
-          s.assignees = Array.from(row.querySelectorAll('.s-assignee-check:checked')).map(el => el.value);
+          const checked = Array.from(row.querySelectorAll('.s-assignee-check:checked'));
+          s.assignees = checked.map(el => el.value);
+          if(assigneeSummary){
+            const labels = checked.map(el => el.closest('label').textContent.trim());
+            assigneeSummary.textContent = labels.length ? labels.join(', ') : 'Select assignees...';
+          }
           await saveProjects();
         };
       });
 
       const removeS = row.querySelector('.s-remove');
       if(removeS) removeS.onclick = async () => {
+        if(!isOwnerAdmin()){ showToast('Owner access required to remove a step'); return; }
         if(!await appConfirm('Remove this step?')) return;
         const p = findP(); if(!p) return;
         const i = (p.steps||[]).findIndex(s => s.id === sid);
@@ -4885,7 +4962,7 @@ document.getElementById('vendorMeetingsToggleBtn').onclick = async () => {
 };
 
 document.getElementById('projectsToggleBtn').onclick = async () => {
-  if(!(await requireOwner())) return;
+  if(!(await requireStaff())) return;
   closeOtherPanels('projects');
   projectsShown = !projectsShown;
   document.getElementById('projectsToggleBtn').classList.toggle('active', projectsShown);
