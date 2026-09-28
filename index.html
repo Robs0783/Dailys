@@ -262,6 +262,7 @@
       <button class="tb-btn admin-only" id="onetimeToggleBtn">One-Time Tasks</button>
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
       <button class="tb-btn admin-only" id="vendorMeetingsToggleBtn">Vendor Meetings</button>
+      <button class="tb-btn admin-only" id="socialToggleBtn">Social Media</button>
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
@@ -340,6 +341,7 @@
     <div class="monthly-view" id="onetimeReviewView"></div>
     <div class="monthly-view" id="meetingsView"></div>
     <div class="monthly-view" id="vendorMeetingsView"></div>
+    <div class="monthly-view" id="socialView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="ownerBoardView"></div>
     <div class="monthly-view" id="metricsView"></div>
@@ -652,6 +654,15 @@ async function refreshServerState(){
     } else {
       VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice();
     }
+    try{ SOCIAL = SERVER_STATE['social-media'] ? JSON.parse(SERVER_STATE['social-media']) : null; }
+    catch(e){ console.error('Bad social media data, resetting', e); SOCIAL = null; }
+    if(!SOCIAL || typeof SOCIAL !== 'object') SOCIAL = {};
+    if(!SOCIAL.reps) SOCIAL.reps = {};
+    if(!Array.isArray(SOCIAL.reps.bridgeland)) SOCIAL.reps.bridgeland = Array(8).fill('');
+    if(!Array.isArray(SOCIAL.reps.candycars)) SOCIAL.reps.candycars = Array(8).fill('');
+    if(!SOCIAL.log) SOCIAL.log = {};
+    if(!SOCIAL.log.bridgeland) SOCIAL.log.bridgeland = {};
+    if(!SOCIAL.log.candycars) SOCIAL.log.candycars = {};
     try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
     try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
@@ -701,6 +712,8 @@ function formatNoteTimestamp(iso){
 // the current one, same as Rob already does on paper). "Next" for a company is just its earliest
 // not-yet-completed date. Admin-only, same gating as Meetings/Metrics. ----
 let VENDOR_MEETINGS = []; // [{ id, company, category, notes, meetings: [{id,date,status,completedAt,notes}], createdAt }]
+// { reps: { bridgeland:[8 names], candycars:[8 names] }, log: { bridgeland:{ 'YYYY-MM-DD': {vehicles:[2],reps:[8 {posted,note}]} }, candycars:{...} } }
+let SOCIAL = { reps: { bridgeland: Array(8).fill(''), candycars: Array(8).fill('') }, log: { bridgeland: {}, candycars: {} } };
 const DEFAULT_VENDOR_MEETING_CATEGORIES = ['Advertising/Marketing','Technology/Software','Finance/Lending','Vendors & Parts','Insurance','Professional Services','Other'];
 let VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice();
 async function saveVendorMeetings(){
@@ -3264,6 +3277,154 @@ function wireVendorMeetingsHandlers(view){
   });
 }
 
+// ---- Sales Rep Social Media Posting tracker (managers + owner, like Vendor Meetings). One
+// day at a time, one card per store (Bridgeland red, Candy Cars blue): the manager logs the
+// 2 vehicles being cleaned up for that day's shoot, and checks off up to 8 reps as posted /
+// not posted, with an optional note (e.g. "out sick"). Rep names are 8 freeform slots per
+// store - managers type a name into a slot the first time and it stays there (like a mini
+// roster) until they change it; blank slots just don't render a name but still keep their
+// posted/note history if something was logged before the slot was cleared. Added 2026-09-27,
+// requested through year-end 2026 - no hard date cutoff was built in, so it'll keep working
+// past 12/31/2026 unless Rob asks for one. ----
+let socialShown = false;
+let socialDayCursor = new Date(); // the day currently being logged/viewed
+const SOCIAL_STORES = [
+  { key: 'bridgeland', label: 'Bridgeland', color: 'var(--kpi-bad)', tint: '#FDF3F2' },
+  { key: 'candycars',  label: 'Candy Cars', color: 'var(--win-accent)', tint: 'var(--win-accent-light)' },
+];
+async function saveSocial(){
+  const ok = await storSet('social-media', JSON.stringify(SOCIAL), true);
+  showToast(ok ? 'Saved' : 'Save failed');
+}
+function socialDayLabel(d){
+  return d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric', year:'numeric' });
+}
+function socialDayEntry(storeKey, dateStr){
+  const log = SOCIAL.log[storeKey];
+  if(!log[dateStr]){
+    log[dateStr] = { vehicles: ['',''], reps: Array.from({length:8}, () => ({ posted: null, note: '' })) };
+  }
+  const entry = log[dateStr];
+  if(!Array.isArray(entry.vehicles)) entry.vehicles = ['',''];
+  while(entry.vehicles.length < 2) entry.vehicles.push('');
+  if(!Array.isArray(entry.reps)) entry.reps = [];
+  while(entry.reps.length < 8) entry.reps.push({ posted: null, note: '' });
+  entry.reps.forEach(r => { if(r.posted === undefined) r.posted = null; if(r.note === undefined) r.note = ''; });
+  return entry;
+}
+async function renderSocial(){
+  await refreshServerState();
+  const view = document.getElementById('socialView');
+  const dateStr = isoDate(socialDayCursor);
+
+  let html = `
+    <div class="monthly-header"><h1>Sales Rep Social Media Posting</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Each day, the store manager logs the 2 vehicles being cleaned up for the team to shoot,
+      and confirms whether each sales rep posted that day (separate from the Google Sheet rep
+      log). Rep names in the 8 slots below stay put once entered - edit a name any time to
+      swap who's in that slot.
+    </p>
+    <div class="week-nav" style="justify-content:flex-start;gap:10px;margin-bottom:18px;">
+      <button id="socialPrevDay" title="Previous day">&#8592;</button>
+      <span class="week-label" id="socialDayLabel" style="min-width:220px;">${escapeHtml(socialDayLabel(socialDayCursor))}</span>
+      <button id="socialNextDay" title="Next day">&#8594;</button>
+      <span class="today-pill" id="socialTodayBtn">Today</span>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+  `;
+
+  SOCIAL_STORES.forEach(store => {
+    const entry = socialDayEntry(store.key, dateStr);
+    const reps = SOCIAL.reps[store.key];
+    html += `<div class="social-store-card" data-store="${store.key}" style="flex:1;min-width:360px;border:1px solid ${store.color};border-top:4px solid ${store.color};border-radius:8px;background:${store.tint};padding:14px 16px;">
+      <div style="font-size:15px;font-weight:700;color:${store.color};margin-bottom:10px;">${escapeHtml(store.label)}</div>
+
+      <div style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Vehicles to clean up for the shoot</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        ${[0,1].map(i => `<input type="text" class="social-vehicle-input" data-idx="${i}" placeholder="Vehicle ${i+1} — stock #, year/make/model" value="${escapeAttr(entry.vehicles[i]||'')}" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;">`).join('')}
+      </div>
+
+      <div style="font-size:11.5px;font-weight:600;color:var(--win-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Sales reps — posted today?</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${entry.reps.map((r,i) => `<div class="social-rep-row" data-idx="${i}" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--win-border);border-radius:6px;padding:6px 8px;flex-wrap:wrap;">
+          <input type="text" class="social-rep-name" placeholder="Rep ${i+1} name" value="${escapeAttr(reps[i]||'')}" style="width:150px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;">
+          <button class="mini-btn social-posted-btn ${r.posted === true ? 'primary-mini' : ''}" data-val="true" style="${r.posted === true ? `background:var(--kpi-good);border-color:var(--kpi-good);color:#fff;` : ''}">Posted</button>
+          <button class="mini-btn social-posted-btn ${r.posted === false ? 'danger-mini' : ''}" data-val="false" style="${r.posted === false ? `background:var(--kpi-bad);border-color:var(--kpi-bad);color:#fff;` : ''}">Not posted</button>
+          <input type="text" class="social-rep-note" placeholder="Note (optional)…" value="${escapeAttr(r.note||'')}" style="flex:1;min-width:120px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 8px;font-size:12px;font-family:inherit;">
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  view.innerHTML = html;
+  wireSocialHandlers(view);
+}
+function wireSocialHandlers(view){
+  const dateStr = isoDate(socialDayCursor);
+
+  document.getElementById('socialPrevDay').onclick = async () => {
+    socialDayCursor = new Date(socialDayCursor.getTime() - 86400000);
+    await renderSocial();
+  };
+  document.getElementById('socialNextDay').onclick = async () => {
+    socialDayCursor = new Date(socialDayCursor.getTime() + 86400000);
+    await renderSocial();
+  };
+  document.getElementById('socialTodayBtn').onclick = async () => {
+    socialDayCursor = new Date();
+    await renderSocial();
+  };
+
+  view.querySelectorAll('.social-store-card').forEach(card => {
+    const storeKey = card.dataset.store;
+    const entry = socialDayEntry(storeKey, dateStr);
+
+    card.querySelectorAll('.social-vehicle-input').forEach(inp => {
+      inp.onblur = async () => {
+        entry.vehicles[parseInt(inp.dataset.idx,10)] = inp.value;
+        await saveSocial();
+      };
+    });
+
+    card.querySelectorAll('.social-rep-row').forEach(row => {
+      const idx = parseInt(row.dataset.idx, 10);
+      const nameInput = row.querySelector('.social-rep-name');
+      nameInput.onblur = async () => {
+        SOCIAL.reps[storeKey][idx] = nameInput.value;
+        await saveSocial();
+      };
+      // Toggling Posted/Not-Posted updates the DOM directly and saves in the background,
+      // WITHOUT a full renderSocial() (which starts with a server refetch) - a manager
+      // clicking through several reps in a row is the normal case here, and re-fetching after
+      // every single click could clobber an edit still in flight elsewhere on the page with
+      // stale server data (the same hazard flagged for live console edits above).
+      row.querySelectorAll('.social-posted-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const val = btn.dataset.val === 'true';
+          entry.reps[idx].posted = (entry.reps[idx].posted === val) ? null : val;
+          row.querySelectorAll('.social-posted-btn').forEach(b => {
+            const bVal = b.dataset.val === 'true';
+            const active = entry.reps[idx].posted === bVal;
+            b.className = 'mini-btn social-posted-btn' + (active ? (bVal ? ' primary-mini' : ' danger-mini') : '');
+            b.style.background = active ? (bVal ? 'var(--kpi-good)' : 'var(--kpi-bad)') : '';
+            b.style.borderColor = active ? (bVal ? 'var(--kpi-good)' : 'var(--kpi-bad)') : '';
+            b.style.color = active ? '#fff' : '';
+          });
+          await saveSocial();
+        };
+      });
+      const noteInput = row.querySelector('.social-rep-note');
+      noteInput.onblur = async () => {
+        entry.reps[idx].note = noteInput.value;
+        await saveSocial();
+      };
+    });
+  });
+}
+
 // ---- Project Planner (any staff - owner or manager). Projects with steps assigned to specific
 // employees, deadlines, status, notes, and attachments (a pasted Google Drive/file link, or an
 // uploaded file stored as a data URL). Employees see just their own assigned steps inline in
@@ -4903,6 +5064,7 @@ function closeOtherPanels(except){
   if(except !== 'onetime' && onetimeReviewShown){ onetimeReviewShown = false; document.getElementById('onetimeToggleBtn').classList.remove('active'); document.getElementById('onetimeReviewView').classList.remove('show'); }
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
   if(except !== 'vendormeetings' && vendorMeetingsShown){ vendorMeetingsShown = false; document.getElementById('vendorMeetingsToggleBtn').classList.remove('active'); document.getElementById('vendorMeetingsView').classList.remove('show'); }
+  if(except !== 'social' && socialShown){ socialShown = false; document.getElementById('socialToggleBtn').classList.remove('active'); document.getElementById('socialView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
@@ -4912,7 +5074,7 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -4959,6 +5121,16 @@ document.getElementById('vendorMeetingsToggleBtn').onclick = async () => {
   document.getElementById('vendorMeetingsView').classList.toggle('show', vendorMeetingsShown);
   updatePanelVisibility();
   if(vendorMeetingsShown) await renderVendorMeetings();
+};
+
+document.getElementById('socialToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('social');
+  socialShown = !socialShown;
+  document.getElementById('socialToggleBtn').classList.toggle('active', socialShown);
+  document.getElementById('socialView').classList.toggle('show', socialShown);
+  updatePanelVisibility();
+  if(socialShown) await renderSocial();
 };
 
 document.getElementById('projectsToggleBtn').onclick = async () => {
