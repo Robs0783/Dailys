@@ -232,6 +232,9 @@
   .status-pill-sm.st-progress{ background:var(--kpi-risk); }
   .status-pill-sm.st-notstarted{ background:var(--kpi-none); }
   .loc-applies-badge{ font-size:9.5px; font-weight:700; color:#fff; background:#8A8886; border-radius:4px; padding:2px 6px; flex-shrink:0; white-space:nowrap; }
+  .tod-badge{ font-size:9.5px; font-weight:700; color:#fff; border-radius:4px; padding:2px 6px; flex-shrink:0; white-space:nowrap; }
+  .tod-badge.tod-am{ background:#0078D4; }
+  .tod-badge.tod-pm{ background:#5C2D91; }
   .info-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:50%; width:20px;height:20px; flex-shrink:0; cursor:pointer; font-size:12px; line-height:1; padding:0; color:var(--win-accent); }
   .info-btn:hover{ background:var(--win-accent-light); }
   .off-day-cell{ text-align:center; color:#C8C6C4; font-size:12px; background:#FAFAFA; }
@@ -263,6 +266,7 @@
       <button class="tb-btn admin-only" id="meetingsToggleBtn">Meetings</button>
       <button class="tb-btn admin-only" id="vendorMeetingsToggleBtn">Vendor Meetings</button>
       <button class="tb-btn admin-only" id="socialToggleBtn">Social Media</button>
+      <button class="tb-btn admin-only" id="propMaintToggleBtn">Other Properties</button>
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
@@ -342,6 +346,7 @@
     <div class="monthly-view" id="meetingsView"></div>
     <div class="monthly-view" id="vendorMeetingsView"></div>
     <div class="monthly-view" id="socialView"></div>
+    <div class="monthly-view" id="propMaintView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="ownerBoardView"></div>
     <div class="monthly-view" id="metricsView"></div>
@@ -401,6 +406,7 @@ function assignTaskIds(locs){
         if(t.howTo === undefined) t.howTo = '';
         if(t.videoUrl === undefined) t.videoUrl = '';
         if(t.appliesTo === undefined) t.appliesTo = 'both';
+        if(t.timeOfDay === undefined) t.timeOfDay = 'NA';
       });
     });
   });
@@ -663,6 +669,12 @@ async function refreshServerState(){
     if(!SOCIAL.log) SOCIAL.log = {};
     if(!SOCIAL.log.bridgeland) SOCIAL.log.bridgeland = {};
     if(!SOCIAL.log.candycars) SOCIAL.log.candycars = {};
+    try{ PROPERTIES = SERVER_STATE['other-properties'] ? JSON.parse(SERVER_STATE['other-properties']) : []; }
+    catch(e){ console.error('Bad other-properties data, resetting', e); PROPERTIES = []; }
+    try{ PROPERTY_TEAM = SERVER_STATE['property-team'] ? JSON.parse(SERVER_STATE['property-team']) : []; }
+    catch(e){ console.error('Bad property-team data, resetting', e); PROPERTY_TEAM = []; }
+    try{ PROPERTY_JOBS = SERVER_STATE['property-jobs'] ? JSON.parse(SERVER_STATE['property-jobs']) : []; }
+    catch(e){ console.error('Bad property-jobs data, resetting', e); PROPERTY_JOBS = []; }
     try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
     try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
@@ -714,6 +726,9 @@ function formatNoteTimestamp(iso){
 let VENDOR_MEETINGS = []; // [{ id, company, category, notes, meetings: [{id,date,status,completedAt,notes}], createdAt }]
 // { reps: { bridgeland:[8 names], candycars:[8 names] }, log: { bridgeland:{ 'YYYY-MM-DD': {vehicles:[2],reps:[8 {posted,note}]} }, candycars:{...} } }
 let SOCIAL = { reps: { bridgeland: Array(8).fill(''), candycars: Array(8).fill('') }, log: { bridgeland: {}, candycars: {} } };
+let PROPERTIES = []; // [{ id, name, createdAt }] - properties outside the two dealership lots
+let PROPERTY_TEAM = []; // [{ id, name, createdAt }] - shared maintenance crew, not tied to one property
+let PROPERTY_JOBS = []; // [{ id, propertyId, assignedTo, text, timeOfDay:'NA'|'AM'|'PM', status:'Open'|'Done', createdAt, completedAt }]
 const DEFAULT_VENDOR_MEETING_CATEGORIES = ['Advertising/Marketing','Technology/Software','Finance/Lending','Vendors & Parts','Insurance','Professional Services','Other'];
 let VENDOR_MEETING_CATEGORIES = DEFAULT_VENDOR_MEETING_CATEGORIES.slice();
 async function saveVendorMeetings(){
@@ -1727,13 +1742,17 @@ async function renderMain(){
 
   const groups = groupTasks(emp.tasks);
   const wrap = document.getElementById('tableWrap');
+  const countableTasks = emp.tasks.filter(t => t.cadence !== 'Awareness');
 
+  // A role with zero regular checklist tasks (e.g. an inventory-only role whose work lives
+  // entirely in Projects/Meetings) used to make this whole function return early here, which
+  // meant the Meetings/Action Items/Projects/One-Time/Weekly Metrics panels below never ran for
+  // that employee - whatever the PREVIOUSLY viewed employee's panels showed just stayed on
+  // screen, stale. Now only the task table itself is skipped; every panel below always runs.
   if(emp.tasks.length === 0){
     wrap.innerHTML = '<div class="empty-note">No tasks on file for this role.</div>';
     updateSummaryStat(0,0,0,0);
-    return;
-  }
-
+  } else {
   const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   let html = '<table class="week-table"><thead><tr><th class="task-col">Task</th>';
   dates.forEach((d,i) => {
@@ -1749,10 +1768,11 @@ async function renderMain(){
       const kpi = getKpiForTask(currentLoc, currentEmployee, t.id);
       const kpiHtml = kpi ? `<span class="kpi-badge kpi-${kpi.cls}" title="${escapeAttr(kpi.title)}">${escapeHtml(kpi.label)}</span>` : '';
       const locBadgeHtml = LOCATIONS[currentLoc].dual ? `<span class="loc-applies-badge">${t.appliesTo==='bridgeland'?'Bridgeland':t.appliesTo==='candycars'?'Candy Cars':'Both locations'}</span>` : '';
+      const todBadgeHtml = (t.timeOfDay === 'AM' || t.timeOfDay === 'PM') ? `<span class="tod-badge tod-${t.timeOfDay.toLowerCase()}" title="Scheduled for the ${t.timeOfDay === 'AM' ? 'morning' : 'afternoon'}">${t.timeOfDay}</span>` : '';
       const hasInfo = (t.howTo && t.howTo.trim()) || (t.videoUrl && t.videoUrl.trim());
       const infoBtnHtml = hasInfo ? `<button class="info-btn" data-taskid="${t.id}" title="How to / training">ⓘ</button>` : '';
       const linkedMetric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
-      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${infoBtnHtml}</td>`;
+      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${todBadgeHtml}${infoBtnHtml}</td>`;
       dates.forEach((d,i) => {
         if(!taskAppliesOnDate(t, d)){
           html += `<td class="day-cell off-day-cell" title="Not scheduled this day">—</td>`;
@@ -1784,8 +1804,6 @@ async function renderMain(){
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
-
-  const countableTasks = emp.tasks.filter(t => t.cadence !== 'Awareness');
 
   // wire status buttons
   wrap.querySelectorAll('.seg').forEach(seg => {
@@ -1823,6 +1841,8 @@ async function renderMain(){
   });
 
   computeSummary(dates, countableTasks);
+  }
+
   await renderMetricsPanel(dates);
   await renderMeetingsPanel(dates);
   await renderActionItemsPanel();
@@ -3422,6 +3442,286 @@ function wireSocialHandlers(view){
         await saveSocial();
       };
     });
+  });
+}
+
+// ---- Other Properties maintenance work board (managers + owner, like Vendor Meetings). Rob's
+// maintenance crew works across several properties outside the two dealership lots (their own
+// facility upkeep stays on the existing Maintenance tab). This is a running work-order list
+// rather than a recurring checklist: add a job whenever one comes up, pick which property it's
+// for and (optionally) who on the shared crew is doing it, tag it NA/AM/PM for when it should
+// get done, and mark it done once it's finished. The crew is one shared pool, not tied to a
+// single property, since these people float between properties. Added 2026-09-28. ----
+let propMaintShown = false;
+let pmCompletedExpanded = false; // keeps "Completed" open across renderPropertyMaintenance() re-renders
+let pmTeamManagerExpanded = false;
+let pmPropManagerExpanded = false;
+
+async function savePropMaintProperties(){
+  const ok = await storSet('other-properties', JSON.stringify(PROPERTIES), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+async function savePropMaintTeam(){
+  const ok = await storSet('property-team', JSON.stringify(PROPERTY_TEAM), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+async function savePropMaintJobs(){
+  const ok = await storSet('property-jobs', JSON.stringify(PROPERTY_JOBS), true);
+  if(!ok) showToast('Not saved — admin code required');
+}
+function newPropertyId(){ return 'prop-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newPropTeamId(){ return 'pteam-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function newPropJobId(){ return 'pjob-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pmTodBadge(tod){
+  if(tod !== 'AM' && tod !== 'PM') return '';
+  return `<span class="tod-badge tod-${tod.toLowerCase()}">${tod}</span>`;
+}
+
+async function renderPropertyMaintenance(){
+  await refreshServerState();
+  const view = document.getElementById('propMaintView');
+
+  let html = `
+    <div class="monthly-header"><h1>Other Properties</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
+      Maintenance work at properties outside Bridgeland and Candy Cars — their own facility
+      upkeep stays on the Maintenance tab. Add a job whenever one comes up, assign it to whoever
+      on the crew is handling it, and mark it done once it's finished.
+    </p>
+
+    <details id="pmTeamDetails" ${pmTeamManagerExpanded ? 'open' : ''} style="max-width:520px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);margin-bottom:12px;">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Maintenance team (${PROPERTY_TEAM.length})</summary>
+      <div style="padding:4px 12px 12px;">
+        <p style="font-size:11.5px;color:var(--win-text-secondary);margin:0 0 8px;">Your shared crew — anyone here can be assigned a job at any property.</p>
+        ${PROPERTY_TEAM.map((p,i) => `<div class="pm-team-row" data-idx="${i}" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input type="text" class="pm-team-name" value="${escapeAttr(p.name)}" style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn danger-mini pm-team-remove">Remove</button>
+        </div>`).join('')}
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="newPmTeamName" placeholder="Person's name..." style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn primary-mini" id="newPmTeamBtn">+ Add person</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="pmPropDetails" ${pmPropManagerExpanded ? 'open' : ''} style="max-width:520px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);margin-bottom:16px;">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Properties (${PROPERTIES.length})</summary>
+      <div style="padding:4px 12px 12px;">
+        ${PROPERTIES.map((p,i) => `<div class="pm-prop-row" data-idx="${i}" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <input type="text" class="pm-prop-name" value="${escapeAttr(p.name)}" placeholder="Property name/address" style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn danger-mini pm-prop-remove">Remove</button>
+        </div>`).join('')}
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="newPmPropName" placeholder="New property name/address..." style="flex:1;max-width:280px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
+          <button class="mini-btn primary-mini" id="newPmPropBtn">+ Add property</button>
+        </div>
+      </div>
+    </details>
+  `;
+
+  if(!PROPERTIES.length){
+    html += `<div class="empty-note">Add a property above to start assigning jobs.</div>`;
+    view.innerHTML = html;
+    wirePropertyMaintenanceHandlers(view);
+    return;
+  }
+
+  const propOpts = PROPERTIES.map(p => `<option value="${p.id}">${escapeAttr(p.name)}</option>`).join('');
+  const teamOpts = PROPERTY_TEAM.map(p => `<option value="${p.id}">${escapeAttr(p.name)}</option>`).join('');
+
+  html += `
+    <div class="task-card" style="padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <select id="newPmJobProp" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Property…</option>${propOpts}
+      </select>
+      <select id="newPmJobAssignee" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="">Unassigned</option>${teamOpts}
+      </select>
+      <input type="text" id="newPmJobText" placeholder="Describe the job..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
+      <select id="newPmJobTod" title="When this job should be done" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
+        <option value="NA">N/A</option>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+      <button class="mini-btn primary-mini" id="newPmJobBtn">+ Add job</button>
+    </div>
+  `;
+
+  const open = PROPERTY_JOBS.filter(j => j.status !== 'Done');
+  const done = PROPERTY_JOBS.filter(j => j.status === 'Done')
+    .sort((a,b) => (b.completedAt||'').localeCompare(a.completedAt||''));
+
+  if(!open.length){
+    html += `<div class="empty-note">No open jobs.</div>`;
+  }
+
+  PROPERTIES.forEach(prop => {
+    const jobs = open.filter(j => j.propertyId === prop.id);
+    if(!jobs.length) return;
+    html += `<div class="dept-section"><div class="dept-title">${escapeHtml(prop.name)}</div>`;
+    jobs.forEach(j => {
+      const person = PROPERTY_TEAM.find(p => p.id === j.assignedTo);
+      html += `<div class="task-card" data-jid="${j.id}" style="padding:10px 12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;flex:1;min-width:160px;">${escapeHtml(j.text)}</span>
+          ${pmTodBadge(j.timeOfDay)}
+          <span style="font-size:11px;color:var(--win-text-secondary);">${person ? escapeHtml(person.name) : 'Unassigned'}</span>
+          <button class="mini-btn pm-job-done">Mark done</button>
+          <button class="mini-btn danger-mini pm-job-remove">Remove</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  // Jobs whose property got deleted still show, grouped separately, so nothing silently vanishes.
+  const orphaned = open.filter(j => !PROPERTIES.some(p => p.id === j.propertyId));
+  if(orphaned.length){
+    html += `<div class="dept-section"><div class="dept-title">No property on file</div>`;
+    orphaned.forEach(j => {
+      const person = PROPERTY_TEAM.find(p => p.id === j.assignedTo);
+      html += `<div class="task-card" data-jid="${j.id}" style="padding:10px 12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;flex:1;min-width:160px;">${escapeHtml(j.text)}</span>
+          ${pmTodBadge(j.timeOfDay)}
+          <span style="font-size:11px;color:var(--win-text-secondary);">${person ? escapeHtml(person.name) : 'Unassigned'}</span>
+          <button class="mini-btn pm-job-done">Mark done</button>
+          <button class="mini-btn danger-mini pm-job-remove">Remove</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<details id="pmCompletedDetails" ${pmCompletedExpanded ? 'open' : ''} style="margin-top:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
+    <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Completed (${done.length})</summary>
+    <div style="padding:4px 14px 14px;">
+      ${done.length ? done.map(j => {
+        const prop = PROPERTIES.find(p => p.id === j.propertyId);
+        const person = PROPERTY_TEAM.find(p => p.id === j.assignedTo);
+        return `<div data-jid="${j.id}" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--win-text-secondary);padding:4px 0;border-top:1px solid var(--win-border);">
+          <span style="flex:1;">${escapeHtml(j.text)} — ${escapeHtml(prop ? prop.name : 'no property on file')}${person ? ', ' + escapeHtml(person.name) : ''}${j.completedAt ? ', done ' + escapeHtml(j.completedAt) : ''}</span>
+          <button class="mini-btn pm-job-reopen">Reopen</button>
+          <button class="mini-btn danger-mini pm-job-remove">Delete</button>
+        </div>`;
+      }).join('') : '<div class="empty-note">No completed jobs yet.</div>'}
+    </div>
+  </details>`;
+
+  view.innerHTML = html;
+  wirePropertyMaintenanceHandlers(view);
+}
+
+function wirePropertyMaintenanceHandlers(view){
+  const teamDetails = document.getElementById('pmTeamDetails');
+  if(teamDetails) teamDetails.addEventListener('toggle', () => { pmTeamManagerExpanded = teamDetails.open; });
+  const propDetails = document.getElementById('pmPropDetails');
+  if(propDetails) propDetails.addEventListener('toggle', () => { pmPropManagerExpanded = propDetails.open; });
+  const completedDetails = document.getElementById('pmCompletedDetails');
+  if(completedDetails) completedDetails.addEventListener('toggle', () => { pmCompletedExpanded = completedDetails.open; });
+
+  view.querySelectorAll('.pm-team-row').forEach(row => {
+    const idx = parseInt(row.dataset.idx, 10);
+    row.querySelector('.pm-team-name').onchange = async (e) => {
+      const name = (e.target.value || '').trim();
+      if(!name){ e.target.value = PROPERTY_TEAM[idx].name; return; }
+      PROPERTY_TEAM[idx].name = name;
+      await savePropMaintTeam();
+      await renderPropertyMaintenance();
+    };
+    row.querySelector('.pm-team-remove').onclick = async () => {
+      const p = PROPERTY_TEAM[idx];
+      const inUse = PROPERTY_JOBS.filter(j => j.assignedTo === p.id && j.status !== 'Done').length;
+      const msg = inUse
+        ? `Remove "${p.name}"? ${inUse} open job${inUse===1?'':'s'} assigned to them will show as Unassigned.`
+        : `Remove "${p.name}"?`;
+      if(!await appConfirm(msg, 'Remove')) return;
+      PROPERTY_TEAM.splice(idx, 1);
+      await savePropMaintTeam();
+      await renderPropertyMaintenance();
+    };
+  });
+  const newPmTeamBtn = document.getElementById('newPmTeamBtn');
+  if(newPmTeamBtn) newPmTeamBtn.onclick = async () => {
+    const input = document.getElementById('newPmTeamName');
+    const name = (input.value || '').trim();
+    if(!name) return;
+    PROPERTY_TEAM.push({ id: newPropTeamId(), name, createdAt: isoDate(new Date()) });
+    await savePropMaintTeam();
+    await renderPropertyMaintenance();
+  };
+
+  view.querySelectorAll('.pm-prop-row').forEach(row => {
+    const idx = parseInt(row.dataset.idx, 10);
+    row.querySelector('.pm-prop-name').onchange = async (e) => {
+      const name = (e.target.value || '').trim();
+      if(!name){ e.target.value = PROPERTIES[idx].name; return; }
+      PROPERTIES[idx].name = name;
+      await savePropMaintProperties();
+      await renderPropertyMaintenance();
+    };
+    row.querySelector('.pm-prop-remove').onclick = async () => {
+      const p = PROPERTIES[idx];
+      const inUse = PROPERTY_JOBS.filter(j => j.propertyId === p.id && j.status !== 'Done').length;
+      const msg = inUse
+        ? `Remove "${p.name}"? ${inUse} open job${inUse===1?'':'s'} there will show under "No property on file".`
+        : `Remove "${p.name}"?`;
+      if(!await appConfirm(msg, 'Remove')) return;
+      PROPERTIES.splice(idx, 1);
+      await savePropMaintProperties();
+      await renderPropertyMaintenance();
+    };
+  });
+  const newPmPropBtn = document.getElementById('newPmPropBtn');
+  if(newPmPropBtn) newPmPropBtn.onclick = async () => {
+    const input = document.getElementById('newPmPropName');
+    const name = (input.value || '').trim();
+    if(!name) return;
+    PROPERTIES.push({ id: newPropertyId(), name, createdAt: isoDate(new Date()) });
+    await savePropMaintProperties();
+    await renderPropertyMaintenance();
+  };
+
+  const newPmJobBtn = document.getElementById('newPmJobBtn');
+  if(newPmJobBtn) newPmJobBtn.onclick = async () => {
+    const propertyId = document.getElementById('newPmJobProp').value;
+    const assignedTo = document.getElementById('newPmJobAssignee').value;
+    const text = (document.getElementById('newPmJobText').value || '').trim();
+    const timeOfDay = document.getElementById('newPmJobTod').value;
+    if(!propertyId || !text){ showToast('Pick a property and describe the job'); return; }
+    PROPERTY_JOBS.push({ id: newPropJobId(), propertyId, assignedTo, text, timeOfDay, status: 'Open', createdAt: isoDate(new Date()), completedAt: '' });
+    await savePropMaintJobs();
+    await renderPropertyMaintenance();
+  };
+
+  view.querySelectorAll('[data-jid]').forEach(row => {
+    const jid = row.dataset.jid;
+    const findJob = () => PROPERTY_JOBS.find(j => j.id === jid);
+
+    const doneBtn = row.querySelector('.pm-job-done');
+    if(doneBtn) doneBtn.onclick = async () => {
+      const j = findJob(); if(!j) return;
+      j.status = 'Done';
+      j.completedAt = isoDate(new Date());
+      await savePropMaintJobs();
+      await renderPropertyMaintenance();
+    };
+    const reopenBtn = row.querySelector('.pm-job-reopen');
+    if(reopenBtn) reopenBtn.onclick = async () => {
+      const j = findJob(); if(!j) return;
+      j.status = 'Open';
+      j.completedAt = '';
+      await savePropMaintJobs();
+      await renderPropertyMaintenance();
+    };
+    const removeBtn = row.querySelector('.pm-job-remove');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!await appConfirm('Delete this job? This cannot be undone.', 'Delete')) return;
+      const i = PROPERTY_JOBS.findIndex(x => x.id === jid);
+      if(i > -1) PROPERTY_JOBS.splice(i, 1);
+      await savePropMaintJobs();
+      await renderPropertyMaintenance();
+    };
   });
 }
 
@@ -5065,6 +5365,7 @@ function closeOtherPanels(except){
   if(except !== 'meetings' && meetingsShown){ meetingsShown = false; document.getElementById('meetingsToggleBtn').classList.remove('active'); document.getElementById('meetingsView').classList.remove('show'); }
   if(except !== 'vendormeetings' && vendorMeetingsShown){ vendorMeetingsShown = false; document.getElementById('vendorMeetingsToggleBtn').classList.remove('active'); document.getElementById('vendorMeetingsView').classList.remove('show'); }
   if(except !== 'social' && socialShown){ socialShown = false; document.getElementById('socialToggleBtn').classList.remove('active'); document.getElementById('socialView').classList.remove('show'); }
+  if(except !== 'propmaint' && propMaintShown){ propMaintShown = false; document.getElementById('propMaintToggleBtn').classList.remove('active'); document.getElementById('propMaintView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
@@ -5074,7 +5375,7 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
@@ -5131,6 +5432,16 @@ document.getElementById('socialToggleBtn').onclick = async () => {
   document.getElementById('socialView').classList.toggle('show', socialShown);
   updatePanelVisibility();
   if(socialShown) await renderSocial();
+};
+
+document.getElementById('propMaintToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('propmaint');
+  propMaintShown = !propMaintShown;
+  document.getElementById('propMaintToggleBtn').classList.toggle('active', propMaintShown);
+  document.getElementById('propMaintView').classList.toggle('show', propMaintShown);
+  updatePanelVisibility();
+  if(propMaintShown) await renderPropertyMaintenance();
 };
 
 document.getElementById('projectsToggleBtn').onclick = async () => {
@@ -5316,6 +5627,11 @@ async function renderSetup(){
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="text" class="st-text" value="${escapeAttr(t.text)}" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
             <select class="st-cadence" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">${cadOpts}</select>
+            <select class="st-tod" title="When this task should be done" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
+              <option value="NA" ${(t.timeOfDay||'NA')==='NA'?'selected':''}>N/A</option>
+              <option value="AM" ${t.timeOfDay==='AM'?'selected':''}>AM</option>
+              <option value="PM" ${t.timeOfDay==='PM'?'selected':''}>PM</option>
+            </select>
             ${appliesSelect}
             <select class="st-reassign" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
               <option value="">Reassign to\u2026</option>${targetOpts}
@@ -5435,7 +5751,7 @@ async function renderSetup(){
       if(!text) return;
       const empIdx = parseInt(btn.dataset.emp, 10);
       const appliesTo = appliesSelect ? appliesSelect.value : 'both';
-      LOCATIONS[btn.dataset.loc].data[empIdx].tasks.push({ id: newTaskId(), text, cadence: 'Daily', howTo: '', videoUrl: '', appliesTo });
+      LOCATIONS[btn.dataset.loc].data[empIdx].tasks.push({ id: newTaskId(), text, cadence: 'Daily', howTo: '', videoUrl: '', appliesTo, timeOfDay: 'NA' });
       await saveRoster();
       await renderSetup();
     };
@@ -5458,6 +5774,7 @@ async function renderSetup(){
         await saveRoster();
       }
     };
+    row.querySelector('.st-tod').onchange = async (e) => { const t = findTask(); if(t){ t.timeOfDay = e.target.value; await saveRoster(); } };
     row.querySelector('.st-howto').onchange = async (e) => { const t = findTask(); if(t){ t.howTo = e.target.value; await saveRoster(); } };
     row.querySelector('.st-video').onchange = async (e) => { const t = findTask(); if(t){ t.videoUrl = e.target.value; await saveRoster(); } };
     const appliesEl = row.querySelector('.st-applies');
