@@ -39,7 +39,12 @@ function codeTier(code) {
 // (the owner's private work plan) is deliberately NOT in this set; it stays ungated the same
 // way it always has (employees assigned to a step still need to update it), but is only ever
 // shown in the UI to the owner, never to managers.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs']);
+// 'owner-change-requests' is Rob's own private change-request list (separate from the
+// employee-facing Suggestion Box, which is deliberately NOT in this set - any employee needs
+// to write a suggestion without a code). It's owner-tier only in the UI (see isOwnerAdmin()/
+// requireOwner() in index.html), but either code unlocks it here same as every other key in
+// this set - the client is what keeps managers out of it.
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs', 'owner-change-requests']);
 
 function loadStore() {
   try {

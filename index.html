@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Dealership Daily Ops</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
   :root{
     --win-bg:#F3F3F3;
@@ -247,6 +249,177 @@
   .metric-replaces-task{ display:block; width:auto; height:auto; margin:0 auto; padding:4px 7px; font-size:11px; font-weight:600; border-radius:6px; white-space:nowrap; border:1px solid var(--win-accent); color:var(--win-accent); background:#fff; }
   .metric-replaces-task:hover{ background:var(--win-accent-light); }
   .metric-replaces-task.has-value{ border-color:var(--c-complete); color:#fff; background:var(--c-complete); }
+
+  /* =====================================================================================
+     PHASE 1 REDESIGN - dark "instrument cluster" theme for the per-employee daily page ONLY.
+     Everything below is scoped under `.main` (which, per updatePanelVisibility(), only ever
+     holds the employee daily page - every admin/Setup screen renders in a sibling `.monthly-view`
+     and is untouched by any of this). Class names shared with admin views (.task-card, .mini-btn,
+     .group-title, .seg-btn, etc.) are re-skinned here via `.main <selector>` overrides, which
+     win on specificity without touching the base (light) rule those admin views still use.
+     Reference: dailys-redesign-mockup.html (Rob-approved concept). ===================== */
+  .main{
+    --win-bg:#15171a; --win-surface:#1e2124; --win-sidebar:#262a2e;
+    --win-border:#33383d; --win-border-strong:#33383d;
+    --win-text:#ece9e2; --win-text-secondary:#9aa1a8;
+    --win-accent:#ff7a33; --win-accent-light:rgba(255,122,51,0.16);
+    --c-complete:#57c785; --c-incomplete:#f2b544; --c-off:#6b7178;
+    --kpi-good:#57c785; --kpi-risk:#f2b544; --kpi-bad:#ff5f5f; --kpi-none:#6b7178;
+    --d-surface-2:#262a2e; --d-surface-3:#2d3237;
+    --tasks:#ff7a33; --metrics:#2fd1c5; --meetings:#ffc94a; --projects:#7bd66a; --social:#ff5fa2; --suggest:#7c93ff; --beacon:#ff4438;
+    --font-display:'Oswald','Arial Narrow',sans-serif;
+    --font-body:'Work Sans','Segoe UI',sans-serif;
+    --font-data:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+    background:var(--win-bg); color:var(--win-text); font-family:var(--font-body);
+  }
+  .main .employee-title h1{ font-family:var(--font-display); font-weight:600; letter-spacing:0.01em; text-transform:none; }
+  .main .employee-avatar-lg{ background:var(--tasks); }
+  .main .week-nav{ display:none; } /* superseded by the day strip below */
+  .main .summary-bar{ background:var(--win-surface); border-color:var(--win-border); }
+  .main .legend-dot{ border-radius:3px; }
+  .main a{ color:var(--metrics); }
+
+  /* -- day strip: Mon-Sat, today first, running into the days ahead (dealership closed Sunday) -- */
+  .main .day-strip{ display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; margin:2px 0 18px; -webkit-overflow-scrolling:touch; }
+  .main .day-chip{ flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:var(--win-surface); border:1px solid var(--win-border); color:var(--win-text-secondary);
+    border-radius:10px; padding:9px 14px; min-width:54px; cursor:pointer; font-family:var(--font-data); }
+  .main .day-chip-label{ font-size:10px; font-weight:700; letter-spacing:0.06em; }
+  .main .day-chip-date{ font-size:16px; font-weight:700; }
+  .main .day-chip-today{ background:var(--win-text); color:var(--win-bg); border-color:transparent; }
+  .main .day-chip-today .day-chip-label{ font-size:11px; }
+  .main .day-chip-today .day-chip-date{ font-size:19px; }
+  .main .day-chip-selected:not(.day-chip-today){ border-color:var(--win-text); color:var(--win-text); }
+  .main .day-chip:focus-visible{ outline:2px solid var(--win-text); outline-offset:2px; }
+
+  /* -- shared panel shell every re-skinned section below sits in -- */
+  .main .dpanel{ background:var(--win-surface); border:1px solid var(--win-border); border-radius:10px; padding:20px; margin-bottom:18px; }
+  .main .dpanel-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .main .dpanel-sub{ font-size:12px; color:var(--win-text-secondary); }
+  .main .h-tasks{ font-family:var(--font-display); font-weight:700; font-size:26px; text-transform:uppercase; letter-spacing:0.02em; color:var(--tasks); }
+  .main .h-metrics{ font-family:var(--font-data); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.18em; color:var(--metrics); }
+  .main .h-meetings{ font-family:var(--font-display); font-weight:500; font-size:21px; letter-spacing:0.03em; color:var(--meetings); }
+  .main .h-projects{ font-family:var(--font-body); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.12em; color:var(--projects); }
+  .main .h-actionitems{ font-family:var(--font-body); font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.12em; color:var(--meetings); }
+
+  /* -- merged Today & One-Time list -- */
+  .main .row{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--d-surface-2); border-radius:8px; padding:11px 13px; margin-bottom:8px; }
+  .main .row:last-child{ margin-bottom:0; }
+  .main .row-label{ font-size:14px; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .main .row-tags{ display:flex; gap:8px; align-items:center; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+  .main .row.awareness-row{ opacity:.6; }
+  .main .row.onetime-row-merged.done{ opacity:.55; }
+  .main .row.onetime-row-merged.done .row-onetime-text{ text-decoration:line-through; }
+  .main .tag{ font-family:var(--font-data); font-size:10px; font-weight:700; letter-spacing:0.04em; border-radius:5px; padding:4px 8px; color:var(--win-bg); white-space:nowrap; }
+  .main .tag-am{ background:var(--metrics); }
+  .main .tag-pm{ background:var(--meetings); }
+  .main .tag-onetime{ background:transparent; border:1px solid var(--tasks); color:var(--tasks); }
+  .main .tag-awareness{ background:transparent; border:1px solid var(--win-text-secondary); color:var(--win-text-secondary); }
+  .main .cadence-tag{ background:transparent; border:1px solid var(--win-border-strong); color:var(--win-text-secondary); }
+  .main .seg{ display:flex; gap:3px; padding:0; }
+  .main .seg-btn{ background:var(--win-surface); border-color:var(--win-border-strong); color:var(--win-text-secondary); }
+  .main .seg-btn:hover{ background:var(--d-surface-3); }
+  .main .add-row{ display:flex; gap:10px; align-items:center; border-top:1px solid var(--win-border); padding-top:14px; margin-top:14px; flex-wrap:wrap; }
+
+  /* -- metrics: Daily group above Weekly group, in one panel -- */
+  .main .metric-group-label{ font-family:var(--font-data); font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--win-text-secondary); margin:0 0 8px 2px; }
+  .main .metric-group-label-weekly{ margin-top:16px; padding-top:14px; border-top:1px solid var(--win-border); }
+  .main .metric-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:11px 0; border-bottom:1px solid var(--win-border); }
+  .main .metric-row:last-child{ border-bottom:none; }
+  .main .metric-name{ font-size:14px; }
+  .main .metric-side{ display:flex; align-items:center; gap:10px; }
+  .main .metric-mtd{ font-family:var(--font-data); font-size:12px; color:var(--win-text-secondary); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* -- meetings preview for the selected day -- */
+  .main .mp-day-chip{ font-size:12px; padding:8px 10px; border:1px solid var(--win-border); border-radius:6px; margin-bottom:6px; cursor:pointer; background:var(--d-surface-2); }
+
+  /* -- projects: a slim progress bar per assigned step -- */
+  .main .proj-name{ font-size:15px; font-weight:600; }
+  .main .proj-step{ font-size:13px; color:var(--win-text-secondary); }
+  .main .bar{ background:var(--d-surface-3); border-radius:999px; height:8px; overflow:hidden; margin:8px 0; }
+  .main .bar-fill{ height:100%; background:var(--projects); }
+
+  .main .task-card{ background:var(--win-surface); border:1px solid var(--win-border); border-radius:8px; }
+  .main .proj-card{ background:var(--d-surface-2); border-radius:8px; }
+  .main .proj-status-select{ background:var(--d-surface-3); color:var(--win-text); }
+  .main .mini-btn{ background:var(--d-surface-2); color:var(--win-text); border-color:var(--win-border-strong); }
+  .main .mini-btn:hover{ background:var(--d-surface-3); }
+  .main .mini-btn.primary-mini{ background:var(--tasks); color:#17110b; border-color:var(--tasks); }
+  .main .mini-btn.sel-C{ background:var(--c-complete); color:#0f1a13; border-color:var(--c-complete); }
+  .main .mini-btn.danger-mini{ color:var(--kpi-bad); }
+  .main .onetime-row{ border-bottom-color:var(--win-border); }
+  .main .photo-btn{ background:var(--d-surface-2); color:var(--win-text-secondary); border-color:var(--win-border-strong); }
+  .main .attach-chip{ background:var(--d-surface-2); }
+  .main .ai-link-chip{ background:var(--d-surface-2) !important; }
+  .main .info-btn{ background:var(--d-surface-2); }
+  .main .metric-entry-btn{ background:var(--d-surface-2); }
+  .main .metric-replaces-task{ background:var(--win-surface); }
+  .main .empty-note{ color:var(--win-text-secondary); }
+  .main .off-day-cell{ background:var(--d-surface-2); color:var(--win-border-strong); }
+  .main input[type="text"], .main input[type="number"], .main input[type="date"], .main select, .main textarea{
+    background:var(--d-surface-3); border:1px solid var(--win-border-strong); color:var(--win-text); font-family:var(--font-body);
+  }
+  .main input::placeholder, .main textarea::placeholder{ color:var(--win-text-secondary); opacity:.8; }
+  .main input:focus, .main textarea:focus, .main select:focus{ outline:2px solid var(--tasks); outline-offset:1px; }
+
+  /* -- Suggestion Box: click-anywhere-to-open, expands in place -- */
+  .main .sugg-panel{ margin-top:2px; }
+  .main .sugg-collapsed{ display:block; width:100%; text-align:left; background:none; border:none; padding:0; margin:0; font-family:inherit; color:inherit; cursor:pointer; }
+  .main .sugg-collapsed:hover .h-suggest{ text-decoration:underline; }
+  .main .h-suggest{ font-family:var(--font-body); font-weight:800; font-size:19px; color:var(--suggest); }
+  .main .sugg-collapsed .dpanel-sub{ display:block; margin-top:6px; }
+  .main .sugg-type-row{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .main .sugg-type-row input[type="radio"]{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .main .sugg-chip{ display:inline-block; font-family:var(--font-body); font-size:13px; font-weight:600; border:1px solid var(--win-border-strong); border-radius:999px; padding:7px 13px; cursor:pointer; color:var(--win-text-secondary); }
+  .main input[type="radio"]:checked + .sugg-chip{ background:var(--suggest); border-color:var(--suggest); color:#0d1020; }
+  .main input[type="radio"]:focus-visible + .sugg-chip{ outline:2px solid var(--suggest); outline-offset:2px; }
+  .main .sugg-actions{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .main .sugg-collapse-btn{ background:none !important; color:var(--win-text-secondary); border:none !important; }
+  .main .btn-suggest{ background:var(--suggest); color:#0d1020; border-color:var(--suggest); }
+  .main .sugg-thanks{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .visually-hidden{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+  /* -- messages beacon + slide-over panel (global overlay, only shown while the employee page
+     itself is visible - see updatePanelVisibility()) -- */
+  .beacon{ position:fixed; right:20px; bottom:calc(20px + env(safe-area-inset-bottom,0px)); width:58px; height:58px; border-radius:50%;
+    background:#ff4438; color:#fff; border:none; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 20px rgba(255,68,56,0.45); cursor:pointer; z-index:60; font-family:'Work Sans',sans-serif; }
+  .beacon[hidden]{ display:none !important; }
+  .beacon svg{ width:24px; height:24px; }
+  .beacon-ring{ position:absolute; inset:-6px; border-radius:50%; border:2px solid #ff4438; opacity:.55; animation:beaconPulse 2.2s ease-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .beacon-ring{ animation:none; } }
+  @keyframes beaconPulse{ 0%{ transform:scale(0.9); opacity:.55; } 100%{ transform:scale(1.6); opacity:0; } }
+  .beacon-badge{ position:absolute; top:-4px; right:-4px; background:#ece9e2; color:#15171a; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+    min-width:20px; height:20px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+  .beacon-badge[hidden]{ display:none !important; }
+  .msg-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:69; }
+  .msg-panel{ position:fixed; top:0; right:0; height:100%; width:380px; max-width:92vw; background:#1e2124; color:#ece9e2;
+    border-left:1px solid #33383d; box-shadow:-12px 0 32px rgba(0,0,0,0.4); z-index:70; display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top,0px); font-family:'Work Sans',sans-serif; }
+  .msg-scrim[hidden], .msg-panel[hidden]{ display:none !important; }
+  .msg-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; border-bottom:1px solid #33383d; flex-shrink:0; }
+  .msg-head-title{ font-family:'Oswald',sans-serif; font-size:18px; font-weight:600; }
+  .msg-back{ background:none; border:none; color:#9aa1a8; font-size:20px; cursor:pointer; padding:2px 8px; }
+  .msg-close{ background:none; border:none; color:#9aa1a8; font-size:22px; line-height:1; padding:4px 8px; cursor:pointer; }
+  .msg-list{ flex:1; overflow-y:auto; padding:10px; }
+  .msg-convo-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 12px; border-radius:8px; cursor:pointer; margin-bottom:4px; }
+  .msg-convo-row:hover{ background:#262a2e; }
+  .msg-convo-name{ font-size:13.5px; font-weight:600; }
+  .msg-convo-preview{ font-size:11.5px; color:#9aa1a8; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .msg-convo-unread{ background:#ff4438; color:#fff; font-size:10.5px; font-weight:700; min-width:18px; height:18px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px; flex-shrink:0; }
+  .msg-new-row{ display:flex; gap:8px; padding:10px; border-bottom:1px solid #33383d; flex-shrink:0; }
+  .msg-new-row select{ flex:1; background:#2d3237; border:1px solid #33383d; color:#ece9e2; border-radius:7px; padding:8px 10px; font-size:13px; font-family:inherit; }
+  .msg-body{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .bubble-row{ display:flex; }
+  .bubble-row.mine{ justify-content:flex-end; }
+  .bubble{ max-width:78%; padding:9px 13px; border-radius:12px; font-size:13.5px; line-height:1.4; background:#262a2e; }
+  .bubble-meta{ font-size:10px; color:#9aa1a8; margin-top:3px; }
+  .bubble-row.mine .bubble{ background:#ff4438; color:#fff; }
+  .msg-compose{ display:flex; gap:8px; padding:14px 16px; padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid #33383d; flex-shrink:0; }
+  .msg-compose input{ flex:1; background:#2d3237; border:1px solid #33383d; color:#ece9e2; border-radius:7px; padding:9px 12px; font-size:14px; font-family:inherit; }
+  .msg-compose button, .msg-new-row button{ font-family:'Work Sans',sans-serif; font-weight:600; font-size:13.5px; border:none; border-radius:7px; padding:9px 14px; cursor:pointer; background:#ff4438; color:#fff; }
+  .msg-empty{ padding:20px 14px; font-size:12.5px; color:#9aa1a8; }
 </style>
 </head>
 <body>
@@ -268,6 +441,7 @@
       <button class="tb-btn admin-only" id="socialToggleBtn">Social Media</button>
       <button class="tb-btn admin-only" id="propMaintToggleBtn">Other Properties</button>
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
+      <button class="tb-btn admin-only" id="suggestionsToggleBtn">Suggestion Box</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
       <button class="tb-btn admin-only" id="trainingToggleBtn">Training Admin</button>
@@ -308,6 +482,8 @@
         </div>
       </div>
 
+      <div class="day-strip" id="dayStrip" role="group" aria-label="Choose a day"></div>
+
       <div class="summary-bar">
         <div class="legend">
           <div class="legend-item"><div class="legend-dot" style="background:var(--c-complete)"></div>Complete</div>
@@ -318,26 +494,54 @@
         <div class="summary-stat" id="summaryStat"></div>
       </div>
 
-      <div id="metricsPanelWrap" style="margin-bottom:22px;"></div>
-
-      <div id="tableWrap"></div>
-
-      <div id="meetingsPanelWrap" style="margin-top:22px;"></div>
-
-      <div id="actionItemsPanelWrap" style="margin-top:22px;"></div>
-
-      <div id="projectsPanelWrap" style="margin-top:22px;"></div>
-
-      <div id="onetimeWrap" style="display:none; margin-top:22px;">
-        <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">One-Time Tasks</div>
-        <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
-          <input type="text" id="addOnetimeInput" placeholder="Describe the one-time task…" style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;">
-          <button id="addOnetimeBtn" class="mini-btn primary-mini">+ Add task</button>
+      <section class="dpanel">
+        <div class="dpanel-head">
+          <div class="h-tasks" id="dailyPanelHeading">Today &amp; One-Time</div>
+          <div class="dpanel-sub">Daily checklist, plus anything one-time you add yourself</div>
         </div>
-        <div class="task-card" id="onetimeList" style="padding:4px;"></div>
-      </div>
+        <div id="tableWrap"></div>
+        <div id="onetimeList" style="margin-top:4px;"></div>
+        <div class="add-row">
+          <label for="addOnetimeInput">Add to your own page</label>
+          <input type="text" id="addOnetimeInput" placeholder="Describe the one-time task…">
+          <button id="addOnetimeBtn" class="mini-btn primary-mini">+ Add</button>
+        </div>
+      </section>
 
-      <div id="weeklyMetricsPanelWrap" style="margin-top:22px;"></div>
+      <div id="metricsPanelWrap" style="margin-bottom:18px;"></div>
+
+      <div id="meetingsPanelWrap" style="margin-bottom:18px;"></div>
+
+      <div id="actionItemsPanelWrap" style="margin-bottom:18px;"></div>
+
+      <div id="projectsPanelWrap" style="margin-bottom:18px;"></div>
+
+      <section class="dpanel sugg-panel">
+        <button type="button" class="sugg-collapsed" id="suggCollapsed" aria-expanded="false" aria-controls="suggExpanded">
+          <span class="h-suggest">Suggestion Box</span>
+          <span class="dpanel-sub">Have an idea to make Dailys better, or something not working right? Tap anywhere here to tell Rob.</span>
+        </button>
+        <div class="sugg-expanded" id="suggExpanded" hidden>
+          <form id="suggForm">
+            <div class="sugg-type-row">
+              <input type="radio" name="suggType" id="typeIdea" value="idea" checked>
+              <label for="typeIdea" class="sugg-chip">Idea / Improvement</label>
+              <input type="radio" name="suggType" id="typeIssue" value="issue">
+              <label for="typeIssue" class="sugg-chip">Something is Broken</label>
+            </div>
+            <label for="suggText" class="visually-hidden">Tell Rob what is going on</label>
+            <textarea id="suggText" rows="3" placeholder="What would make this better, or what is not working?" style="width:100%;"></textarea>
+            <div class="sugg-actions">
+              <button type="button" class="mini-btn sugg-collapse-btn" id="suggCollapseBtn">Close</button>
+              <button type="submit" class="mini-btn btn-suggest">Send to Rob</button>
+            </div>
+          </form>
+          <div class="sugg-thanks" id="suggThanks" hidden>
+            <div class="dpanel-sub">Thanks — this goes straight to Rob.</div>
+            <button type="button" class="mini-btn btn-suggest" id="suggAgainBtn">Write Another</button>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div class="monthly-view" id="monthlyView"></div>
@@ -354,10 +558,46 @@
     <div class="monthly-view" id="targetsView"></div>
     <div class="monthly-view" id="dashboardView"></div>
     <div class="monthly-view" id="trainingLibraryView"></div>
+    <div class="monthly-view" id="suggestionsView"></div>
   </div>
 </div>
 
 <div class="status-toast" id="toast">Saved</div>
+
+<!-- Messages: floating beacon + slide-over reply panel, shown only while the employee daily
+     page itself is visible (see updatePanelVisibility()). Every employee/device shares the same
+     'messages' server key - there's no login in this app, so "private" here is UI-level only,
+     same trust model as everything else (anyone can click any name in the sidebar). -->
+<button type="button" class="beacon" id="beaconBtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Open messages" hidden>
+  <span class="beacon-ring" aria-hidden="true"></span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <span class="beacon-badge" id="beaconBadge" hidden>0</span>
+</button>
+
+<div class="msg-scrim" id="msgScrim" hidden></div>
+<aside class="msg-panel" id="msgPanel" role="dialog" aria-label="Messages" hidden>
+  <div class="msg-head">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="msg-back" id="msgBackBtn" aria-label="Back to conversations" hidden>&#8592;</button>
+      <div>
+        <div class="msg-head-title" id="msgHeadTitle">Messages</div>
+        <div class="msg-role" id="msgHeadSub" style="font-size:11.5px;color:#9aa1a8;"></div>
+      </div>
+    </div>
+    <button type="button" class="msg-close" id="msgCloseBtn" aria-label="Close messages">&times;</button>
+  </div>
+  <div class="msg-new-row" id="msgNewRow">
+    <select id="msgNewSelect"><option value="">Start a conversation with…</option></select>
+    <button type="button" id="msgNewBtn">Go</button>
+  </div>
+  <div class="msg-list" id="msgListView"></div>
+  <div class="msg-body" id="msgThreadView" style="display:none;"></div>
+  <form class="msg-compose" id="msgComposeForm" style="display:none;">
+    <label for="msgInput" class="visually-hidden">Reply</label>
+    <input type="text" id="msgInput" placeholder="Type a reply">
+    <button type="submit">Send</button>
+  </form>
+</aside>
 
 <div class="modal-backdrop" id="photoModal">
   <div class="modal">
@@ -435,6 +675,58 @@ let currentEmployee = 0;
 let weekStart = defaultWeekStart();
 let statusCache = {};   // dayKey -> array of statuses
 let onetimeListCache = {}; // "loc:facilityIdx" -> array of one-time task objects
+
+// ---- Horizontal day strip (Mon-Sat only, dealership closed Sundays): always anchored to the
+// REAL current date, not to whatever week weekStart/prevWeek/nextWeek happen to be browsing -
+// "Today" is always really today. Selecting a chip sets `previewDate`, which drives the merged
+// Daily/One-Time list and the Daily Metrics entry box for that specific date. Meetings preview
+// that date too (real date-keyed data). Action Items/Projects have no clean per-day preview in
+// the current data model (steps/items aren't tied to a specific calendar date, just an optional
+// deadline) - per spec, those keep showing today's real state regardless of the selected day. ----
+function normalizedToday(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+let previewDate = normalizedToday();
+const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function buildDayStripDates(n){
+  const out = [];
+  const today = normalizedToday();
+  const cursor = new Date(today);
+  while(out.length < n){
+    if(cursor.getDay() !== 0){ out.push(new Date(cursor)); } // skip Sunday - closed
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+function renderDayStrip(){
+  const el = document.getElementById('dayStrip');
+  if(!el) return;
+  const today = normalizedToday();
+  const days = buildDayStripDates(6);
+  el.innerHTML = days.map(d => {
+    const isToday = d.getTime() === today.getTime();
+    const isSelected = d.getTime() === previewDate.getTime();
+    let cls = 'day-chip';
+    if(isToday) cls += ' day-chip-today';
+    if(isSelected) cls += ' day-chip-selected';
+    return `<button type="button" class="${cls}" data-date="${isoDate(d)}" aria-pressed="${isSelected}">
+      <span class="day-chip-label">${isToday ? 'Today' : DAY_ABBR[d.getDay()]}</span>
+      <span class="day-chip-date">${d.getDate()}</span>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.day-chip').forEach(btn => {
+    btn.onclick = async () => {
+      const [y,m,dd] = btn.dataset.date.split('-').map(Number);
+      previewDate = new Date(y, m-1, dd);
+      await renderMain();
+    };
+  });
+}
+// A short label for the selected day, used in the merged panel's heading ("Today & One-Time",
+// "Tue 9/30 & One-Time", ...).
+function previewDayLabel(){
+  const today = normalizedToday();
+  if(previewDate.getTime() === today.getTime()) return 'Today';
+  return previewDate.toLocaleDateString('en-US', { weekday:'short', month:'numeric', day:'numeric' });
+}
 
 function mondayOf(d){
   const dt = new Date(d);
@@ -688,6 +980,12 @@ async function refreshServerState(){
     catch(e){ console.error('Bad owner recurring tasks data, resetting', e); OWNER_RECURRING_TASKS = []; }
     try{ OWNER_RECURRING_STATUS = SERVER_STATE['owner-recurring-status'] ? JSON.parse(SERVER_STATE['owner-recurring-status']) : {}; }
     catch(e){ console.error('Bad owner recurring status data, resetting', e); OWNER_RECURRING_STATUS = {}; }
+    try{ MESSAGES = SERVER_STATE['messages'] ? JSON.parse(SERVER_STATE['messages']) : []; }
+    catch(e){ console.error('Bad messages data, resetting', e); MESSAGES = []; }
+    try{ SUGGESTIONS = SERVER_STATE['suggestions'] ? JSON.parse(SERVER_STATE['suggestions']) : []; }
+    catch(e){ console.error('Bad suggestions data, resetting', e); SUGGESTIONS = []; }
+    try{ OWNER_CHANGE_REQUESTS = SERVER_STATE['owner-change-requests'] ? JSON.parse(SERVER_STATE['owner-change-requests']) : []; }
+    catch(e){ console.error('Bad owner change request data, resetting', e); OWNER_CHANGE_REQUESTS = []; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -1268,6 +1566,92 @@ function ownerRecurringPeriodKey(cadence){
   if(cadence === 'Monthly') return monthKey(now);
   return isoDate(now); // Daily
 }
+
+// ---- Messages: simple direct-message threads between any two roster lines. Participants are
+// keyed exactly the same "locKey::empIdx" way projects/metrics/meeting assignment already do
+// (see currentLoc/currentEmployee usage throughout) - there's no separate identity system.
+// Not admin-gated: any employee needs to write their own reply without a code. There's no
+// per-user login anywhere in this app (anyone can click any name in the sidebar), so "private"
+// here is UI-level only, same trust model as the rest of Dailys. ----
+let MESSAGES = []; // [{ id, from:'loc::idx', to:'loc::idx', text, ts:ISO, read:bool }]
+function newMessageId(){ return 'msg-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function myKey(){ return `${currentLoc}::${currentEmployee}`; }
+function rosterLabelForKey(key){
+  if(!key) return 'Unknown';
+  const [locKey, empIdxStr] = key.split('::');
+  const empIdx = parseInt(empIdxStr, 10);
+  const loc = LOCATIONS[locKey];
+  const emp = loc && loc.data[empIdx];
+  return emp ? emp.label : 'Removed employee';
+}
+async function saveMessages(){
+  await storSet('messages', JSON.stringify(MESSAGES));
+}
+// Every conversation the currently-viewed employee is part of, newest message first, each with
+// its unread count and a preview of the last line.
+function conversationsForMe(){
+  const me = myKey();
+  const others = new Map();
+  MESSAGES.forEach(m => {
+    if(m.from !== me && m.to !== me) return;
+    const other = m.from === me ? m.to : m.from;
+    if(other === me) return; // no self-conversations
+    if(!others.has(other)) others.set(other, []);
+    others.get(other).push(m);
+  });
+  const out = [];
+  others.forEach((msgs, other) => {
+    msgs.sort((a,b) => a.ts.localeCompare(b.ts));
+    const last = msgs[msgs.length - 1];
+    const unread = msgs.filter(m => m.to === me && !m.read).length;
+    out.push({ other, msgs, last, unread });
+  });
+  out.sort((a,b) => (b.last.ts||'').localeCompare(a.last.ts||''));
+  return out;
+}
+function unreadMessageCountForMe(){
+  const me = myKey();
+  return MESSAGES.filter(m => m.to === me && !m.read).length;
+}
+async function markThreadRead(otherKey){
+  const me = myKey();
+  let changed = false;
+  MESSAGES.forEach(m => { if(m.to === me && m.from === otherKey && !m.read){ m.read = true; changed = true; } });
+  if(changed) await saveMessages();
+}
+async function sendMessageTo(otherKey, text){
+  const t = (text||'').trim();
+  if(!t || !otherKey) return;
+  MESSAGES.push({ id: newMessageId(), from: myKey(), to: otherKey, text: t, ts: new Date().toISOString(), read: false });
+  await saveMessages();
+}
+
+// ---- Suggestion Box: employee-facing, not admin-gated (any employee needs to send one without
+// a code). Reviewed from a dedicated staff-gated panel (owner OR manager - see requireStaff()),
+// not the owner-only Owner Board, since both tiers should see what's coming in. ----
+let SUGGESTIONS = []; // [{ id, tag:'idea'|'issue', text, from:'loc::idx', fromLabel, ts:ISO, reviewed:bool }]
+function newSuggestionId(){ return 'sugg-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+async function saveSuggestions(){
+  const ok = await storSet('suggestions', JSON.stringify(SUGGESTIONS));
+  if(!ok) showToast('Save failed');
+}
+async function submitSuggestion(tag, text){
+  const t = (text||'').trim();
+  if(!t) return;
+  SUGGESTIONS.push({ id: newSuggestionId(), tag, text: t, from: myKey(), fromLabel: rosterLabelForKey(myKey()), ts: new Date().toISOString(), reviewed: false });
+  await saveSuggestions();
+}
+
+// ---- Rob's own private "change requests for Dailys" list - separate from the employee-facing
+// Suggestion Box above, and NOT manager-visible (owner-tier only, both in the UI gate below and
+// server-side via ADMIN_ONLY_KEYS - see server.js). Lives on the private Owner tab. ----
+let OWNER_CHANGE_REQUESTS = []; // [{ id, text, ts:ISO, done:bool }]
+function newChangeRequestId(){ return 'ocr-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+async function saveOwnerChangeRequests(){
+  const ok = await storSet('owner-change-requests', JSON.stringify(OWNER_CHANGE_REQUESTS), true);
+  if(!ok) showToast('Not saved — owner code required');
+  return ok;
+}
 // A compact "how's this department doing" table shown at the top of a meeting - Daily
 // metrics show every entered value Mon-Fri so far this week, Weekly ones show this week's
 // single number, both against goal. Meant to replace someone manually re-typing numbers
@@ -1660,7 +2044,7 @@ function renderLocSwitch(){
     const btn = document.createElement('button');
     btn.className = 'loc-btn' + (key === currentLoc ? ' active' : '');
     btn.textContent = loc.name;
-    btn.onclick = () => { currentLoc = key; currentEmployee = 0; renderAll(); };
+    btn.onclick = () => { currentLoc = key; currentEmployee = 0; previewDate = normalizedToday(); renderAll(); };
     el.appendChild(btn);
   });
   document.getElementById('appIcon').textContent = LOCATIONS[currentLoc].short;
@@ -1678,7 +2062,7 @@ function renderNav(){
       <div>${emp.label}</div>
       <div class="nav-progress" data-idx="${idx}"></div>
     `;
-    item.onclick = async () => { currentEmployee = idx; await renderMain(); renderNavProgress(); highlightNav(); };
+    item.onclick = async () => { currentEmployee = idx; previewDate = normalizedToday(); await renderMain(); renderNavProgress(); highlightNav(); };
     nav.appendChild(item);
   });
 }
@@ -1707,7 +2091,7 @@ function metricValidOnDate(metric, date){
   if(!metric) return false;
   const dow = date.getDay();
   if(metric.cadence === 'Weekly') return dow === 4; // Thursday
-  return dow >= 1 && dow <= 5; // Mon-Fri
+  return dow >= 1 && dow <= 6; // Mon-Sat - the dealership is closed Sundays only (see update-18)
 }
 
 function groupTasks(tasks){
@@ -1728,11 +2112,21 @@ async function renderMain(){
   document.getElementById('empName').textContent = emp.label;
   document.getElementById('empSub').textContent = LOCATIONS[currentLoc].name + ' · ' + emp.tasks.length + ' tasks';
 
+  // `dates` (the week-nav's Mon-Sun week) still drives the weekly completion stat below, the
+  // sidebar's per-employee progress %, and which Monday a Weekly metric entry is filed under -
+  // none of that changed. It's independent of `previewDate`/the day strip above, which is always
+  // anchored to the real current date (see the day-strip block near weekStart's declaration).
   const dates = weekDates(weekStart);
   document.getElementById('weekLabel').textContent = fmtWeekLabel(dates);
+  renderDayStrip();
+  const headingEl = document.getElementById('dailyPanelHeading');
+  if(headingEl) headingEl.textContent = previewDayLabel() + ' & One-Time';
 
-  // preload statuses for all 7 days
+  // preload statuses for the whole week (feeds the weekly completion stat) plus the single
+  // selected day (feeds the merged task list below) - previewDate can fall outside `dates`
+  // (e.g. weekStart jumped to next week over a weekend while previewDate still starts at today).
   const dayStatuses = await Promise.all(dates.map(d => loadStatuses(currentLoc, currentEmployee, isoDate(d))));
+  const previewStatuses = await loadStatuses(currentLoc, currentEmployee, isoDate(previewDate));
 
   // preload entries for any metrics linked to this employee's tasks, so the little entry
   // button can show whether a value's already there without an extra round trip per click
@@ -1746,72 +2140,64 @@ async function renderMain(){
 
   // A role with zero regular checklist tasks (e.g. an inventory-only role whose work lives
   // entirely in Projects/Meetings) used to make this whole function return early here, which
-  // meant the Meetings/Action Items/Projects/One-Time/Weekly Metrics panels below never ran for
-  // that employee - whatever the PREVIOUSLY viewed employee's panels showed just stayed on
-  // screen, stale. Now only the task table itself is skipped; every panel below always runs.
+  // meant the Meetings/Action Items/Projects/One-Time/Metrics panels below never ran for that
+  // employee - whatever the PREVIOUSLY viewed employee's panels showed just stayed on screen,
+  // stale. Now only the task list itself is skipped; every panel below always runs.
   if(emp.tasks.length === 0){
     wrap.innerHTML = '<div class="empty-note">No tasks on file for this role.</div>';
     updateSummaryStat(0,0,0,0);
   } else {
-  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  let html = '<table class="week-table"><thead><tr><th class="task-col">Task</th>';
-  dates.forEach((d,i) => {
-    html += `<th>${dow[i]}<span class="dow-date">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></th>`;
-  });
-  html += '</tr></thead><tbody>';
-
+  let html = '';
   groups.forEach(g => {
     const isAwareness = g.cadence === 'Awareness';
-    html += `<tr class="cadence-row${isAwareness ? ' awareness-row' : ''}"><td colspan="8">${g.cadence}${isAwareness ? ' <span style="font-weight:400;text-transform:none;">\u2014 parked, not a current priority, excluded from completion stats</span>' : ''}</td></tr>`;
     g.tasks.forEach(t => {
-      html += `<tr data-taskid="${t.id}"${isAwareness ? ' class="awareness-task"' : ''}>`;
+      // Awareness tasks always show (parked, but not date-scoped); everything else only shows
+      // on the currently-selected day, same rule (taskAppliesOnDate) the old week grid used.
+      if(!isAwareness && !taskAppliesOnDate(t, previewDate)) return;
       const kpi = getKpiForTask(currentLoc, currentEmployee, t.id);
       const kpiHtml = kpi ? `<span class="kpi-badge kpi-${kpi.cls}" title="${escapeAttr(kpi.title)}">${escapeHtml(kpi.label)}</span>` : '';
       const locBadgeHtml = LOCATIONS[currentLoc].dual ? `<span class="loc-applies-badge">${t.appliesTo==='bridgeland'?'Bridgeland':t.appliesTo==='candycars'?'Candy Cars':'Both locations'}</span>` : '';
-      const todBadgeHtml = (t.timeOfDay === 'AM' || t.timeOfDay === 'PM') ? `<span class="tod-badge tod-${t.timeOfDay.toLowerCase()}" title="Scheduled for the ${t.timeOfDay === 'AM' ? 'morning' : 'afternoon'}">${t.timeOfDay}</span>` : '';
+      const todBadgeHtml = (t.timeOfDay === 'AM' || t.timeOfDay === 'PM') ? `<span class="tag tag-${t.timeOfDay.toLowerCase()}" title="Scheduled for the ${t.timeOfDay === 'AM' ? 'morning' : 'afternoon'}">${t.timeOfDay}</span>` : '';
+      const cadenceTagHtml = isAwareness
+        ? `<span class="tag tag-awareness" title="Parked \u2014 not a current priority, excluded from completion stats">AWARENESS</span>`
+        : (g.cadence !== 'Daily' ? `<span class="tag cadence-tag">${escapeHtml(g.cadence.toUpperCase())}</span>` : '');
       const hasInfo = (t.howTo && t.howTo.trim()) || (t.videoUrl && t.videoUrl.trim());
       const infoBtnHtml = hasInfo ? `<button class="info-btn" data-taskid="${t.id}" title="How to / training">ⓘ</button>` : '';
       const linkedMetric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
-      html += `<td class="task-cell"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${todBadgeHtml}${infoBtnHtml}</td>`;
-      dates.forEach((d,i) => {
-        if(!taskAppliesOnDate(t, d)){
-          html += `<td class="day-cell off-day-cell" title="Not scheduled this day">—</td>`;
-          return;
-        }
-        const val = dayStatuses[i][t.id] || '';
-        // A task linked to a metric is verified BY that metric's number, not by a separate
-        // checkbox - on days the metric is valid to log, the entry button IS the task's
-        // completion control (entering a value marks it Complete, clearing it un-marks it,
-        // via syncLinkedTaskStatuses). No C/I/O shown alongside it - that would just be the
-        // same completion tracked twice.
-        const metricGatesThisDay = linkedMetric && metricValidOnDate(linkedMetric, d);
-        if(metricGatesThisDay){
-          const mEntries = linkedMetricEntries[linkedMetric.id] || {};
-          const mVal = mEntries[isoDate(d)];
-          const hasVal = mVal !== undefined && mVal !== '';
-          const metricBtnHtml = `<button class="metric-entry-btn metric-replaces-task${hasVal ? ' has-value' : ''}" data-taskid="${t.id}" data-dayindex="${i}" data-metricid="${linkedMetric.id}" title="${hasVal ? 'Complete — '+escapeAttr(linkedMetric.name)+': '+escapeAttr(String(mVal)) : 'Enter '+escapeAttr(linkedMetric.name)+' to complete this task'}">${hasVal ? '✓ '+escapeHtml(String(mVal)) : '\u{1F522} Enter'}</button>`;
-          html += `<td class="day-cell">${metricBtnHtml}</td>`;
-        } else {
-          html += `<td class="day-cell"><div class="seg" data-taskid="${t.id}" data-dayindex="${i}">
-          <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C">C</button>
-          <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I">I</button>
-          <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O">O</button>
-        </div></td>`;
-        }
-      });
-      html += '</tr>';
+      // A task linked to a metric is verified BY that metric's number, not by a separate
+      // checkbox - on days the metric is valid to log, the entry button IS the task's
+      // completion control (entering a value marks it Complete, clearing it un-marks it, via
+      // syncLinkedTaskStatuses). No C/I/O shown alongside it - that would just be the same
+      // completion tracked twice.
+      const metricGatesThisDay = linkedMetric && metricValidOnDate(linkedMetric, previewDate);
+      let controlHtml;
+      if(metricGatesThisDay){
+        const mEntries = linkedMetricEntries[linkedMetric.id] || {};
+        const mVal = mEntries[isoDate(previewDate)];
+        const hasVal = mVal !== undefined && mVal !== '';
+        controlHtml = `<button class="metric-entry-btn metric-replaces-task${hasVal ? ' has-value' : ''}" data-taskid="${t.id}" data-metricid="${linkedMetric.id}" title="${hasVal ? 'Complete \u2014 '+escapeAttr(linkedMetric.name)+': '+escapeAttr(String(mVal)) : 'Enter '+escapeAttr(linkedMetric.name)+' to complete this task'}">${hasVal ? '\u2713 '+escapeHtml(String(mVal)) : '\u{1F522} Enter'}</button>`;
+      } else {
+        const val = previewStatuses[t.id] || '';
+        controlHtml = `<div class="seg" data-taskid="${t.id}">
+          <button class="seg-btn ${val==='C'?'sel-C':''}" data-val="C" title="Complete">C</button>
+          <button class="seg-btn ${val==='I'?'sel-I':''}" data-val="I" title="Incomplete">I</button>
+          <button class="seg-btn ${val==='O'?'sel-O':''}" data-val="O" title="Off">O</button>
+        </div>`;
+      }
+      html += `<div class="row${isAwareness ? ' awareness-row' : ''}" data-taskid="${t.id}">
+        <div class="row-label"><span>${t.text}</span>${kpiHtml}${locBadgeHtml}${infoBtnHtml}</div>
+        <div class="row-tags">${todBadgeHtml}${cadenceTagHtml}${controlHtml}</div>
+      </div>`;
     });
   });
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
+  wrap.innerHTML = html || '<div class="empty-note">Nothing on the checklist for this day.</div>';
 
-  // wire status buttons
+  // wire status buttons - single day now, no dayindex needed
   wrap.querySelectorAll('.seg').forEach(seg => {
     const taskId = seg.dataset.taskid;
-    const dayIdx = parseInt(seg.dataset.dayindex,10);
     seg.querySelectorAll('.seg-btn').forEach(btn => {
       btn.onclick = async () => {
-        const dateStr = isoDate(dates[dayIdx]);
+        const dateStr = isoDate(previewDate);
         const obj = await loadStatuses(currentLoc, currentEmployee, dateStr);
         const val = btn.dataset.val;
         const newVal = obj[taskId] === val ? '' : val;
@@ -1834,28 +2220,25 @@ async function renderMain(){
   wrap.querySelectorAll('.metric-entry-btn').forEach(btn => {
     btn.onclick = () => {
       const metric = METRICS.find(m => m.id === btn.dataset.metricid);
-      const dayIdx = parseInt(btn.dataset.dayindex, 10);
-      const date = dates[dayIdx];
-      if(metric) openMetricEntryModal(metric, date, async () => { await renderMain(); });
+      if(metric) openMetricEntryModal(metric, previewDate, async () => { await renderMain(); });
     };
   });
 
   computeSummary(dates, countableTasks);
   }
 
-  await renderMetricsPanel(dates);
+  await renderMetricsSection(dates);
   await renderMeetingsPanel(dates);
   await renderActionItemsPanel();
   renderProjectsPanel();
 
-  // Every role gets a One-Time Tasks panel (for ad-hoc things assigned outside the
-  // regular daily/weekly/monthly list) - checking one off leaves it visible with a
-  // strikethrough rather than removing it, so nothing just disappears.
-  const otWrap = document.getElementById('onetimeWrap');
-  otWrap.style.display = '';
+  // Every role gets a One-Time Tasks list (for ad-hoc things assigned outside the regular
+  // daily/weekly/monthly checklist) - checking one off leaves it visible with a strikethrough
+  // rather than removing it, so nothing just disappears. Not date-scoped in the data model (never
+  // was), so it shows the same real list regardless of which day is selected in the strip.
   await renderOnetimePanel();
 
-  await renderWeeklyMetricsPanel(dates);
+  renderMessagesBeacon();
 }
 
 // ---- Employee-facing inline "My Projects" panel: any step assigned to the employee
@@ -1887,7 +2270,7 @@ async function renderActionItemsPanel(){
   const items = myMeetingActionItems(currentLoc, currentEmployee);
   if(items.length === 0){ wrap.innerHTML = ''; return; }
   const today = isoDate(new Date());
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Action Items (from meetings)</div>`;
+  let html = `<section class="dpanel"><div class="dpanel-head"><div class="h-actionitems">My Action Items (from meetings)</div></div>`;
   items.forEach(({meeting, item}) => {
     const overdue = item.deadline && item.deadline < today;
     const notes = actionItemNotes(item.id);
@@ -1913,6 +2296,7 @@ async function renderActionItemsPanel(){
       </div>
     </div>`;
   });
+  html += `</section>`;
   wrap.innerHTML = html;
 
   wrap.querySelectorAll('[data-itemid]').forEach(card => {
@@ -1962,7 +2346,7 @@ function renderProjectsPanel(){
   });
   if(rows.length === 0){ wrap.innerHTML = ''; return; }
   rows.sort((a,b) => (a.step.dueDate||'9999').localeCompare(b.step.dueDate||'9999'));
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">My Projects</div>`;
+  let html = `<section class="dpanel"><div class="dpanel-head"><div class="h-projects">My Projects</div></div>`;
   rows.forEach(({project, step}) => {
     html += `<div class="proj-card" data-pid="${project.id}" data-sid="${step.id}" style="padding:10px 12px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1981,6 +2365,7 @@ function renderProjectsPanel(){
       ${step.attachments && step.attachments.length ? `<div style="margin-top:6px;">${renderAttachmentChips(step.attachments)}</div>` : ''}
     </div>`;
   });
+  html += `</section>`;
   wrap.innerHTML = html;
   wrap.querySelectorAll('.proj-card').forEach(card => {
     const pid = card.dataset.pid, sid = card.dataset.sid;
@@ -2035,64 +2420,76 @@ function metricPaceStats(m, entries, monthDate){
   return { mtd, elapsed, totalDays, perDayAvg, projected };
 }
 
-// ---- Employee-facing inline metrics entry: shown at the very top of the page so daily numbers
-// are the first thing an employee sees. Daily metrics get Mon-Sat boxes for the week being
-// viewed (the dealership is closed Sunday only), weekly metrics get a single box for the week
-// (meant to be filled in on Thursday). Metrics flagged mtdAuto show a running month-to-date
-// total calculated from the entries themselves (owner can override it from here if there's a
-// calc error); metrics flagged showPace also show the per-day average and a projected month-end
-// total at the current pace. Full metric definitions (create/edit/remove, who's assigned) live
-// in the admin-only panel below (see renderMetrics). ----
-async function renderMetricsPanel(dates){
+// ---- Employee-facing inline metrics entry: shown right after the merged Daily/One-Time list.
+// Daily-cadence metrics get a single entry box for the currently-selected day (the dealership is
+// closed Sunday only); Weekly-cadence metrics get a single box for the displayed week (meant to
+// be filled in on Thursday). Both groups sit in ONE "Metrics" panel, Daily above Weekly, per the
+// redesign - previously these were two separate panels far apart on the page. Metrics flagged
+// mtdAuto show a running month-to-date total calculated from the entries themselves (owner can
+// override it from here if there's a calc error); metrics flagged showPace also show the per-day
+// average and a projected month-end total at the current pace. Full metric definitions
+// (create/edit/remove, who's assigned) live in the admin-only panel below (see renderMetrics). ----
+function metricLabelHtml(m){
+  return `${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}`;
+}
+function metricMtdRowHtml(m, entries, monthCursor, owner){
+  if(!m.mtdAuto) return '';
+  const stats = metricPaceStats(m, entries, monthCursor);
+  const mk = monthKey(monthCursor);
+  const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
+  return `<div class="mtd-row" style="margin-top:6px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
+    <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
+    ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
+    ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
+  </div>`;
+}
+async function renderMetricsSection(dates){
   const wrap = document.getElementById('metricsPanelWrap');
   if(!wrap) return;
   const myKey = `${currentLoc}::${currentEmployee}`;
-  // Daily cadence only up here - Weekly-cadence metrics have their own panel further down the
-  // page (renderWeeklyMetricsPanel), so a metric like "Appraisal Recon" (a weekly number) never
-  // shows up mixed in under the "Daily Metrics" heading.
-  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence !== 'Weekly' && m.status !== 'review' && !m.archived);
-  if(mine.length === 0){ wrap.innerHTML = ''; return; }
+  const mineDaily = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence !== 'Weekly' && m.status !== 'review' && !m.archived);
+  const mineWeekly = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence === 'Weekly' && m.status !== 'review' && !m.archived);
+  if(mineDaily.length === 0 && mineWeekly.length === 0){ wrap.innerHTML = ''; return; }
 
-  const weekdayDates = dates.slice(0,6); // Mon-Sat
-  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat'];
   const monthCursor = firstOfMonth(new Date());
   const owner = isOwnerAdmin();
+  const dayKey = isoDate(previewDate);
+  const weekKey = isoDate(dates[0]); // Monday of the displayed week - key for weekly entries
 
+  const allMine = [...mineDaily, ...mineWeekly];
   const entriesByMetric = {};
-  await Promise.all(mine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
+  await Promise.all(allMine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
 
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Daily Metrics</div>
-    <div class="task-card" style="padding:10px 12px;">`;
+  let html = `<section class="dpanel"><div class="dpanel-head"><div class="h-metrics">Metrics</div><div class="dpanel-sub">Shown here because this role has metrics assigned</div></div>`;
 
-  mine.forEach(m => {
-    const entries = entriesByMetric[m.id];
-    html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
-      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">`;
-    weekdayDates.forEach((d,i) => {
-      const dk = isoDate(d);
-      const val = entries[dk] !== undefined ? entries[dk] : '';
-      html += `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-        <span style="font-size:10.5px;color:var(--win-text-secondary);text-align:center;line-height:1.25;">${dow[i]}<br><span style="font-size:9.5px;">${d.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></span>
-        <input type="number" step="any" class="metric-input" data-datekey="${dk}" value="${escapeAttr(val)}" style="width:70px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 7px;font-size:12.5px;text-align:center;">
-      </div>`;
+  if(mineDaily.length){
+    html += `<div class="metric-group-label">Daily \u2014 ${escapeHtml(previewDayLabel())}</div>`;
+    mineDaily.forEach(m => {
+      const entries = entriesByMetric[m.id];
+      const val = entries[dayKey] !== undefined ? entries[dayKey] : '';
+      html += `<div class="metric-row" data-mid="${m.id}">
+        <div class="metric-name">${metricLabelHtml(m)}</div>
+        <div class="metric-side">
+          <input type="number" step="any" class="metric-input" data-datekey="${dayKey}" value="${escapeAttr(val)}" aria-label="${escapeAttr(m.name)} entry for ${escapeAttr(previewDayLabel())}">
+        </div>
+      </div>${metricMtdRowHtml(m, entries, monthCursor, owner)}`;
     });
-    html += `</div>`;
-
-    if(m.mtdAuto){
-      const stats = metricPaceStats(m, entries, monthCursor);
-      const mk = monthKey(monthCursor);
-      const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
-      html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
-        <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
-        ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
-        ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
-      </div>`;
-    }
-    html += `</div>`;
-  });
-
-  html += `</div>`;
+  }
+  if(mineWeekly.length){
+    html += `<div class="metric-group-label metric-group-label-weekly">Weekly</div>`;
+    mineWeekly.forEach(m => {
+      const entries = entriesByMetric[m.id];
+      const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
+      html += `<div class="metric-row" data-mid="${m.id}">
+        <div class="metric-name">${metricLabelHtml(m)}</div>
+        <div class="metric-side">
+          <span class="metric-mtd">This week, due Thu</span>
+          <input type="number" step="any" class="metric-input" data-datekey="${weekKey}" value="${escapeAttr(val)}" aria-label="${escapeAttr(m.name)} entry for this week">
+        </div>
+      </div>${metricMtdRowHtml(m, entries, monthCursor, owner)}`;
+    });
+  }
+  html += `</section>`;
   wrap.innerHTML = html;
 
   wrap.querySelectorAll('.metric-row').forEach(row => {
@@ -2106,86 +2503,16 @@ async function renderMetricsPanel(dates){
         await saveMetricEntries(mid, entries);
         await syncLinkedTaskStatuses(mid, dk, hasValue);
         showToast('Saved');
-        renderMetricsPanel(dates);
+        renderMetricsSection(dates);
       };
     });
   });
 
   wrap.querySelectorAll('.mtd-override-btn').forEach(btn => {
     btn.onclick = () => {
-      const m = mine.find(x => x.id === btn.dataset.mid);
+      const m = allMine.find(x => x.id === btn.dataset.mid);
       if(!m) return;
-      openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderMetricsPanel(dates));
-    };
-  });
-}
-// Weekly-cadence metrics get their own panel at the very bottom of the page, separate from the
-// Daily Metrics panel up top - a weekly number like "Appraisal Recon" used to show up mixed in
-// under "Daily Metrics" even though it's only meant to be entered once a week. Always visible
-// (not hidden outside Thursday) so someone who misses Thursday can still catch up the next day.
-async function renderWeeklyMetricsPanel(dates){
-  const wrap = document.getElementById('weeklyMetricsPanelWrap');
-  if(!wrap) return;
-  const myKey = `${currentLoc}::${currentEmployee}`;
-  const mine = METRICS.filter(m => `${m.assignedLoc}::${m.assignedEmp}` === myKey && m.cadence === 'Weekly' && m.status !== 'review' && !m.archived);
-  if(mine.length === 0){ wrap.innerHTML = ''; return; }
-
-  const weekKey = isoDate(dates[0]); // Monday of the displayed week, used as the key for weekly entries
-  const monthCursor = firstOfMonth(new Date());
-  const owner = isOwnerAdmin();
-
-  const entriesByMetric = {};
-  await Promise.all(mine.map(async m => { entriesByMetric[m.id] = await loadMetricEntries(m.id); }));
-
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Enter weekly metrics below</div>
-    <div class="task-card" style="padding:10px 12px;">`;
-
-  mine.forEach(m => {
-    const entries = entriesByMetric[m.id];
-    const val = entries[weekKey] !== undefined ? entries[weekKey] : '';
-    html += `<div class="metric-row" data-mid="${m.id}" style="padding:8px 0;border-bottom:1px solid var(--win-border);">
-      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px;">${escapeHtml(m.name)}${m.storeLabel ? ` <span style="font-weight:700;">(${escapeHtml(m.storeLabel)})</span>` : ''}${m.unit ? ` <span style="font-weight:400;color:var(--win-text-secondary);">(${escapeHtml(m.unit)})</span>` : ''}${m.target ? ` <span style="font-weight:400;color:var(--win-text-secondary);"> \u00b7 target ${escapeHtml(m.target)}</span>` : ''}</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11.5px;color:var(--win-text-secondary);min-width:110px;">This week (due Thu):</span>
-        <input type="number" step="any" class="metric-input" data-datekey="${weekKey}" value="${escapeAttr(val)}" style="width:110px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
-      </div>`;
-    if(m.mtdAuto){
-      const stats = metricPaceStats(m, entries, monthCursor);
-      const mk = monthKey(monthCursor);
-      const hasOverride = m.mtdOverrides && m.mtdOverrides[mk] !== undefined && m.mtdOverrides[mk] !== '';
-      html += `<div class="mtd-row" style="margin-top:8px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--win-text-secondary);">
-        <span><b style="color:var(--win-text);">MTD:</b> ${stats.mtd}${hasOverride ? ' <span style="color:var(--kpi-risk);">(manually set)</span>' : ''}</span>
-        ${m.showPace ? `<span><b style="color:var(--win-text);">Per-day avg:</b> ${stats.perDayAvg.toFixed(1)}</span><span><b style="color:var(--win-text);">Projected month-end at pace:</b> ${Math.round(stats.projected)}</span>` : ''}
-        ${owner ? `<button class="mini-btn mtd-override-btn" data-mid="${m.id}" style="margin-left:auto;">${hasOverride ? 'Edit override' : 'Fix MTD'}</button>` : ''}
-      </div>`;
-    }
-    html += `</div>`;
-  });
-
-  html += `</div>`;
-  wrap.innerHTML = html;
-
-  wrap.querySelectorAll('.metric-row').forEach(row => {
-    const mid = row.dataset.mid;
-    row.querySelectorAll('.metric-input').forEach(input => {
-      input.onchange = async () => {
-        const entries = entriesByMetric[mid];
-        const dk = input.dataset.datekey;
-        const hasValue = input.value !== '';
-        if(hasValue){ entries[dk] = input.value; } else { delete entries[dk]; }
-        await saveMetricEntries(mid, entries);
-        await syncLinkedTaskStatuses(mid, dk, hasValue);
-        showToast('Saved');
-        renderWeeklyMetricsPanel(dates);
-      };
-    });
-  });
-
-  wrap.querySelectorAll('.mtd-override-btn').forEach(btn => {
-    btn.onclick = () => {
-      const m = mine.find(x => x.id === btn.dataset.mid);
-      if(!m) return;
-      openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderWeeklyMetricsPanel(dates));
+      openMtdOverrideModal(m, entriesByMetric[m.id], monthCursor, () => renderMetricsSection(dates));
     };
   });
 }
@@ -2226,56 +2553,49 @@ function openMtdOverrideModal(m, entries, monthCursor, onSaved){
 // action items here (those still have their own full detail in the print view and, for action
 // items, their own panel below). Click a meeting to open the same print/detail view the old
 // full card linked to.
+// Previews the SELECTED day's meetings only (real date-keyed data via meetingOccursOn), matching
+// the day strip above - previously this listed the whole displayed week grouped by day.
 async function renderMeetingsPanel(dates){
   const wrap = document.getElementById('meetingsPanelWrap');
   if(!wrap) return;
   const myKey = `${currentLoc}::${currentEmployee}`;
-  const byDay = dates.map(d => ({ date: d, meetings: [] }));
-  dates.forEach((d, i) => {
-    MEETINGS.forEach(m => {
-      if((m.attendeeRoles||[]).includes(myKey) && meetingOccursOn(m, d)){
-        byDay[i].meetings.push(m);
-      }
-    });
-  });
-  if(!byDay.some(b => b.meetings.length > 0)){ wrap.innerHTML = ''; return; }
-  const dow = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  let html = `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:0 0 8px 2px;">Meetings this week</div>
-    <div class="task-card" style="padding:10px 12px;">
-    <div style="display:flex;gap:14px;flex-wrap:wrap;">`;
-  byDay.forEach((b, i) => {
-    if(b.meetings.length === 0) return;
-    html += `<div style="min-width:130px;flex:1;">
-      <div style="font-size:11px;font-weight:700;color:var(--win-text-secondary);margin-bottom:5px;">${dow[i]} <span style="font-weight:400;">${b.date.toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</span></div>
-      ${b.meetings.map(m => `<div class="mp-meeting-chip" data-mid="${m.id}" title="View details" style="font-size:12px;padding:5px 9px;border:1px solid var(--win-border);border-radius:6px;margin-bottom:5px;cursor:pointer;background:var(--win-surface);">${escapeHtml(m.title||'Untitled meeting')}${m.time ? ` <span style="color:var(--win-text-secondary);">\u00b7 ${escapeHtml(m.time)}</span>` : ''}</div>`).join('')}
+  const todaysMeetings = MEETINGS.filter(m => (m.attendeeRoles||[]).includes(myKey) && meetingOccursOn(m, previewDate));
+  if(todaysMeetings.length === 0){ wrap.innerHTML = ''; return; }
+  let html = `<section class="dpanel"><div class="dpanel-head"><div class="h-meetings">Meetings</div><div class="dpanel-sub">${escapeHtml(previewDayLabel())}</div></div>`;
+  todaysMeetings.forEach(m => {
+    html += `<div class="row mp-meeting-chip" data-mid="${m.id}" title="View details" style="cursor:pointer;">
+      <div class="row-label">${escapeHtml(m.title||'Untitled meeting')}</div>
+      <div class="row-tags">${m.time ? `<span class="tag cadence-tag">${escapeHtml(m.time)}</span>` : ''}</div>
     </div>`;
   });
-  html += `</div></div>`;
+  html += `</section>`;
   wrap.innerHTML = html;
   wrap.querySelectorAll('.mp-meeting-chip').forEach(chip => {
     chip.onclick = () => openMeetingPrint(chip.dataset.mid);
   });
 }
 
+// Renders directly into the merged Today & One-Time panel's #onetimeList div, right below the
+// day's regular checklist rows, so the two visually read as one shared list (heading + rows) per
+// the redesign. Not date-scoped in the data model (never was, even before this redesign) - shows
+// the same real list regardless of which day is selected in the strip above.
 async function renderOnetimePanel(){
   const list = await loadOnetimeList(currentLoc, currentEmployee);
   const panel = document.getElementById('onetimeList');
   panel.innerHTML = '';
 
-  if(list.length === 0){
-    panel.innerHTML = '<div class="empty-note" style="padding:10px 4px">No one-time tasks added yet.</div>';
-  }
-
   list.forEach((item, i) => {
     const row = document.createElement('div');
-    row.className = 'onetime-row' + (item.done ? ' done' : '');
+    row.className = 'row onetime-row-merged' + (item.done ? ' done' : '');
     row.innerHTML = `
-      <div class="onetime-thumb-wrap">${item.refPhoto ? `<img class="photo-thumb" src="${item.refPhoto}">` : `<div class="photo-btn" style="cursor:default">&#128247;</div>`}</div>
-      <div class="onetime-text">${item.text}</div>
-      <button class="mini-btn" data-action="ref">${item.refPhoto ? 'View photo' : 'Add photo'}</button>
-      <button class="mini-btn ${item.done ? 'sel-C' : ''}" data-action="done">${item.done ? 'Complete' : 'Mark complete'}</button>
-      ${item.done ? `<button class="mini-btn" data-action="donephoto">${item.donePhoto ? 'View completion photo' : 'Add completion photo'}</button>` : ''}
-      <button class="mini-btn danger-mini" data-action="delete">Remove</button>
+      <div class="row-label">${item.refPhoto ? `<img class="photo-thumb" src="${item.refPhoto}">` : ''}<span class="row-onetime-text">${item.text}</span></div>
+      <div class="row-tags">
+        <span class="tag tag-onetime">ONE-TIME</span>
+        <button class="mini-btn" data-action="ref">${item.refPhoto ? 'View photo' : 'Add photo'}</button>
+        <button class="mini-btn ${item.done ? 'sel-C' : ''}" data-action="done">${item.done ? 'Complete' : 'Mark complete'}</button>
+        ${item.done ? `<button class="mini-btn" data-action="donephoto">${item.donePhoto ? 'View completion photo' : 'Add completion photo'}</button>` : ''}
+        <button class="mini-btn danger-mini" data-action="delete">Remove</button>
+      </div>
     `;
     row.querySelector('[data-action="ref"]').onclick = () => {
       const actions = [
@@ -4238,6 +4558,29 @@ async function renderOwnerBoard(){
         </div>`;
       }).join('')}
     </div>
+
+    <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">My Change Requests for Dailys</div>
+    <p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 10px;">Your own private list of things you want changed or added in this app - owner-tier only, managers never see this (separate from the employee-facing Suggestion Box).</p>
+    <div class="task-card" style="padding:0;">
+      <button type="button" id="ocrCollapsed" aria-expanded="false" aria-controls="ocrExpanded" style="display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;font:inherit;padding:10px 12px;">
+        <span style="font-weight:700;">+ Add a change request</span>
+      </button>
+      <div id="ocrExpanded" hidden style="padding:0 12px 12px;">
+        <textarea id="ocrText" rows="2" placeholder="What do you want changed or added?" style="width:100%;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:8px;"></textarea>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="mini-btn" id="ocrCancelBtn">Cancel</button>
+          <button type="button" class="mini-btn primary-mini" id="ocrSendBtn">Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="task-card" id="ocrList" style="padding:4px;margin-top:8px;">
+      ${OWNER_CHANGE_REQUESTS.length === 0 ? '<div class="empty-note">No change requests yet.</div>' : OWNER_CHANGE_REQUESTS.slice().sort((a,b) => (a.done - b.done) || (b.ts||'').localeCompare(a.ts||'')).map(r => `
+        <div class="onetime-row ${r.done ? 'done' : ''}" data-rid="${r.id}">
+          <input type="checkbox" class="ocr-toggle" ${r.done ? 'checked' : ''}>
+          <span class="onetime-text">${escapeHtml(r.text)}</span>
+          <button class="mini-btn danger-mini ocr-remove">Remove</button>
+        </div>`).join('')}
+    </div>
   `;
 
   view.innerHTML = html;
@@ -4344,6 +4687,53 @@ async function renderOwnerBoard(){
     if(rm) rm.onclick = async () => {
       OWNER_TASKS = OWNER_TASKS.filter(x => x.id !== tid);
       await saveOwnerTasks();
+      await renderOwnerBoard();
+    };
+  });
+
+  // My Change Requests for Dailys - owner-tier only, both here (requireOwner()) and server-side
+  // (see ADMIN_ONLY_KEYS in server.js). Same click-to-open interaction as the employee-facing
+  // Suggestion Box, but this list is never shown to a manager.
+  const ocrCollapsed = document.getElementById('ocrCollapsed');
+  const ocrExpanded = document.getElementById('ocrExpanded');
+  if(ocrCollapsed) ocrCollapsed.onclick = () => {
+    ocrCollapsed.hidden = true;
+    ocrExpanded.hidden = false;
+    document.getElementById('ocrText').focus();
+  };
+  const ocrCancelBtn = document.getElementById('ocrCancelBtn');
+  if(ocrCancelBtn) ocrCancelBtn.onclick = () => {
+    ocrExpanded.hidden = true;
+    ocrCollapsed.hidden = false;
+    document.getElementById('ocrText').value = '';
+  };
+  const ocrSendBtn = document.getElementById('ocrSendBtn');
+  if(ocrSendBtn) ocrSendBtn.onclick = async () => {
+    if(!(await requireOwner())) return;
+    const textEl = document.getElementById('ocrText');
+    const text = textEl.value.trim();
+    if(!text) return;
+    OWNER_CHANGE_REQUESTS.push({ id: newChangeRequestId(), text, ts: new Date().toISOString(), done: false });
+    const ok = await saveOwnerChangeRequests();
+    if(ok) showToast('Saved');
+    await renderOwnerBoard();
+  };
+  view.querySelectorAll('#ocrList [data-rid]').forEach(row => {
+    const rid = row.dataset.rid;
+    const toggle = row.querySelector('.ocr-toggle');
+    if(toggle) toggle.onchange = async (e) => {
+      if(!(await requireOwner())){ e.target.checked = !e.target.checked; return; }
+      const r = OWNER_CHANGE_REQUESTS.find(x => x.id === rid); if(!r) return;
+      r.done = e.target.checked;
+      await saveOwnerChangeRequests();
+      await renderOwnerBoard();
+    };
+    const rm = row.querySelector('.ocr-remove');
+    if(rm) rm.onclick = async () => {
+      if(!(await requireOwner())) return;
+      if(!(await appConfirm('Remove this change request?'))) return;
+      OWNER_CHANGE_REQUESTS = OWNER_CHANGE_REQUESTS.filter(x => x.id !== rid);
+      await saveOwnerChangeRequests();
       await renderOwnerBoard();
     };
   });
@@ -5367,6 +5757,7 @@ function closeOtherPanels(except){
   if(except !== 'social' && socialShown){ socialShown = false; document.getElementById('socialToggleBtn').classList.remove('active'); document.getElementById('socialView').classList.remove('show'); }
   if(except !== 'propmaint' && propMaintShown){ propMaintShown = false; document.getElementById('propMaintToggleBtn').classList.remove('active'); document.getElementById('propMaintView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
+  if(except !== 'suggestions' && suggestionsShown){ suggestionsShown = false; document.getElementById('suggestionsToggleBtn').classList.remove('active'); document.getElementById('suggestionsView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
   if(except !== 'training' && trainingShown){ trainingShown = false; document.getElementById('trainingToggleBtn').classList.remove('active'); document.getElementById('trainingView').classList.remove('show'); }
@@ -5375,9 +5766,17 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
+  // The Messages beacon/panel and Suggestion Box only belong on the employee's own daily page -
+  // hide the beacon (and close its panel if open) the moment any admin/Setup screen is shown;
+  // renderMain() below brings the beacon back the moment we return to the employee page.
+  if(anyShown){
+    const beacon = document.getElementById('beaconBtn');
+    if(beacon) beacon.hidden = true;
+    closeMessagesPanel();
+  }
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
   // refresh it so anything just edited (roster changes, a newly-assigned project step, a new
   // meeting) shows up immediately instead of needing a manual page reload.
@@ -5433,6 +5832,57 @@ document.getElementById('socialToggleBtn').onclick = async () => {
   updatePanelVisibility();
   if(socialShown) await renderSocial();
 };
+
+// Suggestion Box review - staff-gated (owner OR manager), NOT the owner-only Owner Board, since
+// both tiers should see what employees are sending in.
+let suggestionsShown = false;
+document.getElementById('suggestionsToggleBtn').onclick = async () => {
+  if(!(await requireStaff())) return;
+  closeOtherPanels('suggestions');
+  suggestionsShown = !suggestionsShown;
+  document.getElementById('suggestionsToggleBtn').classList.toggle('active', suggestionsShown);
+  document.getElementById('suggestionsView').classList.toggle('show', suggestionsShown);
+  updatePanelVisibility();
+  if(suggestionsShown) await renderSuggestionsReview();
+};
+async function renderSuggestionsReview(){
+  await refreshServerState();
+  const view = document.getElementById('suggestionsView');
+  const sorted = SUGGESTIONS.slice().sort((a,b) => (b.ts||'').localeCompare(a.ts||''));
+  let html = `<div class="monthly-header"><h1>Suggestion Box</h1></div>
+    <p style="font-size:13px;color:var(--win-text-secondary);max-width:700px;margin:0 0 14px;">Ideas and issue reports employees send in from their own daily page - visible to owner and manager alike.</p>`;
+  if(sorted.length === 0){
+    html += `<div class="empty-note">Nothing submitted yet.</div>`;
+  } else {
+    html += sorted.map(s => `<div class="task-card" data-sid="${s.id}" style="padding:10px 12px;margin-bottom:8px;${s.reviewed ? 'opacity:.55;' : ''}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="status-pill-sm" style="background:${s.tag==='issue' ? 'var(--kpi-bad)' : 'var(--win-accent)'};">${s.tag==='issue' ? 'Something is Broken' : 'Idea / Improvement'}</span>
+        <span style="font-size:11px;color:var(--win-text-secondary);">${escapeHtml(s.fromLabel||'Unknown')} · ${new Date(s.ts).toLocaleString()}</span>
+        ${s.reviewed ? `<span class="status-pill-sm" style="background:var(--kpi-good);">Reviewed</span>` : ''}
+        <span style="margin-left:auto;display:flex;gap:6px;">
+          <button class="mini-btn sr-toggle-btn">${s.reviewed ? 'Mark unreviewed' : 'Mark reviewed'}</button>
+          <button class="mini-btn danger-mini sr-remove-btn">Dismiss</button>
+        </span>
+      </div>
+      <div style="font-size:13px;margin-top:8px;white-space:pre-line;">${escapeHtml(s.text)}</div>
+    </div>`).join('');
+  }
+  view.innerHTML = html;
+  view.querySelectorAll('[data-sid]').forEach(card => {
+    const sid = card.dataset.sid;
+    const s = SUGGESTIONS.find(x => x.id === sid);
+    if(!s) return;
+    const toggleBtn = card.querySelector('.sr-toggle-btn');
+    if(toggleBtn) toggleBtn.onclick = async () => { s.reviewed = !s.reviewed; await saveSuggestions(); renderSuggestionsReview(); };
+    const removeBtn = card.querySelector('.sr-remove-btn');
+    if(removeBtn) removeBtn.onclick = async () => {
+      if(!(await appConfirm('Dismiss this suggestion?'))) return;
+      SUGGESTIONS = SUGGESTIONS.filter(x => x.id !== sid);
+      await saveSuggestions();
+      renderSuggestionsReview();
+    };
+  });
+}
 
 document.getElementById('propMaintToggleBtn').onclick = async () => {
   if(!(await requireStaff())) return;
@@ -5823,6 +6273,150 @@ document.getElementById('importFile').onchange = (e) => {
   const file = e.target.files[0];
   if(file) importData(file);
   e.target.value = '';
+};
+
+// ---- Messages: floating beacon + slide-over panel (list of conversations, or one open thread).
+// Wired once here (static markup, never re-created); renderMessagesBeacon() (called from
+// renderMain() every time the employee page re-renders) just refreshes the badge count and, if
+// the panel happens to be open, its contents. ----
+let msgPanelView = 'list'; // 'list' | 'thread'
+let msgActiveOther = null; // 'loc::idx' of the open thread's other participant
+function renderMessagesBeaconBadgeOnly(){
+  const badge = document.getElementById('beaconBadge');
+  if(!badge) return;
+  const unread = unreadMessageCountForMe();
+  badge.hidden = unread === 0;
+  badge.textContent = String(unread);
+}
+function renderMessagesBeacon(){
+  const beacon = document.getElementById('beaconBtn');
+  if(!beacon) return;
+  beacon.hidden = false; // renderMain() only runs while the employee page itself is visible
+  const unread = unreadMessageCountForMe();
+  beacon.setAttribute('aria-label', unread > 0 ? `Open messages, ${unread} unread` : 'Open messages');
+  renderMessagesBeaconBadgeOnly();
+  if(!document.getElementById('msgPanel').hidden) renderMessagesPanelBody();
+}
+function renderMessagesPanelBody(){
+  const listEl = document.getElementById('msgListView');
+  const threadEl = document.getElementById('msgThreadView');
+  const composeForm = document.getElementById('msgComposeForm');
+  const newRow = document.getElementById('msgNewRow');
+  const backBtn = document.getElementById('msgBackBtn');
+  const titleEl = document.getElementById('msgHeadTitle');
+  const me = myKey();
+
+  const sel = document.getElementById('msgNewSelect');
+  const prevVal = sel.value;
+  const options = activeRosterTargets().filter(t => (t.locKey+'::'+t.empIdx) !== me);
+  sel.innerHTML = '<option value="">Start a conversation with…</option>' + options.map(t => `<option value="${t.locKey}::${t.empIdx}">${escapeHtml(t.label)}</option>`).join('');
+  sel.value = prevVal;
+
+  if(msgPanelView === 'thread' && msgActiveOther){
+    listEl.style.display = 'none';
+    newRow.style.display = 'none';
+    backBtn.hidden = false;
+    threadEl.style.display = 'flex';
+    composeForm.style.display = 'flex';
+    titleEl.textContent = rosterLabelForKey(msgActiveOther);
+    const convo = conversationsForMe().find(c => c.other === msgActiveOther);
+    const msgs = convo ? convo.msgs : [];
+    threadEl.innerHTML = msgs.length ? msgs.map(m => {
+      const mine = m.from === me;
+      const when = new Date(m.ts).toLocaleString(undefined, { month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' });
+      return `<div class="bubble-row${mine ? ' mine' : ''}"><div><div class="bubble">${escapeHtml(m.text)}</div><div class="bubble-meta">${when}</div></div></div>`;
+    }).join('') : '<div class="msg-empty">No messages yet — say hello.</div>';
+    threadEl.scrollTop = threadEl.scrollHeight;
+    markThreadRead(msgActiveOther).then(renderMessagesBeaconBadgeOnly);
+  } else {
+    threadEl.style.display = 'none';
+    composeForm.style.display = 'none';
+    backBtn.hidden = true;
+    newRow.style.display = 'flex';
+    titleEl.textContent = 'Messages';
+    listEl.style.display = 'block';
+    const convos = conversationsForMe();
+    listEl.innerHTML = convos.length ? convos.map(c => `
+      <div class="msg-convo-row" data-other="${c.other}">
+        <div><div class="msg-convo-name">${escapeHtml(rosterLabelForKey(c.other))}</div><div class="msg-convo-preview">${escapeHtml(c.last.text)}</div></div>
+        ${c.unread ? `<span class="msg-convo-unread">${c.unread}</span>` : ''}
+      </div>`).join('') : '<div class="msg-empty">No conversations yet — pick someone above to start one.</div>';
+    listEl.querySelectorAll('.msg-convo-row').forEach(row => {
+      row.onclick = () => openThreadWith(row.dataset.other);
+    });
+  }
+}
+function openThreadWith(otherKey){
+  if(!otherKey) return;
+  msgPanelView = 'thread';
+  msgActiveOther = otherKey;
+  renderMessagesPanelBody();
+}
+function openMessagesPanel(){
+  document.getElementById('msgScrim').hidden = false;
+  document.getElementById('msgPanel').hidden = false;
+  document.getElementById('beaconBtn').setAttribute('aria-expanded', 'true');
+  msgPanelView = 'list';
+  msgActiveOther = null;
+  renderMessagesPanelBody();
+  document.getElementById('msgNewSelect').focus();
+}
+function closeMessagesPanel(){
+  document.getElementById('msgScrim').hidden = true;
+  document.getElementById('msgPanel').hidden = true;
+  const beacon = document.getElementById('beaconBtn');
+  if(beacon) beacon.setAttribute('aria-expanded', 'false');
+}
+document.getElementById('beaconBtn').onclick = openMessagesPanel;
+document.getElementById('msgCloseBtn').onclick = closeMessagesPanel;
+document.getElementById('msgScrim').onclick = closeMessagesPanel;
+document.getElementById('msgBackBtn').onclick = () => { msgPanelView = 'list'; msgActiveOther = null; renderMessagesPanelBody(); };
+document.getElementById('msgNewBtn').onclick = () => {
+  const val = document.getElementById('msgNewSelect').value;
+  if(val) openThreadWith(val);
+};
+document.getElementById('msgComposeForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if(!text || !msgActiveOther) return;
+  await sendMessageTo(msgActiveOther, text);
+  input.value = '';
+  renderMessagesPanelBody();
+};
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && !document.getElementById('msgPanel').hidden) closeMessagesPanel();
+});
+
+// ---- Suggestion Box: click-anywhere-to-open, expands in place. Wired once (static markup). ----
+document.getElementById('suggCollapsed').onclick = () => {
+  document.getElementById('suggCollapsed').hidden = true;
+  document.getElementById('suggExpanded').hidden = false;
+  document.getElementById('suggCollapsed').setAttribute('aria-expanded', 'true');
+  document.getElementById('suggText').focus();
+};
+document.getElementById('suggCollapseBtn').onclick = () => {
+  document.getElementById('suggExpanded').hidden = true;
+  document.getElementById('suggCollapsed').hidden = false;
+  document.getElementById('suggCollapsed').setAttribute('aria-expanded', 'false');
+  document.getElementById('suggForm').hidden = false;
+  document.getElementById('suggThanks').hidden = true;
+};
+document.getElementById('suggForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const textEl = document.getElementById('suggText');
+  if(!textEl.value.trim()) return;
+  const checked = document.querySelector('input[name="suggType"]:checked');
+  await submitSuggestion(checked ? checked.value : 'idea', textEl.value);
+  document.getElementById('suggForm').hidden = true;
+  document.getElementById('suggThanks').hidden = false;
+};
+document.getElementById('suggAgainBtn').onclick = () => {
+  document.getElementById('suggForm').hidden = false;
+  document.getElementById('suggThanks').hidden = true;
+  document.getElementById('suggText').value = '';
+  document.getElementById('typeIdea').checked = true;
+  document.getElementById('suggText').focus();
 };
 
 applyAdminVisibility();
