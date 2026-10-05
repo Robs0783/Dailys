@@ -68,6 +68,45 @@ function loadStore() {
 }
 
 let store = loadStore();
+
+// ---- Update-36 safety net (after the 10/4 roster wipe) ----
+// 1) Daily full snapshot of the store (DATA_DIR/backups/store-YYYY-MM-DD.json, 30 kept).
+// 2) Every roster write keeps the PREVIOUS roster (DATA_DIR/roster-history/, 60 kept).
+// 3) A roster made only of untouched starter tasks can never overwrite a customized one.
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const ROSTER_HIST_DIR = path.join(DATA_DIR, 'roster-history');
+function dayStamp() { return new Date(Date.now() - 4 * 3600 * 1000).toISOString().slice(0, 10); }
+function pruneDir(dir, keep) {
+  try { const files = fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort(); files.slice(0, Math.max(0, files.length - keep)).forEach(f => fs.unlinkSync(path.join(dir, f))); } catch (e) {}
+}
+function dailySnapshot() {
+  try {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const f = path.join(BACKUP_DIR, 'store-' + dayStamp() + '.json');
+    if (!fs.existsSync(f) && Object.keys(store).length) { fs.writeFileSync(f, JSON.stringify(store)); pruneDir(BACKUP_DIR, 30); }
+  } catch (e) { console.error('Snapshot failed:', e); }
+}
+function saveRosterHistory(prev) {
+  try {
+    if (!prev) return;
+    fs.mkdirSync(ROSTER_HIST_DIR, { recursive: true });
+    fs.writeFileSync(path.join(ROSTER_HIST_DIR, 'roster-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json'), prev);
+    pruneDir(ROSTER_HIST_DIR, 60);
+  } catch (e) { console.error('Roster history failed:', e); }
+}
+function rosterIsUntouchedSeed(raw) {
+  try {
+    const r = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    let n = 0, custom = false;
+    Object.values(r || {}).forEach(loc => (loc.data || []).forEach(emp => {
+      if (emp.name || emp.department || emp.archived) custom = true;
+      (emp.tasks || []).forEach(t => { n++; if (!String(t.id || '').startsWith('seed-')) custom = true; });
+    }));
+    return n > 0 && !custom;
+  } catch (e) { return false; }
+}
+dailySnapshot();
+setInterval(dailySnapshot, 60 * 60 * 1000);
 let saveQueued = false;
 function persist() {
   if (saveQueued) return;
@@ -79,6 +118,7 @@ function persist() {
       const tmp = DATA_FILE + '.tmp';
       fs.writeFileSync(tmp, JSON.stringify(store));
       fs.renameSync(tmp, DATA_FILE);
+      if (typeof dailySnapshot === 'function') dailySnapshot();
     } catch (e) {
       console.error('Failed to persist store:', e);
     }
@@ -164,6 +204,30 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: tier !== null, tier });
     }
 
+    // Owner-only backup tools: list snapshots / roster versions, fetch one, restore the roster.
+    if (pathname === '/api/backups' && req.method === 'POST') {
+      const body = await readBody(req);
+      if (!body || codeTier(body.adminCode) !== 'owner') return sendJson(res, 403, { error: 'owner code required' });
+      const list = (dir) => { try { return fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort().reverse(); } catch (e) { return []; } };
+      if (body.action === 'list') return sendJson(res, 200, { snapshots: list(BACKUP_DIR), rosters: list(ROSTER_HIST_DIR) });
+      const safe = (f) => typeof f === 'string' && /^[\w.-]+\.json$/.test(f);
+      if (body.action === 'get' && safe(body.file)) {
+        const dir = body.file.startsWith('roster-') ? ROSTER_HIST_DIR : BACKUP_DIR;
+        try { return sendJson(res, 200, { file: body.file, data: fs.readFileSync(path.join(dir, body.file), 'utf8') }); } catch (e) { return sendJson(res, 404, { error: 'not found' }); }
+      }
+      if (body.action === 'restoreRoster' && safe(body.file)) {
+        try {
+          let raw;
+          if (body.file.startsWith('roster-')) raw = fs.readFileSync(path.join(ROSTER_HIST_DIR, body.file), 'utf8');
+          else raw = JSON.parse(fs.readFileSync(path.join(BACKUP_DIR, body.file), 'utf8')).roster;
+          if (!raw) return sendJson(res, 404, { error: 'no roster in that file' });
+          saveRosterHistory(store.roster); store.roster = raw; persist();
+          return sendJson(res, 200, { ok: true });
+        } catch (e) { return sendJson(res, 404, { error: 'not found' }); }
+      }
+      return sendJson(res, 400, { error: 'unknown action' });
+    }
+
     if (pathname === '/api/ai-builder-code' && req.method === 'POST') {
       // Owner sets or clears Shreya's AI Builds code.
       const body = await readBody(req);
@@ -195,6 +259,14 @@ const server = http.createServer(async (req, res) => {
         if (tier !== 'owner' && tier !== 'builder') return sendJson(res, 403, { error: 'AI Builds code required' });
       } else if (ADMIN_ONLY_KEYS.has(key) && tier !== 'owner' && tier !== 'manager') {
         return sendJson(res, 403, { error: 'admin or manager code required' });
+      }
+      if (key === 'roster') {
+        if (value === null || value === undefined || value === '') return sendJson(res, 409, { error: 'the roster cannot be deleted' });
+        if (store.roster && rosterIsUntouchedSeed(value) && !rosterIsUntouchedSeed(store.roster)) {
+          console.warn('Refused to overwrite a customized roster with the starter roster');
+          return sendJson(res, 409, { error: 'refused: would replace the real roster with the starter list - refresh the page' });
+        }
+        saveRosterHistory(store.roster);
       }
       if (value === null || value === undefined) {
         delete store[key];

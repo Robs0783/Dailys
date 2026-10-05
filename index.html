@@ -1014,7 +1014,9 @@ function backfillLocations(locs){
 function newTaskId(){
   return 'tsk-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 }
+let ROSTER_LOAD_FAILED = false;
 async function saveRoster(){
+  if(ROSTER_LOAD_FAILED){ showToast('Roster didn\u2019t load correctly \u2014 refresh the page before editing. Nothing was saved.'); return; }
   const ok = await storSet('roster', JSON.stringify(LOCATIONS), true);
   if(!ok) showToast('Not saved \u2014 admin code required');
 }
@@ -1243,14 +1245,19 @@ async function refreshServerState(){
     if(SERVER_STATE['roster']){
       try{
         LOCATIONS = JSON.parse(SERVER_STATE['roster']);
+        ROSTER_LOAD_FAILED = false;
         const addedLocation = backfillLocations(LOCATIONS);
         LOCATIONS = assignTaskIds(LOCATIONS);
         if(addedLocation) await saveRoster(); // persist the newly-added 'Both Locations' tab right away
       }
-      catch(e){ console.error('Bad roster data, falling back to default', e); LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); }
-    } else {
+      catch(e){ console.error('Bad roster data, falling back to default', e); LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); ROSTER_LOAD_FAILED = true; }
+    } else if(Object.keys(SERVER_STATE).length === 0){
       LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS);
-      await saveRoster(); // first client to see an empty store seeds the shared roster for everyone
+      await saveRoster(); // first client to see a brand-new EMPTY store seeds the shared roster
+    } else {
+      // Update-36 safety: the store has data but no roster came back - never seed defaults over a
+      // real store (that is how the roster got wiped on 10/4). Show defaults read-only, block saves.
+      LOCATIONS = assignTaskIds(DEFAULT_LOCATIONS); ROSTER_LOAD_FAILED = true;
     }
     try{ MEETINGS = SERVER_STATE['meetings'] ? JSON.parse(SERVER_STATE['meetings']) : []; }
     catch(e){ console.error('Bad meetings data, resetting', e); MEETINGS = []; }
