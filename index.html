@@ -320,6 +320,42 @@
   .sch-blk{ border-left:4px solid var(--cc); background:color-mix(in srgb, var(--cc) 12%, #fff); border-radius:5px; padding:4px 6px; cursor:pointer; }
   .sch-blk:hover{ background:color-mix(in srgb, var(--cc) 22%, #fff); }
   .sch-blk.done{ opacity:.5; }
+  .myt-card{ padding:12px; }
+  .myt-add{ display:flex; gap:8px; flex-wrap:wrap; }
+  #mytQuick{ flex:1 1 380px; border:1px solid var(--win-border-strong); border-radius:8px; padding:9px 12px; font:inherit; font-size:13.5px; }
+  #mytQuickList{ border:1px solid var(--win-border-strong); border-radius:8px; padding:8px; font:inherit; font-size:12.5px; }
+  .myt-hint{ font-size:10.5px; color:var(--win-text-secondary); margin:5px 2px 10px; }
+  .myt-tabs{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--win-border); padding-bottom:8px; margin-bottom:6px; }
+  .myt-tab{ font:inherit; font-size:12px; border:1px solid var(--win-border); background:#fff; border-radius:16px; padding:4px 10px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; color:var(--win-text); }
+  .myt-tab i{ width:8px; height:8px; border-radius:2px; background:var(--lc); display:inline-block; }
+  .myt-tab b{ font-size:11px; color:var(--win-text-secondary); font-weight:700; }
+  .myt-tab.on{ background:#1f2328; color:#fff; border-color:#1f2328; }
+  .myt-tab.on b{ color:#ffc94a; }
+  .myt-sep{ width:1px; height:18px; background:var(--win-border); margin:0 3px; }
+  #mytSearch{ margin-left:auto; border:1px solid var(--win-border-strong); border-radius:16px; padding:5px 12px; font:inherit; font-size:12px; min-width:180px; }
+  .myt-body{ max-height:620px; overflow-y:auto; }
+  .myt-group{ margin-top:6px; }
+  .myt-gh{ font:inherit; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--win-text-secondary); background:none; border:none; cursor:pointer; padding:6px 2px; }
+  .myt-gh span{ font-weight:600; color:#a19f9d; margin-left:4px; }
+  .myt-group.od .myt-gh{ color:#d13438; }
+  .myt-row{ display:flex; align-items:flex-start; gap:10px; padding:7px 4px; border-bottom:1px solid #f0f0f0; }
+  .myt-row:hover{ background:#fafafa; }
+  .myt-chk{ flex-shrink:0; width:20px; height:20px; border-radius:50%; border:2px solid var(--pc); background:#fff; cursor:pointer; font-size:11px; font-weight:800; color:#fff; line-height:15px; padding:0; margin-top:1px; }
+  .myt-chk:hover{ background:color-mix(in srgb, var(--pc) 20%, #fff); }
+  .myt-row.done .myt-chk{ background:#8a8886; border-color:#8a8886; }
+  .myt-row.done .myt-text{ text-decoration:line-through; color:#8a8886; }
+  .myt-main{ flex:1; min-width:0; }
+  .myt-text{ font-size:13px; cursor:pointer; line-height:1.35; }
+  .myt-text:hover{ color:var(--win-accent); }
+  .myt-meta{ display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; font-size:11px; color:var(--win-text-secondary); }
+  .myt-due.od{ color:#d13438; font-weight:700; }
+  .myt-due.td{ color:#107c10; font-weight:700; }
+  .myt-rec{ color:#0d9488; }
+  .myt-lst::before{ content:''; display:inline-block; width:7px; height:7px; border-radius:2px; background:var(--lc); margin-right:4px; vertical-align:0; }
+  .myt-pri{ font-weight:800; }
+  .myt-act{ display:flex; gap:4px; opacity:.35; }
+  .myt-row:hover .myt-act{ opacity:1; }
+  .myt-b{ border:1px solid var(--win-border); background:#fff; border-radius:6px; cursor:pointer; font-size:13px; padding:2px 6px; }
   .sch-proj{ font-size:10.5px; font-weight:600; color:#8a5a00; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sch-src{ font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--cc); margin-top:1px; }
   .sch-hidden{ font-size:11px; color:var(--win-text-secondary); margin-top:8px; }
@@ -1158,6 +1194,7 @@ async function refreshServerState(){
     catch(e){ console.error('Bad week plan data, resetting', e); OWNER_WEEK_PLAN = {}; }
     try{ ASSIGNED_OWNER_SEEN = SERVER_STATE['assigned-owner-seen'] ? JSON.parse(SERVER_STATE['assigned-owner-seen']) : {}; }
     catch(e){ ASSIGNED_OWNER_SEEN = {}; }
+    MYT = mytParse(SERVER_STATE['owner-mytasks']);
     try{ OWNER_SCHEDULE = SERVER_STATE['owner-schedule'] ? JSON.parse(SERVER_STATE['owner-schedule']) : []; }
     catch(e){ console.error('Bad schedule data, resetting', e); OWNER_SCHEDULE = []; }
     return true;
@@ -2082,6 +2119,8 @@ function ownerAssignSectionsHtml(){
     <div id="obWeekWrap"></div>
     ${hdr('My schedule', 'Block your own time. Every block has a location; prep and travel time are added automatically. Send anything to Google Calendar with one click.')}
     <div id="obSchedWrap"></div>
+    ${hdr('My projects', 'Everything on your plate, personal and business, in one place. Check it off, block time for it, or hand it to someone.')}
+    <div id="obTasksWrap"></div>
     ${hdr('Needs you', 'Anyone stuck, and any reply you haven’t read yet.')}
     <div id="obNeedsWrap"></div>
     ${hdr('Assign a task', 'One owner, one deadline, one line on what “done” looks like. Chain it behind another task if it can’t start until that’s finished.')}
@@ -2496,7 +2535,7 @@ function renderHandoffChecklist(){
 }
 
 function refreshOwnerAssign(){
-  renderOwnerWeek(); renderOwnerSchedule(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
+  renderOwnerWeek(); renderOwnerSchedule(); renderMyTasks(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
 }
 function wireOwnerAssignSections(){
   refreshOwnerAssign();
@@ -2783,6 +2822,292 @@ function renderOwnerSchedule(){
     window.open(gcalLink(el.dataset.ptitle, el.dataset.pdate, el.dataset.ps, el.dataset.pe, el.dataset.pnote, ''), '_blank', 'noopener');
   });
 }
+
+// ======================================================================================
+// ---- My Projects (update-29): Rob's own task manager on the Owner Board - replaces Apple Notes /
+// Todoist. Deliberately NOT for Bridgeland/Candy Cars dealership management or Syracuse Cars -
+// that work lives in the rest of Dailys (Rob's call). Seven lists, sub-sections inside each list, priority, due dates, real repeating
+// tasks, notes, quick-capture with shorthand, and one-click "Schedule it" (-> My Schedule) or
+// "Delegate it" (-> Assign a task). Stored under 'owner-mytasks' (owner/manager-gated, owner-only
+// in the UI). Every save re-reads the server copy and merges task-by-task (newest edit wins,
+// deletions tracked) so a stale open tab can never wipe newer tasks. ----
+const MYT_LISTS = [
+  { k:'inbox',        label:'Inbox',                   color:'#64748b' },
+  { k:'properties',   label:'Properties',              color:'#16a34a' },
+  { k:'construction', label:'Construction & Equipment',color:'#d97706' },
+  { k:'ai',           label:'AI & Tech',               color:'#4f46e5' },
+  { k:'personal',     label:'Personal',                color:'#db2777' },
+  { k:'followup',     label:'Follow-up / Waiting on',  color:'#7c3aed' },
+];
+const MYT_PRI = { 1:{ label:'P1', color:'#d13438' }, 2:{ label:'P2', color:'#e8890c' }, 3:{ label:'P3', color:'#2563eb' }, 4:{ label:'', color:'#c8c6c4' } };
+let MYT = { v:1, tasks:[], deleted:{}, migrated:false };
+let mytView = 'today';      // today | upcoming | list:<k> | done
+let mytSearch = '';
+let mytCollapsed = {};      // section collapse state (per render session)
+
+function mytList(k){ return MYT_LISTS.find(l => l.k === k) || MYT_LISTS[0]; }
+function newMytId(){ return 'myt-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function mytParse(raw){
+  let o = null; try{ o = raw ? JSON.parse(raw) : null; }catch(e){}
+  if(!o || typeof o !== 'object') o = {};
+  return { v:1, tasks: Array.isArray(o.tasks) ? o.tasks : [], deleted: o.deleted || {}, migrated: !!o.migrated };
+}
+function mytMerge(a, b){
+  const deleted = { ...(b.deleted||{}) };
+  Object.entries(a.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
+  const byId = new Map();
+  [b.tasks||[], a.tasks||[]].forEach(arr => arr.forEach(t => { const cur = byId.get(t.id); if(!cur || (t.u||0) >= (cur.u||0)) byId.set(t.id, t); }));
+  const tasks = [...byId.values()].filter(t => !(deleted[t.id] && deleted[t.id] >= (t.u||0)));
+  return { v:1, tasks, deleted, migrated: !!(a.migrated || b.migrated) };
+}
+async function saveMyTasks(){
+  try{
+    const fresh = await (await fetch('/api/state')).json();
+    MYT = mytMerge(MYT, mytParse(fresh['owner-mytasks']));
+  }catch(e){ /* offline: save what we have */ }
+  const ok = await storSet('owner-mytasks', JSON.stringify(MYT), true);
+  if(!ok) showToast('Not saved — owner code required');
+  return ok;
+}
+function mytTouch(t){ t.u = Date.now(); return t; }
+
+// ---- Repeats: Todoist-style rules ("every workday", "every other month", "every Tue, Fri",
+// "every 3 weeks", "every 2nd monday" ...). nextOccurrence() returns the first date AFTER fromISO.
+const MYT_DOW = { sun:0, sunday:0, mon:1, monday:1, tue:2, tues:2, tuesday:2, wed:3, weds:3, wednesday:3, thu:4, thur:4, thurs:4, thursday:4, fri:5, friday:5, sat:6, saturday:6 };
+function isoToDate(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d, 12); }
+function addMonthsISO(iso, n){ const dt = isoToDate(iso); const day = dt.getDate(); dt.setDate(1); dt.setMonth(dt.getMonth()+n); const last = new Date(dt.getFullYear(), dt.getMonth()+1, 0).getDate(); dt.setDate(Math.min(day, last)); return localISODate(dt); }
+function nextOccurrence(rule, fromISO){
+  let r = String(rule||'').toLowerCase().replace(/^every!?\s*/,'').replace(/\s+/g,' ').trim();
+  if(!r) return null;
+  if(r === 'day' || r === 'daily') return addDaysISO(fromISO, 1);
+  const isWork = d => { const g = isoToDate(d).getDay(); return g >= 1 && g <= 5; };
+  if(r === 'workday' || r === 'weekday' || r === 'other workday'){
+    const steps = r === 'other workday' ? 2 : 1; let d = fromISO, n = 0;
+    while(n < steps){ d = addDaysISO(d, 1); if(isWork(d)) n++; }
+    return d;
+  }
+  if(r === 'week' || r === 'weekly') return addDaysISO(fromISO, 7);
+  if(r === 'other week') return addDaysISO(fromISO, 14);
+  if(r === 'month' || r === 'monthly') return addMonthsISO(fromISO, 1);
+  if(r === 'other month') return addMonthsISO(fromISO, 2);
+  if(r === 'year' || r === 'yearly') return addMonthsISO(fromISO, 12);
+  let m = r.match(/^(\d+) (day|week|month|year)s?$/);
+  if(m){ const n = +m[1]; return m[2]==='day' ? addDaysISO(fromISO, n) : m[2]==='week' ? addDaysISO(fromISO, 7*n) : addMonthsISO(fromISO, m[2]==='month' ? n : 12*n); }
+  m = r.match(/^(1st|2nd|3rd|4th|first|second|third|fourth|last) (\w+)$/);
+  if(m && MYT_DOW[m[2]] !== undefined){
+    const want = MYT_DOW[m[2]]; const nth = { '1st':1, first:1, '2nd':2, second:2, '3rd':3, third:3, '4th':4, fourth:4, last:-1 }[m[1]];
+    const pick = (y, mo) => { if(nth === -1){ const d = new Date(y, mo+1, 0, 12); while(d.getDay() !== want) d.setDate(d.getDate()-1); return localISODate(d); } const d = new Date(y, mo, 1, 12); while(d.getDay() !== want) d.setDate(d.getDate()+1); d.setDate(d.getDate() + 7*(nth-1)); return localISODate(d); };
+    const f = isoToDate(fromISO); let c = pick(f.getFullYear(), f.getMonth());
+    if(c <= fromISO){ const nx = new Date(f.getFullYear(), f.getMonth()+1, 1, 12); c = pick(nx.getFullYear(), nx.getMonth()); }
+    return c;
+  }
+  const days = r.split(/[ ,]+|\band\b/).filter(Boolean).map(w => MYT_DOW[w]);
+  if(days.length && days.every(x => x !== undefined)){
+    let d = fromISO; for(let i = 0; i < 8; i++){ d = addDaysISO(d, 1); if(days.includes(isoToDate(d).getDay())) return d; }
+  }
+  return addDaysISO(fromISO, 7); // unknown wording: weekly, keep the original text
+}
+// First occurrence on/after `today` - used to roll an old recurring due date forward.
+function rollForward(rule, dueISO, today){
+  let d = dueISO, guard = 0;
+  while(d < today && guard++ < 2000){ const n = nextOccurrence(rule, d); if(!n || n <= d) break; d = n; }
+  return d;
+}
+
+// ---- Quick capture shorthand: "Call Keith about drain fri #prop !1", "Check fridge every tue, fri #deal"
+function mytQuickParse(input){
+  let s = ' ' + input.trim() + ' ';
+  const out = { list:'inbox', pri:4, due:'', recur:'' };
+  s = s.replace(/\s!([1-3])(?=\s)/, (_, p) => { out.pri = +p; return ' '; });
+  s = s.replace(/\s#([\w&-]+)(?=\s)/, (_, w) => { const q = w.toLowerCase(); const hit = MYT_LISTS.find(l => l.k.startsWith(q) || l.label.toLowerCase().startsWith(q)); if(hit) out.list = hit.k; return ' '; });
+  s = s.replace(/\severy!?\s+(.+?)\s*$/i, (_, r) => { out.recur = 'every ' + r.trim(); return ' '; });
+  const today = localISODate();
+  s = s.replace(/\s(today|tod)(?=\s)/i, () => { out.due = today; return ' '; });
+  s = s.replace(/\s(tomorrow|tmrw|tom)(?=\s)/i, () => { out.due = addDaysISO(today, 1); return ' '; });
+  s = s.replace(/\s(mon|monday|tue|tues|tuesday|wed|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday)(?=\s)/i, (_, w) => { const want = MYT_DOW[w.toLowerCase()]; let d = today; for(let i = 0; i < 7; i++){ d = addDaysISO(d, 1); if(isoToDate(d).getDay() === want) break; } out.due = d; return ' '; });
+  s = s.replace(/\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?=\s)/, (_, mo, dd, yy) => { const y = yy ? (yy.length === 2 ? 2000 + +yy : +yy) : new Date().getFullYear(); out.due = `${y}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`; return ' '; });
+  if(out.recur && !out.due) out.due = rollForward(out.recur, today, today) === today && nextOccurrence(out.recur, addDaysISO(today,-1)) === today ? today : nextOccurrence(out.recur, today);
+  out.text = s.replace(/\s+/g,' ').trim();
+  return out;
+}
+
+function mytOpen(){ return MYT.tasks.filter(t => !t.done); }
+function mytCounts(){
+  const today = localISODate(), wk = addDaysISO(today, 7), c = { today:0, upcoming:0, done:0 };
+  MYT_LISTS.forEach(l => c['list:'+l.k] = 0);
+  MYT.tasks.forEach(t => {
+    if(t.done){ c.done++; return; }
+    c['list:'+(t.list||'inbox')] = (c['list:'+(t.list||'inbox')]||0) + 1;
+    if(t.due && t.due <= today) c.today++;
+    else if(t.due && t.due <= wk) c.upcoming++;
+  });
+  return c;
+}
+
+function renderMyTasks(){
+  const wrap = document.getElementById('obTasksWrap'); if(!wrap) return;
+  // One-time move of the old "My personal tasks" list into Inbox.
+  if(!MYT.migrated && typeof OWNER_TASKS !== 'undefined' && OWNER_TASKS.length){
+    OWNER_TASKS.forEach(o => MYT.tasks.push(mytTouch({ id:newMytId(), text:o.text, notes:'', list:'inbox', section:'', pri:4, due:o.dueDate||'', recur:'', done:!!o.done, doneAt: o.done ? new Date().toISOString() : '', createdAt:new Date().toISOString() })));
+    MYT.migrated = true; saveMyTasks().then(ok => { if(ok){ OWNER_TASKS = []; saveOwnerTasks(); } });
+  }
+  const today = localISODate();
+  const counts = mytCounts();
+  const q = mytSearch.trim().toLowerCase();
+  let rows = MYT.tasks.slice();
+  if(q) rows = rows.filter(t => (t.text + ' ' + (t.notes||'') + ' ' + (t.section||'')).toLowerCase().includes(q));
+  else if(mytView === 'today') rows = rows.filter(t => !t.done && t.due && t.due <= today);
+  else if(mytView === 'upcoming') rows = rows.filter(t => !t.done && t.due && t.due > today && t.due <= addDaysISO(today, 7));
+  else if(mytView === 'done') rows = rows.filter(t => t.done).sort((a,b) => (b.doneAt||'').localeCompare(a.doneAt||'')).slice(0, 60);
+  else if(mytView.startsWith('list:')) rows = rows.filter(t => !t.done && (t.list||'inbox') === mytView.slice(5));
+  const sortFn = (a,b) => (a.pri||4) - (b.pri||4) || (a.due||'9999').localeCompare(b.due||'9999') || (a.text||'').localeCompare(b.text||'');
+  if(mytView !== 'done') rows.sort(sortFn);
+  // Group: list view -> by section; today/upcoming -> by date bucket; search -> by list.
+  const groups = new Map();
+  const put = (k, t) => { if(!groups.has(k)) groups.set(k, []); groups.get(k).push(t); };
+  rows.forEach(t => {
+    if(q) put(mytList(t.list).label, t);
+    else if(mytView === 'today') put(t.due < today ? 'Overdue' : 'Today', t);
+    else if(mytView === 'upcoming') put(shortDate(t.due), t);
+    else if(mytView.startsWith('list:')) put(t.section || 'General', t);
+    else put('Completed', t);
+  });
+  let keys = [...groups.keys()];
+  if(mytView === 'upcoming' && !q) keys.sort((a,b) => (groups.get(a)[0].due||'').localeCompare(groups.get(b)[0].due||''));
+  if(mytView.startsWith('list:') && !q) keys.sort((a,b) => (a==='General'?-1:b==='General'?1:a.localeCompare(b)));
+  const tab = (k, label, n, color) => `<button class="myt-tab ${mytView===k && !q ? 'on' : ''}" data-v="${k}" ${color ? `style="--lc:${color};"` : ''}>${color ? '<i></i>' : ''}${escapeHtml(label)}${n ? ` <b>${n}</b>` : ''}</button>`;
+  const row = t => {
+    const L = mytList(t.list); const P = MYT_PRI[t.pri||4];
+    const od = !t.done && t.due && t.due < today;
+    return `<div class="myt-row ${t.done?'done':''}" data-id="${t.id}">
+      <button class="myt-chk" style="--pc:${P.color};" aria-label="Complete">${t.done ? '✓' : ''}</button>
+      <div class="myt-main">
+        <div class="myt-text">${escapeHtml(t.text)}</div>
+        <div class="myt-meta">
+          ${t.due ? `<span class="myt-due ${od?'od':''} ${t.due===today?'td':''}">${t.due===today ? 'Today' : escapeHtml(shortDate(t.due))}</span>` : ''}
+          ${t.recur ? `<span class="myt-rec" title="${escapeAttr(t.recur)}">↻ ${escapeHtml(t.recur.replace(/^every\s*/i,''))}</span>` : ''}
+          ${(mytView.startsWith('list:') && !q) ? '' : `<span class="myt-lst" style="--lc:${L.color};">${escapeHtml(L.label)}${t.section ? ' › ' + escapeHtml(t.section) : ''}</span>`}
+          ${t.notes ? '<span class="myt-hasnote" title="Has notes">📝</span>' : ''}
+          ${P.label ? `<span class="myt-pri" style="color:${P.color};">${P.label}</span>` : ''}
+        </div>
+      </div>
+      ${t.done ? '' : `<div class="myt-act">
+        <button class="myt-b myt-sched" title="Block time for this on My Schedule">⏰</button>
+        <button class="myt-b myt-deleg" title="Delegate: assign to an employee">👤</button>
+      </div>`}
+    </div>`;
+  };
+  wrap.innerHTML = `<div class="task-card myt-card">
+    <div class="myt-add">
+      <input type="text" id="mytQuick" placeholder="Add a task…   e.g.  Call Keith re: drain fri #prop !1   \u2022   Grease Kioti every month #con">
+      <select id="mytQuickList">${MYT_LISTS.map(l => `<option value="${l.k}">${escapeHtml(l.label)}</option>`).join('')}</select>
+      <button class="mini-btn primary-mini" id="mytAddBtn">+ Add</button>
+    </div>
+    <div class="myt-hint">Shorthand: <b>#list</b> (#prop #con #ai #pers #follow) · <b>!1 !2 !3</b> priority · <b>today / tomorrow / fri / 10/15</b> due · <b>every week / every workday / every tue, fri</b> repeats</div>
+    <div class="myt-tabs">
+      ${tab('today', 'Today', counts.today)}${tab('upcoming', 'Next 7 days', counts.upcoming)}
+      <span class="myt-sep"></span>
+      ${MYT_LISTS.map(l => tab('list:'+l.k, l.label, counts['list:'+l.k], l.color)).join('')}
+      <span class="myt-sep"></span>
+      ${tab('done', 'Completed', 0)}
+      <input type="search" id="mytSearch" placeholder="Search all tasks…" value="${escapeAttr(mytSearch)}">
+    </div>
+    <div class="myt-body">
+      ${rows.length === 0 ? `<div class="empty-note">${q ? 'No tasks match.' : mytView === 'today' ? 'Nothing due today. 👍' : 'Nothing here.'}</div>` : keys.map(k => {
+        const list = groups.get(k); const ck = mytView + '|' + k; const col = mytCollapsed[ck];
+        return `<div class="myt-group ${k==='Overdue'?'od':''}"><button class="myt-gh" data-ck="${escapeAttr(ck)}">${col ? '▸' : '▾'} ${escapeHtml(k)} <span>${list.length}</span></button>
+          ${col ? '' : list.map(row).join('')}</div>`;
+      }).join('')}
+    </div>
+  </div>`;
+  const $ = id => document.getElementById(id);
+  const listSel = $('mytQuickList');
+  if(mytView.startsWith('list:')) listSel.value = mytView.slice(5);
+  const add = async () => {
+    const raw = $('mytQuick').value.trim(); if(!raw) return;
+    const p = mytQuickParse(raw);
+    if(!/\s#/.test(' ' + raw)) p.list = listSel.value;
+    if(!p.text){ showToast('Type the task'); return; }
+    MYT.tasks.push(mytTouch({ id:newMytId(), text:p.text, notes:'', list:p.list, section:'', pri:p.pri, due:p.due, recur:p.recur, done:false, doneAt:'', createdAt:new Date().toISOString() }));
+    $('mytQuick').value = '';
+    if(await saveMyTasks()) showToast('Added to ' + mytList(p.list).label + (p.due ? ' · ' + shortDate(p.due) : ''));
+    renderMyTasks(); const qi = document.getElementById('mytQuick'); if(qi) qi.focus();
+  };
+  $('mytAddBtn').onclick = add;
+  $('mytQuick').onkeydown = e => { if(e.key === 'Enter') add(); };
+  let st; $('mytSearch').oninput = e => { clearTimeout(st); st = setTimeout(() => { mytSearch = e.target.value; renderMyTasks(); const s = document.getElementById('mytSearch'); if(s){ s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 250); };
+  wrap.querySelectorAll('.myt-tab').forEach(b => b.onclick = () => { mytView = b.dataset.v; mytSearch = ''; renderMyTasks(); });
+  wrap.querySelectorAll('.myt-gh').forEach(b => b.onclick = () => { mytCollapsed[b.dataset.ck] = !mytCollapsed[b.dataset.ck]; renderMyTasks(); });
+  const idOf = el => el.closest('[data-id]').dataset.id;
+  wrap.querySelectorAll('.myt-chk').forEach(b => b.onclick = async () => {
+    const t = MYT.tasks.find(x => x.id === idOf(b)); if(!t) return;
+    if(t.done){ t.done = false; t.doneAt = ''; }
+    else if(t.recur){
+      const base = t.due && t.due > today ? t.due : today;
+      t.due = nextOccurrence(t.recur, base); t.lastDone = new Date().toISOString(); t.timesDone = (t.timesDone||0) + 1;
+      showToast('Done — next: ' + shortDate(t.due));
+    } else { t.done = true; t.doneAt = new Date().toISOString(); }
+    mytTouch(t); await saveMyTasks(); renderMyTasks();
+  });
+  wrap.querySelectorAll('.myt-text').forEach(el => el.onclick = () => openMyTask(idOf(el)));
+  wrap.querySelectorAll('.myt-sched').forEach(b => b.onclick = () => {
+    const t = MYT.tasks.find(x => x.id === idOf(b)); if(!t) return;
+    const catMap = { personal:'personal', ai:'ai', properties:'offsite', construction:'offsite', followup:'admin', inbox:'admin' };
+    schedPrefill = { title:t.text, cat:catMap[t.list]||'admin', date: t.due && t.due >= today ? t.due : today, start:'09:00', end:'10:00' };
+    renderOwnerSchedule(); const f = document.getElementById('schForm'); if(f){ f.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  });
+  wrap.querySelectorAll('.myt-deleg').forEach(b => b.onclick = () => {
+    const t = MYT.tasks.find(x => x.id === idOf(b)); if(!t) return;
+    asgFormPrefill = null; renderAssignForm();
+    const tx = document.getElementById('asgText'), nt = document.getElementById('asgNote'), du = document.getElementById('asgDue');
+    if(tx) tx.value = t.text; if(nt && t.notes) nt.value = t.notes; if(du && t.due) du.value = t.due;
+    const c = document.getElementById('asgFormCard'); if(c){ c.scrollIntoView({ behavior:'smooth', block:'center' }); document.getElementById('asgWho').focus(); }
+    showToast('Pick who gets it, then + Assign');
+  });
+}
+
+function openMyTask(id){
+  const t = MYT.tasks.find(x => x.id === id); if(!t) return;
+  const el = asgModalEl(); el._onClose = null;
+  const sections = [...new Set(MYT.tasks.filter(x => (x.list||'inbox') === (t.list||'inbox') && x.section).map(x => x.section))].sort();
+  el.querySelector('.asg-modal').innerHTML = `
+    <div class="asg-m-head"><div class="asg-m-title">Task</div><button class="asg-m-x" aria-label="Close">✕</button></div>
+    <div class="asg-edit">
+      <label>Task<input type="text" id="mtText" value="${escapeAttr(t.text)}"></label>
+      <label>Notes<textarea id="mtNotes" rows="4" style="border:1px solid #c8c6c4;border-radius:6px;padding:7px 9px;font:inherit;font-size:13px;">${escapeHtml(t.notes||'')}</textarea></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:150px;">List<select id="mtList">${MYT_LISTS.map(l => `<option value="${l.k}" ${l.k===(t.list||'inbox')?'selected':''}>${escapeHtml(l.label)}</option>`).join('')}</select></label>
+        <label style="flex:1;min-width:150px;">Section<input type="text" id="mtSection" list="mtSecList" value="${escapeAttr(t.section||'')}" placeholder="e.g. Elmcrest"><datalist id="mtSecList">${sections.map(s => `<option value="${escapeAttr(s)}">`).join('')}</datalist></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:120px;">Due<input type="date" id="mtDue" value="${escapeAttr(t.due||'')}"></label>
+        <label style="flex:1;min-width:120px;">Priority<select id="mtPri">${[1,2,3,4].map(p => `<option value="${p}" ${p===(t.pri||4)?'selected':''}>${p===4 ? 'None' : 'P'+p}</option>`).join('')}</select></label>
+        <label style="flex:2;min-width:180px;">Repeats<input type="text" id="mtRecur" value="${escapeAttr(t.recur||'')}" placeholder="e.g. every week, every tue, fri"></label>
+      </div>
+      ${t.timesDone ? `<div style="font-size:11.5px;color:#605e5c;">Completed ${t.timesDone} time${t.timesDone===1?'':'s'}${t.lastDone ? ', last ' + escapeHtml(fmtTs(t.lastDone)) : ''}</div>` : ''}
+      ${t.src ? `<div style="font-size:11px;color:#8a8886;">Imported from Todoist</div>` : ''}
+      <div class="sch-m-actions">
+        <button class="mini-btn primary-mini" id="mtSave">Save</button>
+        <button class="mini-btn danger-mini" id="mtDel">Delete</button>
+      </div>
+    </div>`;
+  const m = el.querySelector('.asg-modal'); const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  q('#mtSave').onclick = async () => {
+    const text = q('#mtText').value.trim(); if(!text){ showToast('Task can’t be blank'); return; }
+    Object.assign(t, { text, notes:q('#mtNotes').value, list:q('#mtList').value, section:q('#mtSection').value.trim(), due:q('#mtDue').value, pri:+q('#mtPri').value, recur:q('#mtRecur').value.trim() });
+    if(t.recur && !/^every/i.test(t.recur)) t.recur = 'every ' + t.recur;
+    mytTouch(t); if(await saveMyTasks()) showToast('Saved');
+    closeAsgModal(); renderMyTasks();
+  };
+  q('#mtDel').onclick = async () => {
+    MYT.tasks = MYT.tasks.filter(x => x.id !== t.id); MYT.deleted[t.id] = Date.now();
+    if(await saveMyTasks()) showToast('Deleted');
+    closeAsgModal(); renderMyTasks();
+  };
+  el.classList.add('show');
+}
+// ======================================================================================
 
 function openSchedMeeting(meetingId, iso){
   const mt = (MEETINGS||[]).find(x => x.id === meetingId); if(!mt) return;
@@ -5785,6 +6110,7 @@ async function renderOwnerBoard(){
     ${recurringGroup('Weekly', 'Weekly')}
     ${recurringGroup('Monthly', 'Monthly')}
 
+    <div style="${OWNER_TASKS.length ? '' : 'display:none;'}">
     <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">My personal tasks</div>
     <div class="task-card" style="padding:10px 12px; display:flex; gap:8px; margin-bottom:10px;">
       <input type="text" id="ownerTaskInput" placeholder="Describe a task for yourself..." style="flex:1;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;">
@@ -5800,6 +6126,7 @@ async function renderOwnerBoard(){
           <button class="mini-btn danger-mini ob-task-remove">Remove</button>
         </div>`;
       }).join('')}
+    </div>
     </div>
 
     <div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">My Change Requests for Dailys</div>
