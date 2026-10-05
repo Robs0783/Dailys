@@ -320,6 +320,7 @@
   .sch-blk{ border-left:4px solid var(--cc); background:color-mix(in srgb, var(--cc) 12%, #fff); border-radius:5px; padding:4px 6px; cursor:pointer; }
   .sch-blk:hover{ background:color-mix(in srgb, var(--cc) 22%, #fff); }
   .sch-blk.done{ opacity:.5; }
+  .sch-proj{ font-size:10.5px; font-weight:600; color:#8a5a00; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sch-src{ font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--cc); margin-top:1px; }
   .sch-hidden{ font-size:11px; color:var(--win-text-secondary); margin-top:8px; }
   .sch-unhide{ font:inherit; font-size:11px; border:1px solid var(--win-border-strong); background:#fff; border-radius:12px; padding:1px 8px; cursor:pointer; margin:2px; }
@@ -2520,6 +2521,8 @@ const SCHED_CATS = {
   company:  { label:'Company meeting',    color:'#2563eb' },
   oneonone: { label:'One-on-one / Review',color:'#0d9488' },
   focus:    { label:'Focus time (top 3)', color:'#dc2626' },
+  ai:       { label:'AI work (Shreya)',   color:'#4f46e5' },
+  creative: { label:'Creative / Projects',color:'#ca8a04' },
   floor:    { label:'Floor / Store walk', color:'#16a34a' },
   admin:    { label:'Admin / Desk',       color:'#64748b' },
   personal: { label:'Personal',           color:'#db2777' },
@@ -2535,7 +2538,7 @@ const SCHED_LOCS = {
   other:      'Other',
 };
 // Default location per category, so quick-add is one less pick most of the time.
-const SCHED_DEFAULT_LOC = { offsite:'jobsite', vendor:'vendor', company:'bridgeland', oneonone:'bridgeland', focus:'bridgeland', floor:'bridgeland', admin:'bridgeland', personal:'other', other:'bridgeland' };
+const SCHED_DEFAULT_LOC = { ai:'candycars', creative:'home', offsite:'jobsite', vendor:'vendor', company:'bridgeland', oneonone:'bridgeland', focus:'bridgeland', floor:'bridgeland', admin:'bridgeland', personal:'other', other:'bridgeland' };
 let schedWeekStart = null; // Monday ISO of the week being shown
 let schedPrefill = null;
 
@@ -2549,6 +2552,20 @@ function schedPrefs(){
   return p;
 }
 function schedBlocks(){ return OWNER_SCHEDULE.filter(b => b.id !== '__prefs'); }
+// Project Planner link-up: a block can be tied to one project so that time-blocked work opens
+// straight into it (creative / AI time especially).
+function schedActiveProjects(){ return (PROJECTS||[]).filter(p => p.status !== 'Completed'); }
+function schedProjectOptions(sel){ return '<option value="">\u2014 No project \u2014</option>' + schedActiveProjects().map(p => `<option value="${p.id}" ${p.id===sel?'selected':''}>${escapeAttr(p.name)}</option>`).join(''); }
+async function openProjectInPlanner(pid){
+  closeAsgModal();
+  const btn = document.getElementById('projectsToggleBtn');
+  if(!projectsShown && btn) await btn.onclick();
+  setTimeout(() => {
+    const card = pid ? document.querySelector(`#projectsView details[data-pid="${pid}"]`) : null;
+    if(card){ card.open = true; card.scrollIntoView({ behavior:'smooth', block:'start' }); }
+    else { const v = document.getElementById('projectsView'); if(v) v.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  }, 350);
+}
 // Dailys meeting times are typed freehand ("8:00", "8:00 am", "10:00am", "1:00 PM"). No am/pm
 // on 1-6 o'clock means afternoon - nobody meets at 1am.
 function parseMeetingTimeHm(t){
@@ -2679,6 +2696,7 @@ function renderOwnerSchedule(){
             <div class="sch-loc">📍 ${escapeHtml(schedLocLabel(b) || '—')}</div>
             ${b.with ? `<div class="sch-with">with ${escapeHtml(assigneeShort(b.with))}</div>` : ''}
             ${b.fromMeeting ? '<div class="sch-src">Dailys meeting</div>' : ''}
+            ${b.project ? `<div class="sch-proj">\ud83d\udcc1 ${escapeHtml(((PROJECTS||[]).find(p => p.id === b.project)||{}).name || 'Project')}</div>` : ''}
           </div>`;
         }
         const cls = it.kind === 'prep' ? 'sch-prep' : 'sch-travel';
@@ -2698,6 +2716,7 @@ function renderOwnerSchedule(){
         <div class="sch-wk">${escapeHtml(shortDate(days[0]))} – ${escapeHtml(shortDate(wkEnd))}</div>
         <button class="mini-btn" id="schNext">→</button>
         <button class="mini-btn" id="schThis">This week</button>
+        <button class="mini-btn" id="schProjects" title="Open the Project Planner">\ud83d\udcc1 Projects (${schedActiveProjects().length})</button>
         <div class="sch-hours">${Object.keys(SCHED_CATS).filter(k => hoursByCat[k]).map(k => `<span style="--cc:${SCHED_CATS[k].color};">${escapeHtml(SCHED_CATS[k].label.split(' (')[0])} <b>${(hoursByCat[k]/60).toFixed(hoursByCat[k]%60?1:0)}h</b></span>`).join('') || '<span class="sch-none">Nothing blocked this week yet</span>'}</div>
       </div>
       <div class="sch-form" id="schForm">
@@ -2709,7 +2728,8 @@ function renderOwnerSchedule(){
         <input type="time" id="schEnd" value="${escapeAttr(pre.end||'10:00')}" step="900">
         <select id="schLoc">${Object.entries(SCHED_LOCS).map(([k,l]) => `<option value="${k}">${escapeHtml(l)}</option>`).join('')}</select>
         <input type="text" id="schLocText" placeholder="Address / which office (optional)" value="${escapeAttr(pre.locText||'')}">
-        <select id="schWith" style="display:none;"><option value="">— With who? —</option>${roster}</select>
+        <select id="schWith" style="display:none;"><option value="">\u2014 With who? \u2014</option>${roster}</select>
+        <select id="schProj" style="display:none;" title="Tie this time to a project">${schedProjectOptions(pre.project||'')}</select>
         <input type="text" id="schNotes" placeholder="Notes (optional)">
         <label class="sch-rep">Repeat weekly <select id="schRepeat"><option value="1">No</option><option value="4">4 weeks</option><option value="8">8 weeks</option><option value="13">13 weeks</option></select></label>
         <button class="mini-btn primary-mini" id="schAdd">+ Block time</button>
@@ -2725,7 +2745,9 @@ function renderOwnerSchedule(){
 
   const $ = id => document.getElementById(id);
   const catEl = $('schCat'), locEl = $('schLoc'), withEl = $('schWith');
-  const syncCat = () => { if(!pre.loc) locEl.value = SCHED_DEFAULT_LOC[catEl.value] || 'bridgeland'; withEl.style.display = catEl.value === 'oneonone' ? '' : 'none'; };
+  const projEl = $('schProj');
+  const syncCat = () => { if(!pre.loc) locEl.value = SCHED_DEFAULT_LOC[catEl.value] || 'bridgeland'; withEl.style.display = catEl.value === 'oneonone' ? '' : 'none'; projEl.style.display = ['creative','ai','focus','offsite'].includes(catEl.value) ? '' : 'none'; };
+  $('schProjects').onclick = () => openProjectInPlanner('');
   catEl.onchange = () => { pre.loc = ''; syncCat(); };
   if(pre.loc) locEl.value = pre.loc;
   syncCat();
@@ -2743,7 +2765,7 @@ function renderOwnerSchedule(){
     const reps = parseInt($('schRepeat').value, 10) || 1;
     const series = reps > 1 ? newSchedId() : '';
     for(let i = 0; i < reps; i++){
-      OWNER_SCHEDULE.push({ id:newSchedId(), title, cat:catEl.value, date:addDaysISO(date, 7*i), start, end, loc:locEl.value, locText:$('schLocText').value.trim(), with: catEl.value==='oneonone' ? withEl.value : '', notes:$('schNotes').value.trim(), done:false, series });
+      OWNER_SCHEDULE.push({ id:newSchedId(), title, cat:catEl.value, date:addDaysISO(date, 7*i), start, end, loc:locEl.value, locText:$('schLocText').value.trim(), with: catEl.value==='oneonone' ? withEl.value : '', project: projEl.style.display === 'none' ? '' : projEl.value, notes:$('schNotes').value.trim(), done:false, series });
     }
     if(await saveOwnerSchedule()) showToast(reps > 1 ? `Blocked ${reps} weeks` : 'Blocked');
     schedPrefill = null;
@@ -2814,6 +2836,7 @@ function openSchedBlock(id){
       <button class="asg-m-x" aria-label="Close">✕</button></div>
     ${b.notes ? `<div class="asg-m-dod">${escapeHtml(b.notes)}</div>` : ''}
     ${openTasks}
+    ${(() => { const pj = b.project && (PROJECTS||[]).find(p => p.id === b.project); if(!pj) return ''; const open = (pj.steps||[]).filter(st => st.status !== 'Done'); return `<div class="asg-m-dep"><b>\ud83d\udcc1 ${escapeHtml(pj.name)}</b> \u2014 ${open.length} open step${open.length===1?'':'s'}${open.length ? ': ' + open.slice(0,5).map(st => escapeHtml(st.title)).join(' \u2022 ') : ''} <button class="mini-btn" id="seOpenProj" style="margin-left:6px;">Open project</button></div>`; })()}
     <div class="asg-edit">
       <label>Title<input type="text" id="seTitle" value="${escapeAttr(b.title)}"></label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -2829,6 +2852,7 @@ function openSchedBlock(id){
         <label style="flex:2;min-width:180px;">Address / details<input type="text" id="seLocText" value="${escapeAttr(b.locText||'')}"></label>
       </div>
       <label>Notes<input type="text" id="seNotes" value="${escapeAttr(b.notes||'')}"></label>
+      <label>Project<select id="seProj">${schedProjectOptions(b.project||'')}</select></label>
       ${(b.cat==='company'||b.cat==='oneonone') ? `<label style="flex-direction:row;align-items:center;gap:6px;"><input type="checkbox" id="seNoPrep" ${b.noPrep?'checked':''}> No prep block for this one</label>` : ''}
       <div class="sch-m-actions">
         <a class="mini-btn primary-mini" id="seGcal" href="#" target="_blank" rel="noopener">Send to Google Calendar</a>
@@ -2845,13 +2869,14 @@ function openSchedBlock(id){
   m.querySelectorAll('input,select').forEach(i => i.addEventListener('input', refreshGcal));
   refreshGcal();
   q('#seSave').onclick = async () => {
-    const v = { title:q('#seTitle').value.trim(), cat:q('#seCat').value, date:q('#seDate').value, start:q('#seStart').value, end:q('#seEnd').value, loc:q('#seLoc').value, locText:q('#seLocText').value.trim(), notes:q('#seNotes').value.trim() };
+    const v = { title:q('#seTitle').value.trim(), cat:q('#seCat').value, date:q('#seDate').value, start:q('#seStart').value, end:q('#seEnd').value, loc:q('#seLoc').value, locText:q('#seLocText').value.trim(), notes:q('#seNotes').value.trim(), project:q('#seProj').value };
     if(!v.title || !v.date || hmToMin(v.end) <= hmToMin(v.start)){ showToast('Check the title and times'); return; }
     const np = q('#seNoPrep'); if(np) v.noPrep = np.checked;
     Object.assign(b, v);
     if(await saveOwnerSchedule()) showToast('Saved');
     closeAsgModal(); renderOwnerSchedule();
   };
+  const op = q('#seOpenProj'); if(op) op.onclick = () => openProjectInPlanner(b.project);
   q('#seDel').onclick = async () => {
     OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => x.id !== b.id);
     if(await saveOwnerSchedule()) showToast('Deleted');
