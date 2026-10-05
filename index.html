@@ -320,6 +320,9 @@
   .sch-blk{ border-left:4px solid var(--cc); background:color-mix(in srgb, var(--cc) 12%, #fff); border-radius:5px; padding:4px 6px; cursor:pointer; }
   .sch-blk:hover{ background:color-mix(in srgb, var(--cc) 22%, #fff); }
   .sch-blk.done{ opacity:.5; }
+  .sch-src{ font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--cc); margin-top:1px; }
+  .sch-hidden{ font-size:11px; color:var(--win-text-secondary); margin-top:8px; }
+  .sch-unhide{ font:inherit; font-size:11px; border:1px solid var(--win-border-strong); background:#fff; border-radius:12px; padding:1px 8px; cursor:pointer; margin:2px; }
   .sch-time{ font-size:10.5px; font-weight:700; color:var(--win-text-secondary); }
   .sch-title{ font-size:12px; font-weight:600; line-height:1.25; }
   .sch-loc, .sch-with{ font-size:10.5px; color:var(--win-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2537,6 +2540,53 @@ let schedWeekStart = null; // Monday ISO of the week being shown
 let schedPrefill = null;
 
 function newSchedId(){ return 'sch-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+// Per-meeting overrides for the Dailys Meetings list (location, length, hidden) live in one
+// special '__prefs' row inside OWNER_SCHEDULE so they ride on the same owner-gated key.
+function schedPrefs(){
+  let p = OWNER_SCHEDULE.find(b => b.id === '__prefs');
+  if(!p){ p = { id:'__prefs', meetings:{} }; OWNER_SCHEDULE.push(p); }
+  if(!p.meetings) p.meetings = {};
+  return p;
+}
+function schedBlocks(){ return OWNER_SCHEDULE.filter(b => b.id !== '__prefs'); }
+// Dailys meeting times are typed freehand ("8:00", "8:00 am", "10:00am", "1:00 PM"). No am/pm
+// on 1-6 o'clock means afternoon - nobody meets at 1am.
+function parseMeetingTimeHm(t){
+  const m = String(t||'').trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?/);
+  if(!m) return null;
+  let h = parseInt(m[1],10), mi = parseInt(m[2]||'0',10);
+  const ap = m[3] ? m[3][0] : (h >= 1 && h <= 6 ? 'p' : '');
+  if(ap === 'p' && h < 12) h += 12;
+  if(ap === 'a' && h === 12) h = 0;
+  if(h > 23 || mi > 59) return null;
+  return String(h).padStart(2,'0') + ':' + String(mi).padStart(2,'0');
+}
+function meetingDefaultLoc(title){
+  const t = String(title||'');
+  if(/digital|zoom|teams|phone/i.test(t)) return 'phone';
+  const cc = /\bCC\b|candy/i.test(t), bl = /\bBL\b|bridgeland/i.test(t);
+  if(cc && !bl) return 'candycars';
+  return 'bridgeland';
+}
+// The Dailys Meetings that fall on a given day, shaped like schedule blocks.
+function schedMeetingBlocks(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d, 12);
+  const prefs = (OWNER_SCHEDULE.find(b => b.id === '__prefs') || {}).meetings || {};
+  const out = [];
+  (MEETINGS || []).forEach(mt => {
+    const start = parseMeetingTimeHm(mt.time);
+    if(!start || !mt.title || /^new meeting$/i.test(mt.title.trim())) return;
+    let occurs = false; try{ occurs = meetingOccursOn(mt, dt); }catch(e){}
+    if(!occurs) return;
+    const pr = prefs[mt.id] || {};
+    if(pr.hidden) return;
+    const dur = pr.dur || 60;
+    out.push({ id:'mtg:' + mt.id + ':' + iso, fromMeeting: mt.id, title: mt.title.trim(), cat:'company', date: iso, start, end: minToHm(hmToMin(start) + dur), loc: pr.loc || meetingDefaultLoc(mt.title), locText: pr.locText || '', with:'', notes:'', done:false });
+  });
+  return out;
+}
+function schedAllBlocksOn(iso){ return schedBlocks().filter(b => b.date === iso).concat(schedMeetingBlocks(iso)); }
 async function saveOwnerSchedule(){ const ok = await storSet('owner-schedule', JSON.stringify(OWNER_SCHEDULE), true); if(!ok) showToast('Not saved — owner code required'); return ok; }
 function hmToMin(hm){ const [h,m] = String(hm||'0:0').split(':').map(Number); return h*60 + (m||0); }
 function minToHm(n){ n = Math.max(0, Math.min(24*60-1, n)); return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); }
@@ -2558,13 +2608,16 @@ function gcalLink(title, date, start, end, details, location){
 
 // Everything shown for one day: Rob's real blocks + generated prep and travel blocks + warnings.
 function schedDayItems(iso){
-  const real = OWNER_SCHEDULE.filter(b => b.date === iso).map(b => ({ kind:'block', b, s:hmToMin(b.start), e:hmToMin(b.end) }));
+  const real = schedAllBlocksOn(iso).map(b => ({ kind:'block', b, s:hmToMin(b.start), e:hmToMin(b.end) }));
   const gen = [];
-  // Prep for tomorrow's company meetings lands this evening.
+  // Prep for tomorrow's company meetings lands this evening - ONE 1-hr block covering all of
+  // them (a Friday with six meetings gets one prep hour Thursday night, not six stacked ones).
   const tomorrow = addDaysISO(iso, 1);
-  OWNER_SCHEDULE.filter(b => b.date === tomorrow && b.cat === 'company' && !b.noPrep).forEach(b => {
-    gen.push({ kind:'prep', of:b, title:'Prep: ' + b.title, s:hmToMin(COMPANY_PREP_START), e:hmToMin(COMPANY_PREP_START)+60, note:'For tomorrow ' + fmt12(b.start) });
-  });
+  const tmrw = schedAllBlocksOn(tomorrow).filter(b => b.cat === 'company' && !b.noPrep).sort((a,b) => hmToMin(a.start) - hmToMin(b.start));
+  if(tmrw.length){
+    const first = tmrw[0];
+    gen.push({ kind:'prep', of:first, list:tmrw, title: tmrw.length === 1 ? 'Prep: ' + first.title : `Prep: ${tmrw.length} meetings tomorrow`, s:hmToMin(COMPANY_PREP_START), e:hmToMin(COMPANY_PREP_START)+60, note: tmrw.map(b => fmt12(b.start) + ' ' + b.title).join(' \u2022 ') });
+  }
   real.filter(x => x.b.cat === 'oneonone' && !x.b.noPrep).forEach(x => {
     gen.push({ kind:'prep', of:x.b, title:'Prep: ' + x.b.title, s:x.s-20, e:x.s, note:'Review their metrics & open tasks' });
   });
@@ -2604,7 +2657,7 @@ function renderOwnerSchedule(){
   try{ allVendorMeetingEntries().forEach(({company, meeting}) => { if(meeting.status !== 'Completed' && meeting.date) (vendorByDate[meeting.date] = vendorByDate[meeting.date] || []).push(company); }); }catch(e){}
   const pre = schedPrefill || {};
   const roster = activeRosterTargets().map(x => { const k = x.locKey + '::' + x.empIdx; return `<option value="${k}">${escapeAttr(assigneeLabel(k))}</option>`; }).join('');
-  const weekBlocks = OWNER_SCHEDULE.filter(b => b.date >= days[0] && b.date <= days[6]);
+  const weekBlocks = days.flatMap(d => schedAllBlocksOn(d));
   const hoursByCat = {};
   weekBlocks.forEach(b => { hoursByCat[b.cat] = (hoursByCat[b.cat]||0) + Math.max(0, hmToMin(b.end) - hmToMin(b.start)); });
   const dayCol = (iso) => {
@@ -2620,15 +2673,16 @@ function renderOwnerSchedule(){
       ${all.length === 0 && !vend.length ? '<div class="sch-empty">Open</div>' : all.map(it => {
         if(it.kind === 'block'){
           const b = it.b; const c = SCHED_CATS[b.cat] || SCHED_CATS.other;
-          return `<div class="sch-blk ${b.done?'done':''}" data-sid="${b.id}" style="--cc:${c.color};">
+          return `<div class="sch-blk ${b.done?'done':''} ${b.fromMeeting?'from-mtg':''}" data-sid="${b.id}" ${b.fromMeeting ? `data-mtg="${b.fromMeeting}" data-mdate="${b.date}"` : ''} style="--cc:${c.color};">
             <div class="sch-time">${fmt12(b.start)}–${fmt12(b.end)}</div>
             <div class="sch-title">${escapeHtml(b.title)}</div>
             <div class="sch-loc">📍 ${escapeHtml(schedLocLabel(b) || '—')}</div>
             ${b.with ? `<div class="sch-with">with ${escapeHtml(assigneeShort(b.with))}</div>` : ''}
+            ${b.fromMeeting ? '<div class="sch-src">Dailys meeting</div>' : ''}
           </div>`;
         }
         const cls = it.kind === 'prep' ? 'sch-prep' : 'sch-travel';
-        return `<div class="${cls}" ${it.kind==='prep' ? `data-prep="${it.of.id}" data-pdate="${iso}" data-ps="${minToHm(it.s)}" data-pe="${minToHm(it.e)}"` : ''}>
+        return `<div class="${cls}" ${it.kind==='prep' ? `data-ptitle="${escapeAttr(it.title)}" data-pnote="${escapeAttr(it.note||'')}" data-pdate="${iso}" data-ps="${minToHm(it.s)}" data-pe="${minToHm(it.e)}"` : ''}>
           <div class="sch-time">${fmt12(minToHm(it.s))}–${fmt12(minToHm(it.e))}</div>
           <div class="sch-title">${it.kind==='travel' ? '🚗 ' : '📝 '}${escapeHtml(it.title)}</div>
           <div class="sch-loc">${escapeHtml(it.note||'')}</div>
@@ -2661,11 +2715,12 @@ function renderOwnerSchedule(){
         <button class="mini-btn primary-mini" id="schAdd">+ Block time</button>
       </div>
       <div class="sch-grid">${days.map(dayCol).join('')}</div>
+      ${(() => { const pm = ((OWNER_SCHEDULE.find(b => b.id === '__prefs')||{}).meetings)||{}; const hid = (MEETINGS||[]).filter(mt => (pm[mt.id]||{}).hidden); return hid.length ? `<div class="sch-hidden">Hidden meetings: ${hid.map(mt => `<button class="sch-unhide" data-mid="${mt.id}">${escapeHtml(mt.title.trim())} \u21ba</button>`).join(' ')}</div>` : ''; })()}
       <div class="sch-legend">
         ${Object.values(SCHED_CATS).map(c => `<span><i style="background:${c.color};"></i>${escapeHtml(c.label)}</span>`).join('')}
         <span><i class="lg-prep"></i>Auto prep</span><span><i class="lg-travel"></i>Auto travel (${TRAVEL_MIN} min)</span>
       </div>
-      <div class="sch-help">Company meetings get a 1-hr prep block at ${fmt12(COMPANY_PREP_START)} the evening before; one-on-ones get 20 min right before. Click any block to send it to Google Calendar, edit, or delete.</div>
+      <div class="sch-help">Meetings from the Dailys Meetings tab load here automatically (click one to set its location or length, or hide it). Company meetings get a 1-hr prep block at ${fmt12(COMPANY_PREP_START)} the evening before; one-on-ones get 20 min right before. Click any block to send it to Google Calendar, edit, or delete.</div>
     </div>`;
 
   const $ = id => document.getElementById(id);
@@ -2700,11 +2755,47 @@ function renderOwnerSchedule(){
     schedPrefill = { title:'Vendor: ' + v.dataset.vendor, cat:'vendor', date:v.dataset.date, loc:'vendor' };
     renderOwnerSchedule(); const t = document.getElementById('schStart'); if(t) t.focus();
   });
-  wrap.querySelectorAll('.sch-blk').forEach(el => el.onclick = () => openSchedBlock(el.dataset.sid));
+  wrap.querySelectorAll('.sch-unhide').forEach(b => b.onclick = async () => { const p = schedPrefs(); if(p.meetings[b.dataset.mid]) p.meetings[b.dataset.mid].hidden = false; await saveOwnerSchedule(); renderOwnerSchedule(); });
+  wrap.querySelectorAll('.sch-blk').forEach(el => el.onclick = () => el.dataset.mtg ? openSchedMeeting(el.dataset.mtg, el.dataset.mdate) : openSchedBlock(el.dataset.sid));
   wrap.querySelectorAll('.sch-prep').forEach(el => el.onclick = () => {
-    const of = OWNER_SCHEDULE.find(b => b.id === el.dataset.prep); if(!of) return;
-    window.open(gcalLink('Prep: ' + of.title, el.dataset.pdate, el.dataset.ps, el.dataset.pe, 'Prep for ' + of.title + ' (' + shortDate(of.date) + ' ' + fmt12(of.start) + ')' + (of.with ? '\nReview ' + assigneeShort(of.with) + "'s metrics and open tasks in Dailys." : ''), ''), '_blank', 'noopener');
+    window.open(gcalLink(el.dataset.ptitle, el.dataset.pdate, el.dataset.ps, el.dataset.pe, el.dataset.pnote, ''), '_blank', 'noopener');
   });
+}
+
+function openSchedMeeting(meetingId, iso){
+  const mt = (MEETINGS||[]).find(x => x.id === meetingId); if(!mt) return;
+  const blk = schedMeetingBlocks(iso).find(b => b.fromMeeting === meetingId); if(!blk) return;
+  const prefs = schedPrefs();
+  const pr = prefs.meetings[meetingId] || {};
+  const el = asgModalEl(); el._onClose = null;
+  const dur = pr.dur || 60;
+  el.querySelector('.asg-modal').innerHTML = `
+    <div class="asg-m-head"><div><div class="asg-m-title"><span class="sch-dot" style="background:${SCHED_CATS.company.color};"></span>${escapeHtml(blk.title)}</div>
+      <div class="asg-m-sub">Dailys meeting \u00b7 ${escapeHtml(mt.cadence||'')} ${escapeHtml(mt.cadence==='Weekly' ? (mt.dayOfWeek||'') : '')} \u00b7 ${fmt12(blk.start)} \u00b7 ${escapeHtml(shortDate(iso))}</div></div>
+      <button class="asg-m-x" aria-label="Close">\u2715</button></div>
+    <div class="asg-m-dod">This comes from the Meetings tab, so its day and time stay in sync with it. Change the day/time there. Here you set where it is and how long it runs on <b>your</b> schedule (applies every week).</div>
+    <div class="asg-edit">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:140px;">Location<select id="smLoc">${Object.entries(SCHED_LOCS).map(([k,l]) => `<option value="${k}" ${k===blk.loc?'selected':''}>${escapeHtml(l)}</option>`).join('')}</select></label>
+        <label style="flex:2;min-width:180px;">Room / details<input type="text" id="smLocText" value="${escapeAttr(pr.locText||'')}" placeholder="e.g. CC conference room"></label>
+      </div>
+      <label>Length<select id="smDur">${[15,30,45,60,90,120].map(n => `<option value="${n}" ${n===dur?'selected':''}>${n < 60 ? n + ' min' : (n/60) + ' hr'}</option>`).join('')}</select></label>
+      <label style="flex-direction:row;align-items:center;gap:6px;"><input type="checkbox" id="smHide" ${pr.hidden?'checked':''}> I don\u2019t attend this one \u2014 hide it from my schedule</label>
+      <div class="sch-m-actions">
+        <a class="mini-btn primary-mini" id="smGcal" href="#" target="_blank" rel="noopener">Send this one to Google Calendar</a>
+        <button class="mini-btn" id="smSave">Save</button>
+      </div>
+    </div>`;
+  const m = el.querySelector('.asg-modal'); const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  const refresh = () => { const d = parseInt(q('#smDur').value,10); q('#smGcal').href = gcalLink(blk.title, iso, blk.start, minToHm(hmToMin(blk.start)+d), 'Dailys meeting', [SCHED_LOCS[q('#smLoc').value], q('#smLocText').value].filter(Boolean).join(' \u2014 ')); };
+  m.querySelectorAll('input,select').forEach(i => i.addEventListener('input', refresh)); refresh();
+  q('#smSave').onclick = async () => {
+    prefs.meetings[meetingId] = { loc: q('#smLoc').value, locText: q('#smLocText').value.trim(), dur: parseInt(q('#smDur').value,10), hidden: q('#smHide').checked };
+    if(await saveOwnerSchedule()) showToast(q('#smHide').checked ? 'Hidden from your schedule' : 'Saved');
+    closeAsgModal(); renderOwnerSchedule();
+  };
+  el.classList.add('show');
 }
 
 function openSchedBlock(id){
