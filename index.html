@@ -295,6 +295,49 @@
   .asg-edit{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
   .asg-edit label{ display:flex; flex-direction:column; gap:4px; font-size:11.5px; font-weight:600; color:#605e5c; }
   .asg-edit input, .asg-edit select{ border:1px solid #c8c6c4; border-radius:6px; padding:7px 9px; font:inherit; font-size:13px; color:#1f2328; }
+  .ob-top3-block{ font:inherit; font-size:11px; font-weight:700; background:transparent; color:#ffc94a; border:1px solid #6b5a2a; border-radius:6px; padding:5px 9px; cursor:pointer; white-space:nowrap; }
+  .ob-top3-block:hover{ background:#3a3320; }
+  .sch-card{ padding:12px; }
+  .sch-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .sch-wk{ font-weight:700; font-size:14px; min-width:150px; text-align:center; }
+  .sch-hours{ margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; font-size:11px; }
+  .sch-hours span{ border:1px solid var(--win-border); border-left:4px solid var(--cc); border-radius:5px; padding:2px 7px; background:#fff; }
+  .sch-none{ border:none !important; color:var(--win-text-secondary); background:none !important; }
+  .sch-form{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; background:#f6f7f9; border:1px solid var(--win-border); border-radius:8px; padding:8px; margin-bottom:10px; }
+  .sch-form input, .sch-form select{ border:1px solid var(--win-border-strong); border-radius:6px; padding:6px 8px; font:inherit; font-size:12.5px; background:#fff; }
+  #schTitle{ flex:1 1 100%; font-size:13px; }
+  #schLocText, #schNotes{ flex:1 1 180px; }
+  .sch-to{ font-size:12px; color:var(--win-text-secondary); }
+  .sch-rep{ font-size:11.5px; color:var(--win-text-secondary); display:flex; align-items:center; gap:4px; }
+  .sch-grid{ display:grid; grid-template-columns:minmax(0,.7fr) repeat(6, minmax(0,1fr)); gap:6px; }
+  .sch-day{ border:1px solid var(--win-border); border-radius:8px; background:#fff; padding:6px; min-height:120px; display:flex; flex-direction:column; gap:4px; }
+  .sch-day.today{ border:2px solid var(--win-accent); }
+  .sch-day.sun{ background:#fafafa; }
+  .sch-day-head{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--win-text-secondary); text-transform:uppercase; font-weight:700; }
+  .sch-day-head b{ color:var(--win-text); font-size:13px; }
+  .sch-add-day{ margin-left:auto; border:1px solid var(--win-border-strong); background:#fff; border-radius:5px; width:20px; height:20px; line-height:16px; cursor:pointer; font-weight:700; color:var(--win-text-secondary); padding:0; }
+  .sch-empty{ font-size:11px; color:#b0b0b0; text-align:center; margin-top:14px; }
+  .sch-blk{ border-left:4px solid var(--cc); background:color-mix(in srgb, var(--cc) 12%, #fff); border-radius:5px; padding:4px 6px; cursor:pointer; }
+  .sch-blk:hover{ background:color-mix(in srgb, var(--cc) 22%, #fff); }
+  .sch-blk.done{ opacity:.5; }
+  .sch-time{ font-size:10.5px; font-weight:700; color:var(--win-text-secondary); }
+  .sch-title{ font-size:12px; font-weight:600; line-height:1.25; }
+  .sch-loc, .sch-with{ font-size:10.5px; color:var(--win-text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sch-prep{ border:1px dashed #60a5fa; background:#eff6ff; border-radius:5px; padding:3px 6px; cursor:pointer; }
+  .sch-travel{ background:repeating-linear-gradient(45deg,#f1f1f1,#f1f1f1 5px,#e6e6e6 5px,#e6e6e6 10px); border-radius:5px; padding:3px 6px; }
+  .sch-prep .sch-title, .sch-travel .sch-title{ font-size:11px; font-weight:600; color:#475569; }
+  .sch-warn{ font-size:10.5px; font-weight:700; color:#b42318; background:#fef3f2; border:1px solid #fecdca; border-radius:5px; padding:3px 5px; }
+  .sch-vendor{ font-size:11px; font-weight:600; color:#5b21b6; background:#f5f3ff; border:1px dashed #a78bfa; border-radius:5px; padding:3px 6px; cursor:pointer; }
+  .sch-vendor span{ font-weight:400; color:#7c6aa8; display:block; font-size:10px; }
+  .sch-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:10.5px; color:var(--win-text-secondary); margin-top:8px; }
+  .sch-legend i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+  .sch-legend i.lg-prep{ border:1px dashed #60a5fa; background:#eff6ff; }
+  .sch-legend i.lg-travel{ background:repeating-linear-gradient(45deg,#ddd,#ddd 2px,#f3f3f3 2px,#f3f3f3 4px); }
+  .sch-help{ font-size:11px; color:var(--win-text-secondary); margin-top:4px; }
+  .sch-dot{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:7px; vertical-align:1px; }
+  .sch-m-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .sch-m-actions a.mini-btn{ text-decoration:none; display:inline-flex; align-items:center; }
+  @media (max-width:1000px){ .sch-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .onetime-row.done{ opacity:.6; }
   .onetime-row.done .onetime-text{ text-decoration:line-through; }
   .onetime-thumb-wrap{ flex-shrink:0; }
@@ -1111,6 +1154,8 @@ async function refreshServerState(){
     catch(e){ console.error('Bad week plan data, resetting', e); OWNER_WEEK_PLAN = {}; }
     try{ ASSIGNED_OWNER_SEEN = SERVER_STATE['assigned-owner-seen'] ? JSON.parse(SERVER_STATE['assigned-owner-seen']) : {}; }
     catch(e){ ASSIGNED_OWNER_SEEN = {}; }
+    try{ OWNER_SCHEDULE = SERVER_STATE['owner-schedule'] ? JSON.parse(SERVER_STATE['owner-schedule']) : []; }
+    catch(e){ console.error('Bad schedule data, resetting', e); OWNER_SCHEDULE = []; }
     return true;
   }catch(e){
     console.error('Failed to load shared state', e);
@@ -2031,6 +2076,8 @@ function ownerAssignSectionsHtml(){
   const hdr = (t, sub) => `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">${t}</div>${sub ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:-4px 0 8px 2px;">${sub}</p>` : ''}`;
   return `
     <div id="obWeekWrap"></div>
+    ${hdr('My schedule', 'Block your own time. Every block has a location; prep and travel time are added automatically. Send anything to Google Calendar with one click.')}
+    <div id="obSchedWrap"></div>
     ${hdr('Needs you', 'Anyone stuck, and any reply you haven’t read yet.')}
     <div id="obNeedsWrap"></div>
     ${hdr('Assign a task', 'One owner, one deadline, one line on what “done” looks like. Chain it behind another task if it can’t start until that’s finished.')}
@@ -2081,6 +2128,7 @@ function renderOwnerWeek(){
           <input type="checkbox" class="ob-top3-chk" data-i="${i}" ${x.done?'checked':''}>
           <span class="ob-top3-n">${i+1}</span>
           <input type="text" class="ob-top3-txt" data-i="${i}" value="${escapeAttr(x.text||'')}" placeholder="${['The one thing that moves the business most this week','Second priority','Third priority'][i]}">
+          <button class="ob-top3-block" data-i="${i}" title="Put time on your schedule for this">Block time</button>
         </div>`).join('')}
       </div>
       <details class="ob-howto"><summary>How to run your week with this board</summary>
@@ -2095,6 +2143,13 @@ function renderOwnerWeek(){
     </div>`;
   const save = async () => { OWNER_WEEK_PLAN[wk] = plan; await saveOwnerWeekPlan(); };
   wrap.querySelectorAll('.ob-top3-txt').forEach(inp => inp.onchange = async () => { plan.top[+inp.dataset.i].text = inp.value; await save(); showToast('Saved'); });
+  wrap.querySelectorAll('.ob-top3-block').forEach(b => b.onclick = () => {
+    const txt = (plan.top[+b.dataset.i].text || '').trim();
+    if(!txt){ showToast('Write the priority first'); return; }
+    schedPrefill = { title: txt, cat:'focus', start:'08:00', end:'10:00' };
+    renderOwnerSchedule();
+    const f = document.getElementById('schForm'); if(f){ f.scrollIntoView({ behavior:'smooth', block:'center' }); document.getElementById('schDate').focus(); }
+  });
   wrap.querySelectorAll('.ob-top3-chk').forEach(c => c.onchange = async () => { plan.top[+c.dataset.i].done = c.checked; await save(); renderOwnerWeek(); });
   document.getElementById('obMon').onchange = async (e) => { plan.mon = e.target.checked; await save(); };
   document.getElementById('obFri').onchange = async (e) => { plan.fri = e.target.checked; await save(); };
@@ -2437,12 +2492,289 @@ function renderHandoffChecklist(){
 }
 
 function refreshOwnerAssign(){
-  renderOwnerWeek(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
+  renderOwnerWeek(); renderOwnerSchedule(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
 }
 function wireOwnerAssignSections(){
   refreshOwnerAssign();
   renderHandoffChecklist();
 }
+
+// ======================================================================================
+// ---- My Schedule (update-26): Rob's own time-blocking planner on the Owner Board. Google
+// Calendar stays the master for alerts/directions/invites - every block here has a one-click
+// "Send to Google Calendar" link (calendar template URL, no account connection needed). What
+// this adds on top: categories with colors, location on every block, automatic prep blocks
+// (company meeting -> 1 hr the evening before; one-on-one -> 20 min right before), 30-min
+// travel whenever back-to-back blocks are at different places (and around every job site),
+// and overlap/travel warnings. Stored under 'owner-schedule' (owner/manager-gated, owner-only
+// in the UI). ----
+let OWNER_SCHEDULE = []; // [{ id, title, cat, date, start:'HH:MM', end:'HH:MM', loc, locText, with:'loc::idx', notes, done }]
+const TRAVEL_MIN = 30;
+const COMPANY_PREP_START = '19:00'; // evening-before prep block for company meetings (1 hr)
+const SCHED_CATS = {
+  offsite:  { label:'Offsite / Job site', color:'#d97706' },
+  vendor:   { label:'Vendor meeting',     color:'#7c3aed' },
+  company:  { label:'Company meeting',    color:'#2563eb' },
+  oneonone: { label:'One-on-one / Review',color:'#0d9488' },
+  focus:    { label:'Focus time (top 3)', color:'#dc2626' },
+  floor:    { label:'Floor / Store walk', color:'#16a34a' },
+  admin:    { label:'Admin / Desk',       color:'#64748b' },
+  personal: { label:'Personal',           color:'#db2777' },
+  other:    { label:'Other',              color:'#8a8886' },
+};
+const SCHED_LOCS = {
+  bridgeland: 'Bridgeland',
+  candycars:  'Candy Cars',
+  jobsite:    'Job site',
+  vendor:     "Vendor's office",
+  phone:      'Phone / Zoom',
+  home:       'Home',
+  other:      'Other',
+};
+// Default location per category, so quick-add is one less pick most of the time.
+const SCHED_DEFAULT_LOC = { offsite:'jobsite', vendor:'vendor', company:'bridgeland', oneonone:'bridgeland', focus:'bridgeland', floor:'bridgeland', admin:'bridgeland', personal:'other', other:'bridgeland' };
+let schedWeekStart = null; // Monday ISO of the week being shown
+let schedPrefill = null;
+
+function newSchedId(){ return 'sch-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+async function saveOwnerSchedule(){ const ok = await storSet('owner-schedule', JSON.stringify(OWNER_SCHEDULE), true); if(!ok) showToast('Not saved — owner code required'); return ok; }
+function hmToMin(hm){ const [h,m] = String(hm||'0:0').split(':').map(Number); return h*60 + (m||0); }
+function minToHm(n){ n = Math.max(0, Math.min(24*60-1, n)); return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); }
+function fmt12(hm){ const n = hmToMin(hm); let h = Math.floor(n/60), m = n%60; const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (m ? ':' + String(m).padStart(2,'0') : '') + ap; }
+function schedLocLabel(b){ const base = SCHED_LOCS[b.loc] || ''; return b.locText ? (base && b.loc !== 'other' ? base + ': ' : '') + b.locText : base; }
+// Physical place key - used to decide whether travel is needed between two blocks. Phone/Zoom
+// never needs travel; two job sites only count as the same place if the address text matches.
+function schedPlace(b){
+  if(b.loc === 'phone') return null;
+  if(b.loc === 'bridgeland' || b.loc === 'candycars' || b.loc === 'home') return b.loc;
+  return b.loc + ':' + String(b.locText||'').trim().toLowerCase();
+}
+function gcalLink(title, date, start, end, details, location){
+  const d = date.replace(/-/g,'');
+  const t = hm => hm.replace(':','') + '00';
+  const p = new URLSearchParams({ action:'TEMPLATE', text:title, dates:`${d}T${t(start)}/${d}T${t(end)}`, ctz:'America/New_York', details:details||'', location:location||'' });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+// Everything shown for one day: Rob's real blocks + generated prep and travel blocks + warnings.
+function schedDayItems(iso){
+  const real = OWNER_SCHEDULE.filter(b => b.date === iso).map(b => ({ kind:'block', b, s:hmToMin(b.start), e:hmToMin(b.end) }));
+  const gen = [];
+  // Prep for tomorrow's company meetings lands this evening.
+  const tomorrow = addDaysISO(iso, 1);
+  OWNER_SCHEDULE.filter(b => b.date === tomorrow && b.cat === 'company' && !b.noPrep).forEach(b => {
+    gen.push({ kind:'prep', of:b, title:'Prep: ' + b.title, s:hmToMin(COMPANY_PREP_START), e:hmToMin(COMPANY_PREP_START)+60, note:'For tomorrow ' + fmt12(b.start) });
+  });
+  real.filter(x => x.b.cat === 'oneonone' && !x.b.noPrep).forEach(x => {
+    gen.push({ kind:'prep', of:x.b, title:'Prep: ' + x.b.title, s:x.s-20, e:x.s, note:'Review their metrics & open tasks' });
+  });
+  // Travel: 30 min before a block whose place differs from the previous block's place, and
+  // always around a job site (getting there and getting back).
+  const sorted = real.slice().sort((a,b) => a.s - b.s);
+  const warnings = [];
+  sorted.forEach((x, i) => {
+    const prev = sorted[i-1];
+    const here = schedPlace(x.b);
+    if(prev){
+      const there = schedPlace(prev.b);
+      if(prev.e > x.s) warnings.push({ at:x.s, text:`⚠ Overlaps “${prev.b.title}”` });
+      else if(here && there && here !== there){
+        gen.push({ kind:'travel', title:'Travel', s:x.s - TRAVEL_MIN, e:x.s, note:`${SCHED_LOCS[prev.b.loc]||''} → ${schedLocLabel(x.b)}` });
+        if(x.s - prev.e < TRAVEL_MIN) warnings.push({ at:x.s, text:`⚠ Only ${x.s - prev.e} min to get from ${SCHED_LOCS[prev.b.loc]||'there'} to ${SCHED_LOCS[x.b.loc]||'here'} — you need ${TRAVEL_MIN}` });
+      }
+    } else if(x.b.loc === 'jobsite'){
+      gen.push({ kind:'travel', title:'Travel', s:x.s - TRAVEL_MIN, e:x.s, note:'To ' + schedLocLabel(x.b) });
+    }
+    const next = sorted[i+1];
+    if(x.b.loc === 'jobsite' && (!next || schedPlace(next.b) === here)){
+      if(!next) gen.push({ kind:'travel', title:'Travel', s:x.e, e:x.e + TRAVEL_MIN, note:'Back from ' + schedLocLabel(x.b) });
+    }
+  });
+  const all = real.concat(gen).sort((a,b) => a.s - b.s || (a.kind==='block') - (b.kind==='block'));
+  return { all, warnings };
+}
+
+function renderOwnerSchedule(){
+  const wrap = document.getElementById('obSchedWrap'); if(!wrap) return;
+  if(!schedWeekStart) schedWeekStart = planWeekStart();
+  const today = localISODate();
+  // Sunday (closed) leads the week as a narrow column - it's where Monday's evening-before prep lands.
+  const days = []; for(let i = -1; i < 6; i++) days.push(addDaysISO(schedWeekStart, i));
+  const vendorByDate = {};
+  try{ allVendorMeetingEntries().forEach(({company, meeting}) => { if(meeting.status !== 'Completed' && meeting.date) (vendorByDate[meeting.date] = vendorByDate[meeting.date] || []).push(company); }); }catch(e){}
+  const pre = schedPrefill || {};
+  const roster = activeRosterTargets().map(x => { const k = x.locKey + '::' + x.empIdx; return `<option value="${k}">${escapeAttr(assigneeLabel(k))}</option>`; }).join('');
+  const weekBlocks = OWNER_SCHEDULE.filter(b => b.date >= days[0] && b.date <= days[6]);
+  const hoursByCat = {};
+  weekBlocks.forEach(b => { hoursByCat[b.cat] = (hoursByCat[b.cat]||0) + Math.max(0, hmToMin(b.end) - hmToMin(b.start)); });
+  const dayCol = (iso) => {
+    const { all, warnings } = schedDayItems(iso);
+    const [y,m,d] = iso.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    const isSun = dt.getDay() === 0;
+    const vend = vendorByDate[iso] || [];
+    return `<div class="sch-day ${iso===today?'today':''} ${isSun?'sun':''}">
+      <div class="sch-day-head"><span>${dt.toLocaleDateString(undefined,{weekday:'short'})}</span><b>${dt.getMonth()+1}/${dt.getDate()}</b><button class="sch-add-day" data-date="${iso}" title="Add a block on this day">+</button></div>
+      ${vend.map(c => `<div class="sch-vendor" data-vendor="${escapeAttr(c.company)}" data-date="${iso}" title="From Vendor Meetings — click to give it a time">📅 ${escapeHtml(c.company)} <span>no time set</span></div>`).join('')}
+      ${warnings.map(w => `<div class="sch-warn">${escapeHtml(w.text)}</div>`).join('')}
+      ${all.length === 0 && !vend.length ? '<div class="sch-empty">Open</div>' : all.map(it => {
+        if(it.kind === 'block'){
+          const b = it.b; const c = SCHED_CATS[b.cat] || SCHED_CATS.other;
+          return `<div class="sch-blk ${b.done?'done':''}" data-sid="${b.id}" style="--cc:${c.color};">
+            <div class="sch-time">${fmt12(b.start)}–${fmt12(b.end)}</div>
+            <div class="sch-title">${escapeHtml(b.title)}</div>
+            <div class="sch-loc">📍 ${escapeHtml(schedLocLabel(b) || '—')}</div>
+            ${b.with ? `<div class="sch-with">with ${escapeHtml(assigneeShort(b.with))}</div>` : ''}
+          </div>`;
+        }
+        const cls = it.kind === 'prep' ? 'sch-prep' : 'sch-travel';
+        return `<div class="${cls}" ${it.kind==='prep' ? `data-prep="${it.of.id}" data-pdate="${iso}" data-ps="${minToHm(it.s)}" data-pe="${minToHm(it.e)}"` : ''}>
+          <div class="sch-time">${fmt12(minToHm(it.s))}–${fmt12(minToHm(it.e))}</div>
+          <div class="sch-title">${it.kind==='travel' ? '🚗 ' : '📝 '}${escapeHtml(it.title)}</div>
+          <div class="sch-loc">${escapeHtml(it.note||'')}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+  const wkEnd = days[6];
+  wrap.innerHTML = `
+    <div class="task-card sch-card">
+      <div class="sch-top">
+        <button class="mini-btn" id="schPrev">←</button>
+        <div class="sch-wk">${escapeHtml(shortDate(days[0]))} – ${escapeHtml(shortDate(wkEnd))}</div>
+        <button class="mini-btn" id="schNext">→</button>
+        <button class="mini-btn" id="schThis">This week</button>
+        <div class="sch-hours">${Object.keys(SCHED_CATS).filter(k => hoursByCat[k]).map(k => `<span style="--cc:${SCHED_CATS[k].color};">${escapeHtml(SCHED_CATS[k].label.split(' (')[0])} <b>${(hoursByCat[k]/60).toFixed(hoursByCat[k]%60?1:0)}h</b></span>`).join('') || '<span class="sch-none">Nothing blocked this week yet</span>'}</div>
+      </div>
+      <div class="sch-form" id="schForm">
+        <input type="text" id="schTitle" placeholder="What? (e.g. Walk the Route 31 job site, Ally rep, Monday sales meeting)" value="${escapeAttr(pre.title||'')}">
+        <select id="schCat">${Object.entries(SCHED_CATS).map(([k,c]) => `<option value="${k}" ${(pre.cat||'company')===k?'selected':''}>${escapeHtml(c.label)}</option>`).join('')}</select>
+        <input type="date" id="schDate" value="${escapeAttr(pre.date || (today >= days[0] && today <= days[6] ? today : days[0]))}">
+        <input type="time" id="schStart" value="${escapeAttr(pre.start||'09:00')}" step="900">
+        <span class="sch-to">to</span>
+        <input type="time" id="schEnd" value="${escapeAttr(pre.end||'10:00')}" step="900">
+        <select id="schLoc">${Object.entries(SCHED_LOCS).map(([k,l]) => `<option value="${k}">${escapeHtml(l)}</option>`).join('')}</select>
+        <input type="text" id="schLocText" placeholder="Address / which office (optional)" value="${escapeAttr(pre.locText||'')}">
+        <select id="schWith" style="display:none;"><option value="">— With who? —</option>${roster}</select>
+        <input type="text" id="schNotes" placeholder="Notes (optional)">
+        <label class="sch-rep">Repeat weekly <select id="schRepeat"><option value="1">No</option><option value="4">4 weeks</option><option value="8">8 weeks</option><option value="13">13 weeks</option></select></label>
+        <button class="mini-btn primary-mini" id="schAdd">+ Block time</button>
+      </div>
+      <div class="sch-grid">${days.map(dayCol).join('')}</div>
+      <div class="sch-legend">
+        ${Object.values(SCHED_CATS).map(c => `<span><i style="background:${c.color};"></i>${escapeHtml(c.label)}</span>`).join('')}
+        <span><i class="lg-prep"></i>Auto prep</span><span><i class="lg-travel"></i>Auto travel (${TRAVEL_MIN} min)</span>
+      </div>
+      <div class="sch-help">Company meetings get a 1-hr prep block at ${fmt12(COMPANY_PREP_START)} the evening before; one-on-ones get 20 min right before. Click any block to send it to Google Calendar, edit, or delete.</div>
+    </div>`;
+
+  const $ = id => document.getElementById(id);
+  const catEl = $('schCat'), locEl = $('schLoc'), withEl = $('schWith');
+  const syncCat = () => { if(!pre.loc) locEl.value = SCHED_DEFAULT_LOC[catEl.value] || 'bridgeland'; withEl.style.display = catEl.value === 'oneonone' ? '' : 'none'; };
+  catEl.onchange = () => { pre.loc = ''; syncCat(); };
+  if(pre.loc) locEl.value = pre.loc;
+  syncCat();
+  $('schStart').onchange = () => { const s = hmToMin($('schStart').value); if(hmToMin($('schEnd').value) <= s) $('schEnd').value = minToHm(s + 60); };
+  $('schPrev').onclick = () => { schedWeekStart = addDaysISO(schedWeekStart, -7); renderOwnerSchedule(); };
+  $('schNext').onclick = () => { schedWeekStart = addDaysISO(schedWeekStart, 7); renderOwnerSchedule(); };
+  $('schThis').onclick = () => { schedWeekStart = planWeekStart(); renderOwnerSchedule(); };
+  $('schTitle').onkeydown = (e) => { if(e.key === 'Enter') $('schAdd').click(); };
+  $('schAdd').onclick = async () => {
+    const title = $('schTitle').value.trim();
+    if(!title){ showToast('What is the block for?'); return; }
+    const start = $('schStart').value, end = $('schEnd').value, date = $('schDate').value;
+    if(!date || !start || !end){ showToast('Pick a date and times'); return; }
+    if(hmToMin(end) <= hmToMin(start)){ showToast('End time must be after start'); return; }
+    const reps = parseInt($('schRepeat').value, 10) || 1;
+    const series = reps > 1 ? newSchedId() : '';
+    for(let i = 0; i < reps; i++){
+      OWNER_SCHEDULE.push({ id:newSchedId(), title, cat:catEl.value, date:addDaysISO(date, 7*i), start, end, loc:locEl.value, locText:$('schLocText').value.trim(), with: catEl.value==='oneonone' ? withEl.value : '', notes:$('schNotes').value.trim(), done:false, series });
+    }
+    if(await saveOwnerSchedule()) showToast(reps > 1 ? `Blocked ${reps} weeks` : 'Blocked');
+    schedPrefill = null;
+    if(date < schedWeekStart || date > addDaysISO(schedWeekStart, 6)){ schedWeekStart = addDaysISO(date, -((new Date(date+'T12:00').getDay()+6)%7)); }
+    renderOwnerSchedule();
+  };
+  wrap.querySelectorAll('.sch-add-day').forEach(b => b.onclick = () => { schedPrefill = { ...(schedPrefill||{}), date:b.dataset.date }; renderOwnerSchedule(); $('schTitle').focus(); });
+  wrap.querySelectorAll('.sch-vendor').forEach(v => v.onclick = () => {
+    schedPrefill = { title:'Vendor: ' + v.dataset.vendor, cat:'vendor', date:v.dataset.date, loc:'vendor' };
+    renderOwnerSchedule(); const t = document.getElementById('schStart'); if(t) t.focus();
+  });
+  wrap.querySelectorAll('.sch-blk').forEach(el => el.onclick = () => openSchedBlock(el.dataset.sid));
+  wrap.querySelectorAll('.sch-prep').forEach(el => el.onclick = () => {
+    const of = OWNER_SCHEDULE.find(b => b.id === el.dataset.prep); if(!of) return;
+    window.open(gcalLink('Prep: ' + of.title, el.dataset.pdate, el.dataset.ps, el.dataset.pe, 'Prep for ' + of.title + ' (' + shortDate(of.date) + ' ' + fmt12(of.start) + ')' + (of.with ? '\nReview ' + assigneeShort(of.with) + "'s metrics and open tasks in Dailys." : ''), ''), '_blank', 'noopener');
+  });
+}
+
+function openSchedBlock(id){
+  const b = OWNER_SCHEDULE.find(x => x.id === id); if(!b) return;
+  const el = asgModalEl(); el._onClose = null;
+  const c = SCHED_CATS[b.cat] || SCHED_CATS.other;
+  const sameSeries = b.series ? OWNER_SCHEDULE.filter(x => x.series === b.series && x.date >= b.date).length : 0;
+  let openTasks = '';
+  if(b.with){
+    const list = ASSIGNED_TASKS.filter(t => t.assignee === b.with && !assignedDoneInfo(t.id));
+    openTasks = `<div class="asg-m-dod"><b>${escapeHtml(assigneeShort(b.with))}’s open tasks (${list.length}):</b> ${list.length ? list.map(t => escapeHtml(t.text) + (t.due && t.due < localISODate() ? ' <span style="color:#d13438;font-weight:700;">(overdue)</span>' : '')).join(' • ') : 'none'}</div>`;
+  }
+  el.querySelector('.asg-modal').innerHTML = `
+    <div class="asg-m-head"><div><div class="asg-m-title"><span class="sch-dot" style="background:${c.color};"></span>${escapeHtml(b.title)}</div>
+      <div class="asg-m-sub">${escapeHtml(c.label)} · ${escapeHtml(shortDate(b.date))} ${fmt12(b.start)}–${fmt12(b.end)} · 📍 ${escapeHtml(schedLocLabel(b)||'—')}</div></div>
+      <button class="asg-m-x" aria-label="Close">✕</button></div>
+    ${b.notes ? `<div class="asg-m-dod">${escapeHtml(b.notes)}</div>` : ''}
+    ${openTasks}
+    <div class="asg-edit">
+      <label>Title<input type="text" id="seTitle" value="${escapeAttr(b.title)}"></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:140px;">Category<select id="seCat">${Object.entries(SCHED_CATS).map(([k,x]) => `<option value="${k}" ${k===b.cat?'selected':''}>${escapeHtml(x.label)}</option>`).join('')}</select></label>
+        <label style="flex:1;min-width:130px;">Date<input type="date" id="seDate" value="${escapeAttr(b.date)}"></label>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <label style="flex:1;">Start<input type="time" id="seStart" value="${escapeAttr(b.start)}" step="900"></label>
+        <label style="flex:1;">End<input type="time" id="seEnd" value="${escapeAttr(b.end)}" step="900"></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:140px;">Location<select id="seLoc">${Object.entries(SCHED_LOCS).map(([k,l]) => `<option value="${k}" ${k===b.loc?'selected':''}>${escapeHtml(l)}</option>`).join('')}</select></label>
+        <label style="flex:2;min-width:180px;">Address / details<input type="text" id="seLocText" value="${escapeAttr(b.locText||'')}"></label>
+      </div>
+      <label>Notes<input type="text" id="seNotes" value="${escapeAttr(b.notes||'')}"></label>
+      ${(b.cat==='company'||b.cat==='oneonone') ? `<label style="flex-direction:row;align-items:center;gap:6px;"><input type="checkbox" id="seNoPrep" ${b.noPrep?'checked':''}> No prep block for this one</label>` : ''}
+      <div class="sch-m-actions">
+        <a class="mini-btn primary-mini" id="seGcal" href="#" target="_blank" rel="noopener">Send to Google Calendar</a>
+        <button class="mini-btn" id="seSave">Save changes</button>
+        <button class="mini-btn danger-mini" id="seDel">Delete</button>
+        ${sameSeries > 1 ? `<button class="mini-btn danger-mini" id="seDelSeries">Delete this + ${sameSeries-1} later repeats</button>` : ''}
+      </div>
+    </div>`;
+  const m = el.querySelector('.asg-modal');
+  const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  const gcal = q('#seGcal');
+  const refreshGcal = () => { gcal.href = gcalLink(q('#seTitle').value, q('#seDate').value, q('#seStart').value, q('#seEnd').value, (SCHED_CATS[q('#seCat').value]||{}).label + (q('#seNotes').value ? '\n' + q('#seNotes').value : '') + (b.with ? '\nWith ' + assigneeShort(b.with) : ''), (q('#seLoc').value === 'phone' ? 'Phone / Zoom' : [SCHED_LOCS[q('#seLoc').value] !== 'Other' ? SCHED_LOCS[q('#seLoc').value] : '', q('#seLocText').value].filter(Boolean).join(' — '))); };
+  m.querySelectorAll('input,select').forEach(i => i.addEventListener('input', refreshGcal));
+  refreshGcal();
+  q('#seSave').onclick = async () => {
+    const v = { title:q('#seTitle').value.trim(), cat:q('#seCat').value, date:q('#seDate').value, start:q('#seStart').value, end:q('#seEnd').value, loc:q('#seLoc').value, locText:q('#seLocText').value.trim(), notes:q('#seNotes').value.trim() };
+    if(!v.title || !v.date || hmToMin(v.end) <= hmToMin(v.start)){ showToast('Check the title and times'); return; }
+    const np = q('#seNoPrep'); if(np) v.noPrep = np.checked;
+    Object.assign(b, v);
+    if(await saveOwnerSchedule()) showToast('Saved');
+    closeAsgModal(); renderOwnerSchedule();
+  };
+  q('#seDel').onclick = async () => {
+    OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => x.id !== b.id);
+    if(await saveOwnerSchedule()) showToast('Deleted');
+    closeAsgModal(); renderOwnerSchedule();
+  };
+  const ds = q('#seDelSeries');
+  if(ds) ds.onclick = async () => {
+    OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => !(x.series === b.series && x.date >= b.date));
+    if(await saveOwnerSchedule()) showToast('Deleted repeats');
+    closeAsgModal(); renderOwnerSchedule();
+  };
+  el.classList.add('show');
+}
+// ======================================================================================
 // ======================================================================================
 // A compact "how's this department doing" table shown at the top of a meeting - Daily
 // metrics show every entered value Mon-Fri so far this week, Weekly ones show this week's
