@@ -356,6 +356,86 @@
   .om-row{ display:flex; align-items:center; gap:8px; padding:4px 0; font-size:12.5px; border-bottom:1px solid #f0f0f0; }
   .om-t{ flex:1; } .om-p{ font-size:11px; color:var(--win-text-secondary); }
   .om-more{ font-size:11px; color:var(--win-text-secondary); padding-top:4px; }
+  .ob-head{ display:flex; align-items:center; gap:12px; }
+  .ob-ai-btn{ margin-left:auto; font-size:13px; padding:7px 14px; }
+  .g-launch{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; background:#fff; border:1px solid var(--win-border); border-radius:10px; padding:7px 10px; margin:4px 0 10px; }
+  .g-lbl{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--win-text-secondary); margin-right:2px; }
+  .g-btn{ font:inherit; font-size:12px; border:1px solid var(--win-border-strong); background:#fff; border-radius:7px; padding:4px 9px; color:var(--win-text); text-decoration:none; cursor:pointer; }
+  .g-btn:hover{ background:#f3f2f1; }
+  .g-sep{ width:1px; height:18px; background:var(--win-border); }
+  .g-pin{ display:inline-flex; align-items:center; gap:3px; border:1px solid #c7e0f4; background:#eff6fc; border-radius:7px; padding:3px 4px 3px 9px; font-size:12px; }
+  .g-pin a{ color:#0f6cbd; text-decoration:none; }
+  .g-x{ border:none; background:none; color:#a19f9d; cursor:pointer; font-size:10px; }
+  .aib-head{ display:flex; align-items:center; gap:10px; }
+  .aib-head-r{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .aib-me{ font-size:12px; color:var(--win-text-secondary); }
+  .aib-sub{ font-size:12.5px; color:var(--win-text-secondary); max-width:900px; margin:0 0 10px; }
+  .aib-layout{ display:grid; grid-template-columns:300px 1fr; gap:14px; align-items:start; }
+  @media (max-width:900px){ .aib-layout{ grid-template-columns:1fr; } }
+  .aib-side{ display:flex; flex-direction:column; gap:6px; }
+  .aib-filters{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px; }
+  .aib-f{ font:inherit; font-size:11px; border:1px solid var(--win-border); background:#fff; border-radius:12px; padding:2px 8px; cursor:pointer; }
+  .aib-f.on{ background:#1f2328; color:#fff; border-color:#1f2328; }
+  .aib-card{ font:inherit; text-align:left; background:#fff; border:1px solid var(--win-border); border-radius:9px; padding:9px 11px; cursor:pointer; }
+  .aib-card:hover{ border-color:#8764B8; } .aib-card.on{ border:2px solid #8764B8; padding:8px 10px; }
+  .aib-card-top{ display:flex; align-items:center; gap:6px; }
+  .aib-type{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#8764B8; }
+  .aib-st{ font-size:10px; font-weight:700; color:#fff; border-radius:9px; padding:1px 7px; }
+  .aib-st.big{ font-size:11.5px; padding:3px 10px; align-self:flex-end; }
+  .aib-card-top .asg-dot{ margin-left:auto; }
+  .aib-card-name{ font-size:13.5px; font-weight:700; margin-top:3px; }
+  .aib-card-meta{ font-size:11px; color:var(--win-text-secondary); margin-top:2px; }
+  .aib-card-flags{ display:flex; gap:5px; flex-wrap:wrap; margin-top:4px; }
+  .aib-flag{ font-size:10px; font-weight:700; border-radius:4px; padding:1px 6px; }
+  .aib-flag.me{ background:#fff4ce; color:#8a5a00; } .aib-flag.acc{ background:#fde7e9; color:#a4262c; }
+  .aib-general{ background:#f5f3ff; }
+  .aib-detail{ background:#fff; border:1px solid var(--win-border); border-radius:10px; padding:14px 16px; min-height:420px; }
+  .aib-d-head{ border-bottom:1px solid var(--win-border); padding-bottom:10px; margin-bottom:8px; }
+  .aib-name{ font:inherit; font-size:20px; font-weight:800; border:1px solid transparent; border-radius:6px; padding:3px 6px; width:100%; }
+  .aib-name:hover, .aib-name:focus{ border-color:var(--win-border-strong); }
+  .aib-name.static{ border:none; }
+  .aib-d-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .aib-d-row label{ display:flex; flex-direction:column; font-size:10px; font-weight:700; text-transform:uppercase; color:var(--win-text-secondary); gap:2px; }
+  .aib-d-row select, .aib-d-row input{ border:1px solid var(--win-border-strong); border-radius:6px; padding:5px 7px; font:inherit; font-size:12.5px; text-transform:none; }
+  .aib-tabs{ display:flex; gap:4px; flex-wrap:wrap; margin:6px 0 10px; }
+  .aib-tab{ font:inherit; font-size:12.5px; border:none; background:#f3f2f1; border-radius:7px; padding:6px 12px; cursor:pointer; }
+  .aib-tab.on{ background:#8764B8; color:#fff; font-weight:700; }
+  .aib-cnt{ background:#fff4ce; color:#8a5a00; border-radius:8px; padding:0 6px; font-size:10.5px; font-weight:700; }
+  .aib-hint{ font-size:12px; color:var(--win-text-secondary); margin-bottom:8px; }
+  .aib-progress{ height:6px; border-radius:3px; background:#eee; overflow:hidden; margin-bottom:5px; } .aib-progress div{ height:100%; background:#8764B8; }
+  .aib-q{ display:flex; flex-direction:column; gap:3px; font-size:12.5px; font-weight:700; margin-bottom:10px; }
+  .aib-q textarea{ font:inherit; font-size:13px; font-weight:400; border:1px solid var(--win-border-strong); border-radius:7px; padding:7px 9px; resize:vertical; }
+  .aib-sec{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#8764B8; margin:14px 0 8px; }
+  .aib-flow{ display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; background:#fafafa; border:1px solid var(--win-border); border-radius:9px; padding:12px; margin-bottom:12px; }
+  .aib-arrow{ align-self:center; font-size:18px; color:#a19f9d; }
+  .aib-step{ background:#fff; border:1px solid var(--win-border); border-top:4px solid var(--c); border-radius:7px; padding:6px 9px; min-width:140px; max-width:220px; }
+  .aib-step.dec{ border-style:dashed; border-top-style:solid; background:#fffaf0; }
+  .aib-step-n{ font-size:10px; font-weight:800; text-transform:uppercase; color:var(--c); }
+  .aib-step-a{ font-size:12.5px; font-weight:600; margin:2px 0; }
+  .aib-step-p{ display:inline-block; font-size:10.5px; background:#f3f2f1; border-radius:4px; padding:1px 6px; }
+  .aib-step-o{ font-size:11px; color:var(--win-text-secondary); margin-top:2px; }
+  .aib-srow, .aib-prow, .aib-ladd, .aib-padd{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .aib-srow input, .aib-srow select, .aib-prow input, .aib-prow select, .aib-ladd input, .aib-ladd select, .aib-padd select, .aib-padd input{ border:1px solid var(--win-border-strong); border-radius:6px; padding:5px 7px; font:inherit; font-size:12px; }
+  .aib-srow input{ width:130px; } .aib-srow input.w2, .aib-ladd .w2{ flex:1; min-width:180px; }
+  .aib-sn{ width:20px; height:20px; border-radius:10px; background:#8764B8; color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .aib-prow{ border-bottom:1px solid #f0f0f0; padding-bottom:6px; } .aib-prow b{ min-width:170px; font-size:13px; } .aib-prow input{ flex:1; min-width:200px; }
+  .aib-video{ margin-bottom:12px; } .aib-vt{ font-size:12.5px; font-weight:700; margin-bottom:4px; }
+  .aib-video iframe{ width:100%; max-width:720px; aspect-ratio:16/9; border:1px solid var(--win-border); border-radius:8px; }
+  .aib-lrow{ display:flex; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+  .aib-lrow a{ color:#0f6cbd; font-weight:600; text-decoration:none; } .aib-lk{ margin-left:auto; font-size:11px; color:var(--win-text-secondary); }
+  .aib-trow{ display:flex; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+  .aib-trow.done .aib-tt{ text-decoration:line-through; color:#a19f9d; }
+  .aib-tw{ font-size:10px; font-weight:800; text-transform:uppercase; border-radius:4px; padding:1px 6px; }
+  .aib-tw.rob{ background:#dbeafe; color:#1e40af; } .aib-tw.shreya{ background:#ede9fe; color:#5b21b6; }
+  .aib-tt{ flex:1; } .aib-td{ font-size:11px; color:var(--win-text-secondary); } .aib-td.od{ color:#d13438; font-weight:700; }
+  .aib-thread{ max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:4px 0 10px; }
+  .aib-foot{ font-size:11px; color:var(--win-text-secondary); margin-top:14px; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+  .aib-ov h3{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--win-text-secondary); margin:16px 0 6px; }
+  .aib-ov-tiles{ display:flex; gap:8px; flex-wrap:wrap; }
+  .aib-ov-tile{ border:1px solid var(--win-border); border-left:4px solid var(--c); border-radius:8px; padding:8px 12px; min-width:110px; }
+  .aib-ov-tile b{ display:block; font-size:22px; color:var(--c); } .aib-ov-tile span{ font-size:11.5px; color:var(--win-text-secondary); }
+  .aib-ov-row{ display:flex; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+  .aib-ov-row > span:first-child{ flex:1; } .aib-ov-p{ font-size:11.5px; color:var(--win-text-secondary); }
   .myt-f{ display:flex; flex-direction:column; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--win-text-secondary); gap:2px; }
   .myt-f input, .myt-f select, #mytQuickRepCustom{ border:1px solid var(--win-border-strong); border-radius:8px; padding:7px 8px; font:inherit; font-size:12.5px; text-transform:none; letter-spacing:0; font-weight:400; color:var(--win-text); }
   #mytQuickRepCustom{ align-self:flex-end; width:150px; }
@@ -433,6 +513,8 @@
   .admin-only{ display:none !important; }
   body.is-staff .admin-only{ display:inline-block !important; }
   .owner-only{ display:none !important; }
+  .ai-access{ display:none !important; }
+  body.is-ai .ai-access{ display:inline-block !important; }
   body.is-owner .owner-only{ display:inline-block !important; }
   #adminToggleBtn.is-locked-state{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
   .proj-card{ border:1px solid var(--win-border); border-radius:8px; background:var(--win-surface); margin-bottom:12px; }
@@ -678,6 +760,7 @@
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn admin-only" id="suggestionsToggleBtn">Suggestion Box</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
+      <button class="tb-btn ai-access" id="aiBuildsToggleBtn">\ud83e\udd16 AI Builds</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
       <button class="tb-btn admin-only" id="trainingToggleBtn">Training Admin</button>
       <button class="tb-btn admin-only" id="targetsToggleBtn">Team Targets</button>
@@ -791,6 +874,7 @@
     <div class="monthly-view" id="propMaintView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="ownerBoardView"></div>
+    <div class="monthly-view" id="aiBuildsView"></div>
     <div class="monthly-view" id="metricsView"></div>
     <div class="monthly-view" id="trainingView"></div>
     <div class="monthly-view" id="targetsView"></div>
@@ -1104,10 +1188,11 @@ function lockAdmin(){
 function applyAdminVisibility(){
   document.body.classList.toggle('is-staff', isStaff());
   document.body.classList.toggle('is-owner', isOwnerAdmin());
+  document.body.classList.toggle('is-ai', isOwnerAdmin() || getAccessTier() === 'builder');
   const btn = document.getElementById('adminToggleBtn');
   if(btn){
-    btn.textContent = isOwnerAdmin() ? 'Admin: Owner' : isManager() ? 'Admin: Manager' : 'Admin';
-    btn.classList.toggle('is-locked-state', isStaff());
+    btn.textContent = isOwnerAdmin() ? 'Admin: Owner' : isManager() ? 'Admin: Manager' : getAccessTier() === 'builder' ? 'Admin: AI Builds' : 'Admin';
+    btn.classList.toggle('is-locked-state', isStaff() || getAccessTier() === 'builder');
   }
 }
 
@@ -1233,6 +1318,8 @@ async function refreshServerState(){
     try{ ASSIGNED_OWNER_SEEN = SERVER_STATE['assigned-owner-seen'] ? JSON.parse(SERVER_STATE['assigned-owner-seen']) : {}; }
     catch(e){ ASSIGNED_OWNER_SEEN = {}; }
     MYT = mytParse(SERVER_STATE['owner-mytasks']);
+    AIB = aibParse(SERVER_STATE['ai-builds']);
+    try{ OWNER_QUICKLINKS = SERVER_STATE['owner-quicklinks'] ? JSON.parse(SERVER_STATE['owner-quicklinks']) : []; }catch(e){ OWNER_QUICKLINKS = []; }
     try{ OWNER_SCHEDULE = SERVER_STATE['owner-schedule'] ? JSON.parse(SERVER_STATE['owner-schedule']) : []; }
     catch(e){ console.error('Bad schedule data, resetting', e); OWNER_SCHEDULE = []; }
     return true;
@@ -3328,6 +3415,414 @@ function printMyDay(iso){
   const w = window.open('', '_blank');
   if(!w){ showToast('Allow pop-ups for Dailys to print'); return; }
   w.document.open(); w.document.write(html); w.document.close();
+}
+// ======================================================================================
+
+// ======================================================================================
+// ---- AI Builds (update-33): a shared build room for Rob and Shreya (his AI developer).
+// Several builds at once - agents, automations, integrations, apps - each with a build brief,
+// the platforms involved and their access status, a workflow map, video / Google Doc / Sheet
+// links, a to-do list split between Rob and Shreya, and a message thread. Shreya gets her own
+// "builder" access code (set by Rob below; the server keeps only a keyed hash) that unlocks ONLY this
+// room - server.js lets the builder tier write 'ai-*' keys and nothing else.
+// Everything here is readable by anyone with the app link (same trust model as the rest of
+// Dailys), so NEVER paste passwords or API keys - they belong in Secrets Manager. ----
+const AI_TYPES = ['Agent','Automation','Integration','App / Tool','Report','Other'];
+const AI_STATUSES = [
+  { k:'idea',     label:'Idea',            color:'#8a8886' },
+  { k:'scoping',  label:'Scoping',         color:'#0f6cbd' },
+  { k:'waiting',  label:'Waiting on access', color:'#e8890c' },
+  { k:'building', label:'Building',        color:'#8764B8' },
+  { k:'testing',  label:'Testing',         color:'#0d9488' },
+  { k:'live',     label:'Live',            color:'#107c10' },
+  { k:'paused',   label:'Paused',          color:'#605e5c' },
+];
+const AI_PLATFORMS = ['DriveCentric (CRM)','vAuto','ProfitTime','Dealertrack (DMS)','Rapid Recon','Xtime','UVeye','CarGurus','Facebook / Marketplace','Birdeye','Overfuel (website)','Google Reviews','Manheim','ACV Auctions','Smart Auction','Adesa','CNY Auto Auction','PartsTech','Mitchell','Autoshield','Ally','Capital One','700Credit','CallRevu','Pivot','Streamline','Fluid Secure','Gmail','Google Sheets','Google Docs','Google Drive','Google Calendar','Todoist','Dailys','Zoom / Teams','Text / SMS'];
+const AI_ACCESS = [
+  { k:'none',      label:'No access yet',   color:'#d13438' },
+  { k:'requested', label:'Requested',       color:'#e8890c' },
+  { k:'login',     label:'Login only',      color:'#0f6cbd' },
+  { k:'api',       label:'API access',      color:'#107c10' },
+  { k:'na',        label:'Not needed',      color:'#8a8886' },
+];
+const AI_ACTORS = [
+  { k:'person',   label:'Person',   color:'#0f6cbd' },
+  { k:'agent',    label:'Agent / AI', color:'#8764B8' },
+  { k:'system',   label:'System / platform', color:'#605e5c' },
+  { k:'decision', label:'Decision', color:'#e8890c' },
+];
+const AI_BRIEF_FIELDS = [
+  ['problem',  'What problem does this solve?', 'What happens today, what it costs us, why it matters'],
+  ['users',    'Who uses it / who gets the result?', 'Roles or names — e.g. sales managers at both stores'],
+  ['trigger',  'What starts it?', 'A schedule (every morning 7am), an event (new lead, vehicle sold), or someone clicking a button'],
+  ['inputs',   'What information does it need, and from where?', 'Data fields + which platform/report each comes from'],
+  ['outputs',  'What should it produce, and where should it go?', 'Report, alert, text, update in a system, row in a Google Sheet…'],
+  ['rules',    'Rules & exceptions', 'How a person decides today; when it should stop and ask a human'],
+  ['success',  'How will we know it works?', 'The number or result that proves it — tie to a KPI if there is one'],
+  ['example',  'A real example', 'One real case: this input → this should happen'],
+];
+let AIB = { projects:[], deleted:{} };
+let aibSel = '';           // selected project id ('' = list, '__general' = general channel)
+let aibTab = 'brief';
+let aibFilter = 'active';
+let aibShown = false;
+
+function aibWho(){ return getAccessTier() === 'builder' ? 'shreya' : 'rob'; }
+function aibWhoName(w){ return w === 'shreya' ? 'Shreya' : OWNER_NAME; }
+function aibCanUse(){ return isOwnerAdmin() || getAccessTier() === 'builder'; }
+function newAibId(p){ return (p||'aib-') + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function aibParse(raw){ let o = null; try{ o = raw ? JSON.parse(raw) : null; }catch(e){} o = o || {}; return { projects: Array.isArray(o.projects) ? o.projects : [], deleted: o.deleted || {} }; }
+function aibMerge(a, b){
+  const deleted = { ...(b.deleted||{}) };
+  Object.entries(a.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
+  const byId = new Map();
+  [b.projects||[], a.projects||[]].forEach(arr => arr.forEach(p => { const cur = byId.get(p.id); if(!cur || (p.u||0) >= (cur.u||0)) byId.set(p.id, p); }));
+  return { projects: [...byId.values()].filter(p => !(deleted[p.id] && deleted[p.id] >= (p.u||0))), deleted };
+}
+async function aibRefetch(){
+  try{ const fresh = await (await fetch('/api/state')).json();
+    Object.keys(fresh).forEach(k => { if(k.startsWith('ai-')) SERVER_STATE[k] = fresh[k]; });
+    AIB = aibMerge(AIB, aibParse(fresh['ai-builds']));
+  }catch(e){}
+}
+async function saveAib(){
+  await aibRefetch();
+  const ok = await storSet('ai-builds', JSON.stringify(AIB), true);
+  if(!ok) showToast('Not saved — your access code is needed');
+  return ok;
+}
+function aibTouch(p){ p.u = Date.now(); p.updatedBy = aibWho(); return p; }
+function aibProj(id){ return AIB.projects.find(p => p.id === id); }
+function aibStatus(k){ return AI_STATUSES.find(s => s.k === k) || AI_STATUSES[0]; }
+function aibThread(pid){ try{ return JSON.parse(SERVER_STATE['ai-thread:' + pid] || '[]'); }catch(e){ return []; } }
+function aibSeen(){ try{ return JSON.parse(SERVER_STATE['ai-seen-' + aibWho()] || '{}'); }catch(e){ return {}; } }
+function aibUnread(pid){ const seen = aibSeen()[pid] || ''; const me = aibWho(); return aibThread(pid).filter(m => m.from !== me && m.ts > seen).length; }
+function aibTotalUnread(){ return ['__general'].concat(AIB.projects.map(p => p.id)).reduce((n, id) => n + aibUnread(id), 0); }
+function aibMyTodos(){ const me = aibWho(); let n = 0; AIB.projects.forEach(p => (p.todos||[]).forEach(t => { if(!t.done && t.who === me) n++; })); return n; }
+async function aibMarkSeen(pid){
+  const seen = aibSeen(); seen[pid] = new Date().toISOString();
+  const key = 'ai-seen-' + aibWho(); SERVER_STATE[key] = JSON.stringify(seen);
+  await storSet(key, SERVER_STATE[key], true);
+}
+async function aibPost(pid, text){
+  const t = (text||'').trim(); if(!t) return false;
+  try{ const fresh = await (await fetch('/api/state')).json(); SERVER_STATE['ai-thread:' + pid] = fresh['ai-thread:' + pid]; }catch(e){}
+  const arr = aibThread(pid); arr.push({ from: aibWho(), text: t, ts: new Date().toISOString() });
+  const ok = await storSet('ai-thread:' + pid, JSON.stringify(arr), true);
+  if(!ok) showToast('Not sent'); return ok;
+}
+function linkKind(url){
+  const u = String(url||'');
+  if(/docs\.google\.com\/document/.test(u)) return { k:'doc', icon:'📄', label:'Google Doc' };
+  if(/docs\.google\.com\/spreadsheets/.test(u)) return { k:'sheet', icon:'📊', label:'Google Sheet' };
+  if(/docs\.google\.com\/presentation/.test(u)) return { k:'slides', icon:'📽', label:'Google Slides' };
+  if(/drive\.google\.com\/drive\/(u\/\d+\/)?folders/.test(u)) return { k:'folder', icon:'📁', label:'Drive folder' };
+  if(/youtube\.com|youtu\.be|loom\.com|vimeo\.com/.test(u)) return { k:'video', icon:'🎬', label:'Video' };
+  if(/drive\.google\.com\/file/.test(u)) return { k:'file', icon:'🎬', label:'Drive file / video' };
+  return { k:'link', icon:'🔗', label:'Link' };
+}
+function videoEmbed(url){
+  const u = String(url||''); let m;
+  if((m = u.match(/youtube\.com\/watch\?v=([\w-]+)/)) || (m = u.match(/youtu\.be\/([\w-]+)/))) return 'https://www.youtube.com/embed/' + m[1];
+  if((m = u.match(/loom\.com\/share\/([\w-]+)/))) return 'https://www.loom.com/embed/' + m[1];
+  if((m = u.match(/vimeo\.com\/(\d+)/))) return 'https://player.vimeo.com/video/' + m[1];
+  if((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) return 'https://drive.google.com/file/d/' + m[1] + '/preview';
+  return '';
+}
+function safeUrl(u){ u = String(u||'').trim(); return /^https?:\/\//i.test(u) ? u : (u ? 'https://' + u : ''); }
+
+// ---- Google Docs / Sheets launcher (shared by the Owner Board and the AI Builds room) ----
+let OWNER_QUICKLINKS = []; // [{ id, label, url }]
+function googleLauncherHtml(id){
+  const links = OWNER_QUICKLINKS;
+  return `<div class="g-launch" id="${id}">
+    <span class="g-lbl">Google</span>
+    <a class="g-btn" href="https://docs.new" target="_blank" rel="noopener">📄 New Doc</a>
+    <a class="g-btn" href="https://sheets.new" target="_blank" rel="noopener">📊 New Sheet</a>
+    <a class="g-btn" href="https://docs.google.com/document/u/0/" target="_blank" rel="noopener">My Docs</a>
+    <a class="g-btn" href="https://docs.google.com/spreadsheets/u/0/" target="_blank" rel="noopener">My Sheets</a>
+    <a class="g-btn" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener">Drive</a>
+    ${links.length ? '<span class="g-sep"></span>' : ''}
+    ${links.map(l => `<span class="g-pin" data-lid="${l.id}"><a href="${escapeAttr(safeUrl(l.url))}" target="_blank" rel="noopener">${linkKind(l.url).icon} ${escapeHtml(l.label || linkKind(l.url).label)}</a><button class="g-x" title="Remove">✕</button></span>`).join('')}
+    ${isOwnerAdmin() ? `<button class="g-btn g-add">+ Pin a Doc/Sheet</button>` : ''}
+  </div>`;
+}
+function wireGoogleLauncher(id, rerender){
+  const el = document.getElementById(id); if(!el) return;
+  const add = el.querySelector('.g-add');
+  if(add) add.onclick = () => {
+    const m = asgModalEl(); m._onClose = null;
+    m.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">Pin a Google Doc or Sheet</div><button class="asg-m-x">✕</button></div>
+      <div class="asg-edit"><label>Name<input type="text" id="glName" placeholder="e.g. Metrics Dashboard 2026"></label>
+      <label>Link<input type="text" id="glUrl" placeholder="Paste the share link from Google"></label>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="glSave">Pin it</button></div></div>`;
+    m.querySelector('.asg-m-x').onclick = closeAsgModal;
+    m.querySelector('#glSave').onclick = async () => {
+      const url = m.querySelector('#glUrl').value.trim(); if(!url){ showToast('Paste a link'); return; }
+      OWNER_QUICKLINKS.push({ id:newAibId('ql-'), label:m.querySelector('#glName').value.trim(), url });
+      await storSet('owner-quicklinks', JSON.stringify(OWNER_QUICKLINKS), true);
+      closeAsgModal(); rerender();
+    };
+    m.classList.add('show');
+  };
+  el.querySelectorAll('.g-x').forEach(b => b.onclick = async () => {
+    if(!isOwnerAdmin()) return;
+    OWNER_QUICKLINKS = OWNER_QUICKLINKS.filter(l => l.id !== b.closest('[data-lid]').dataset.lid);
+    await storSet('owner-quicklinks', JSON.stringify(OWNER_QUICKLINKS), true); rerender();
+  });
+}
+
+// ---- The room ----
+async function openAiBuilds(pid){
+  if(!aibCanUse()){
+    const ok = await promptAdminUnlock();
+    if(!ok || !aibCanUse()){ showToast('AI Builds is for Rob and Shreya only'); return; }
+  }
+  closeOtherPanels('aibuilds');
+  aibShown = true;
+  const btn = document.getElementById('aiBuildsToggleBtn'); if(btn) btn.classList.add('active');
+  document.getElementById('aiBuildsView').classList.add('show');
+  updatePanelVisibility();
+  if(pid !== undefined) aibSel = pid;
+  await refreshServerState();
+  await renderAiBuilds();
+}
+function closeAiBuilds(){
+  aibShown = false;
+  const btn = document.getElementById('aiBuildsToggleBtn'); if(btn) btn.classList.remove('active');
+  document.getElementById('aiBuildsView').classList.remove('show');
+  updatePanelVisibility();
+}
+
+async function renderAiBuilds(){
+  const view = document.getElementById('aiBuildsView'); if(!view) return;
+  const me = aibWho();
+  let list = AIB.projects.slice().sort((a,b) => (a.status==='live') - (b.status==='live') || (a.priority||3) - (b.priority||3) || (b.u||0) - (a.u||0));
+  if(aibFilter === 'active') list = list.filter(p => !['live','paused'].includes(p.status));
+  else if(aibFilter !== 'all') list = list.filter(p => p.status === aibFilter);
+  const card = p => {
+    const st = aibStatus(p.status); const un = aibUnread(p.id);
+    const myT = (p.todos||[]).filter(t => !t.done && t.who === me).length;
+    const noAccess = (p.platforms||[]).filter(x => x.access === 'none' || x.access === 'requested').length;
+    return `<button class="aib-card ${aibSel===p.id?'on':''}" data-pid="${p.id}">
+      <div class="aib-card-top"><span class="aib-type">${escapeHtml(p.type||'')}</span><span class="aib-st" style="background:${st.color};">${st.label}</span>${un ? `<span class="asg-dot">${un}</span>` : ''}</div>
+      <div class="aib-card-name">${escapeHtml(p.name)}</div>
+      <div class="aib-card-meta">${(p.platforms||[]).slice(0,4).map(x => escapeHtml(x.name)).join(' · ')}${(p.platforms||[]).length > 4 ? ' +' + ((p.platforms||[]).length-4) : ''}</div>
+      <div class="aib-card-flags">${myT ? `<span class="aib-flag me">${myT} for you</span>` : ''}${noAccess ? `<span class="aib-flag acc">${noAccess} access needed</span>` : ''}</div>
+    </button>`;
+  };
+  const sel = aibSel && aibSel !== '__general' ? aibProj(aibSel) : null;
+  view.innerHTML = `
+    <div class="monthly-header aib-head"><h1>🤖 AI Builds</h1>
+      <div class="aib-head-r">
+        <span class="aib-me">Signed in as <b>${aibWhoName(me)}</b></span>
+        <button class="mini-btn primary-mini" id="aibNew">+ New build</button>
+        ${me === 'rob' ? '<button class="mini-btn" id="aibAccess">Shreya’s access</button>' : ''}
+        <button class="mini-btn" id="aibClose">Close</button>
+      </div></div>
+    <p class="aib-sub">Every build Rob and Shreya have going — agents, automations, integrations. Fill in the brief, map the workflow, list the platforms and access, drop in a video or Google Doc, and talk it through here. <b>Never paste passwords or API keys</b> — use Secrets Manager.</p>
+    ${googleLauncherHtml('aibGoogle')}
+    <div class="aib-layout">
+      <div class="aib-side">
+        <div class="aib-filters">${[['active','Active'],['all','All'],...AI_STATUSES.map(s => [s.k, s.label])].map(([k,l]) => `<button class="aib-f ${aibFilter===k?'on':''}" data-f="${k}">${escapeHtml(l)}</button>`).join('')}</div>
+        <button class="aib-card aib-general ${aibSel==='__general'?'on':''}" data-pid="__general"><div class="aib-card-name">💬 General chat ${aibUnread('__general') ? `<span class="asg-dot">${aibUnread('__general')}</span>` : ''}</div><div class="aib-card-meta">Anything not tied to one build</div></button>
+        ${list.length ? list.map(card).join('') : '<div class="empty-note">No builds here yet.</div>'}
+      </div>
+      <div class="aib-detail" id="aibDetail">${aibSel === '__general' ? aibThreadHtml('__general', 'General chat') : sel ? aibDetailHtml(sel) : aibOverviewHtml()}</div>
+    </div>`;
+  wireGoogleLauncher('aibGoogle', renderAiBuilds);
+  const q = s => view.querySelector(s);
+  q('#aibClose').onclick = closeAiBuilds;
+  q('#aibNew').onclick = async () => {
+    const p = aibTouch({ id:newAibId(), name:'New build', type:'Agent', status:'idea', priority:2, owner:'shreya', target:'', brief:{}, agent:{}, platforms:[], steps:[], links:[], todos:[
+      { id:newAibId('td-'), text:'Fill in the build brief (problem, trigger, inputs, outputs, success)', who:'rob', due:'', done:false },
+      { id:newAibId('td-'), text:'List every platform involved and its access status', who:'rob', due:'', done:false },
+      { id:newAibId('td-'), text:'Review brief, map the workflow and confirm what access is needed', who:'shreya', due:'', done:false },
+    ], createdAt:new Date().toISOString(), createdBy: me });
+    AIB.projects.push(p); aibSel = p.id; aibTab = 'brief';
+    await saveAib(); renderAiBuilds();
+    const n = document.getElementById('aibName'); if(n){ n.focus(); n.select(); }
+  };
+  const acc = q('#aibAccess'); if(acc) acc.onclick = openAibAccess;
+  view.querySelectorAll('.aib-f').forEach(b => b.onclick = () => { aibFilter = b.dataset.f; renderAiBuilds(); });
+  view.querySelectorAll('.aib-card').forEach(b => b.onclick = () => { aibSel = b.dataset.pid; if(aibSel === '__general') aibTab = 'messages'; renderAiBuilds(); });
+  view.querySelectorAll('.aib-ov-open').forEach(b => b.onclick = () => { aibSel = b.dataset.pid; aibTab = b.dataset.tab || 'brief'; renderAiBuilds(); });
+  if(aibSel === '__general') wireAibThread('__general');
+  else if(sel) wireAibDetail(sel);
+}
+
+function aibOverviewHtml(){
+  const me = aibWho();
+  const todos = []; AIB.projects.forEach(p => (p.todos||[]).forEach(t => { if(!t.done && t.who === me) todos.push({ p, t }); }));
+  todos.sort((a,b) => (a.t.due||'9999').localeCompare(b.t.due||'9999'));
+  const access = []; AIB.projects.forEach(p => (p.platforms||[]).forEach(x => { if(x.access === 'none' || x.access === 'requested') access.push({ p, x }); }));
+  const counts = AI_STATUSES.map(s => ({ s, n: AIB.projects.filter(p => p.status === s.k).length })).filter(x => x.n);
+  return `<div class="aib-ov">
+    <div class="aib-ov-tiles">${counts.map(({s,n}) => `<div class="aib-ov-tile" style="--c:${s.color};"><b>${n}</b><span>${s.label}</span></div>`).join('') || '<div class="empty-note">No builds yet — click “+ New build”.</div>'}</div>
+    <h3>Waiting on ${aibWhoName(me)} (${todos.length})</h3>
+    ${todos.length ? todos.map(({p,t}) => `<div class="aib-ov-row"><span>${escapeHtml(t.text)}</span><span class="aib-ov-p">${escapeHtml(p.name)}${t.due ? ' · due ' + escapeHtml(shortDate(t.due)) : ''}</span><button class="mini-btn aib-ov-open" data-pid="${p.id}" data-tab="todos">Open</button></div>`).join('') : '<div class="empty-note">Nothing waiting on you.</div>'}
+    <h3>Access still needed (${access.length})</h3>
+    ${access.length ? access.map(({p,x}) => `<div class="aib-ov-row"><span>${escapeHtml(x.name)} — ${escapeHtml((AI_ACCESS.find(a => a.k === x.access)||{}).label||'')}</span><span class="aib-ov-p">${escapeHtml(p.name)}</span><button class="mini-btn aib-ov-open" data-pid="${p.id}" data-tab="platforms">Open</button></div>`).join('') : '<div class="empty-note">Every listed platform has access.</div>'}
+  </div>`;
+}
+
+function aibDetailHtml(p){
+  const tabs = [['brief','Brief'],['workflow','Workflow map'],['platforms','Platforms & access'],['media','Videos & files'],['todos','To-dos'],['messages','Messages']];
+  const st = aibStatus(p.status);
+  const un = aibUnread(p.id);
+  const openT = (p.todos||[]).filter(t => !t.done).length;
+  let body = '';
+  if(aibTab === 'brief'){
+    const filled = AI_BRIEF_FIELDS.filter(([k]) => (p.brief||{})[k] && String(p.brief[k]).trim()).length;
+    body = `<div class="aib-progress"><div style="width:${Math.round(filled/AI_BRIEF_FIELDS.length*100)}%"></div></div>
+      <div class="aib-hint">${filled}/${AI_BRIEF_FIELDS.length} answered — these are the questions Shreya needs answered to build it. Rough notes are fine.</div>
+      ${AI_BRIEF_FIELDS.map(([k, label, ph]) => `<label class="aib-q">${escapeHtml(label)}<textarea data-bk="${k}" rows="2" placeholder="${escapeAttr(ph)}">${escapeHtml((p.brief||{})[k]||'')}</textarea></label>`).join('')}
+      ${p.type === 'Agent' ? `<div class="aib-sec">Agent details</div>
+        <label class="aib-q">Where does the agent run / live?<textarea data-ak="runsOn" rows="1" placeholder="e.g. inside DriveCentric, as a Gmail bot, nightly job, chat in Dailys">${escapeHtml((p.agent||{}).runsOn||'')}</textarea></label>
+        <label class="aib-q">What is it allowed to do on its own?<textarea data-ak="actions" rows="2" placeholder="Read only? Send texts? Update records? Spend money?">${escapeHtml((p.agent||{}).actions||'')}</textarea></label>
+        <label class="aib-q">Where must a person approve before it acts?<textarea data-ak="approvals" rows="2" placeholder="e.g. manager approves any price change">${escapeHtml((p.agent||{}).approvals||'')}</textarea></label>
+        <label class="aib-q">How often does it run?<textarea data-ak="schedule" rows="1" placeholder="Every 15 min / daily 7am / on new lead">${escapeHtml((p.agent||{}).schedule||'')}</textarea></label>` : ''}`;
+  } else if(aibTab === 'workflow'){
+    const steps = p.steps || [];
+    const plats = [...new Set((p.platforms||[]).map(x => x.name).concat(AI_PLATFORMS))];
+    body = `<div class="aib-hint">Map it step by step, the way it should work once it’s built. Who or what does each step, in which platform, and what comes out of it.</div>
+      <div class="aib-flow">${steps.length ? steps.map((s, i) => { const A = AI_ACTORS.find(a => a.k === s.actor) || AI_ACTORS[0]; return `${i ? '<span class="aib-arrow">→</span>' : ''}<div class="aib-step ${s.actor==='decision'?'dec':''}" style="--c:${A.color};"><div class="aib-step-n">${i+1} · ${escapeHtml(A.label)}${s.who ? ' · ' + escapeHtml(s.who) : ''}</div><div class="aib-step-a">${escapeHtml(s.action || '—')}</div>${s.platform ? `<div class="aib-step-p">${escapeHtml(s.platform)}</div>` : ''}${s.output ? `<div class="aib-step-o">↳ ${escapeHtml(s.output)}</div>` : ''}</div>`; }).join('') : '<div class="empty-note">No steps yet.</div>'}</div>
+      <div class="aib-steps">${steps.map((s, i) => `<div class="aib-srow" data-i="${i}">
+        <span class="aib-sn">${i+1}</span>
+        <select data-sf="actor">${AI_ACTORS.map(a => `<option value="${a.k}" ${a.k===s.actor?'selected':''}>${a.label}</option>`).join('')}</select>
+        <input data-sf="who" value="${escapeAttr(s.who||'')}" placeholder="Who / which agent">
+        <input data-sf="action" value="${escapeAttr(s.action||'')}" placeholder="What happens" class="w2">
+        <input data-sf="platform" value="${escapeAttr(s.platform||'')}" placeholder="Platform" list="aibPlatList">
+        <input data-sf="output" value="${escapeAttr(s.output||'')}" placeholder="Result / output">
+        <button class="mini-btn aib-up" ${i===0?'disabled':''}>↑</button><button class="mini-btn aib-down" ${i===steps.length-1?'disabled':''}>↓</button><button class="mini-btn danger-mini aib-sdel">✕</button>
+      </div>`).join('')}</div>
+      <datalist id="aibPlatList">${plats.map(x => `<option value="${escapeAttr(x)}">`).join('')}</datalist>
+      <button class="mini-btn primary-mini" id="aibAddStep">+ Add step</button>`;
+  } else if(aibTab === 'platforms'){
+    const used = new Set((p.platforms||[]).map(x => x.name));
+    body = `<div class="aib-hint">Every system this build touches. Mark where access stands so nobody is waiting without knowing it.</div>
+      <div class="aib-plats">${(p.platforms||[]).map((x, i) => `<div class="aib-prow" data-i="${i}">
+        <b>${escapeHtml(x.name)}</b>
+        <select data-pf="access">${AI_ACCESS.map(a => `<option value="${a.k}" ${a.k===x.access?'selected':''}>${a.label}</option>`).join('')}</select>
+        <input data-pf="notes" value="${escapeAttr(x.notes||'')}" placeholder="Notes: who to contact, API docs link, what’s needed…">
+        <button class="mini-btn danger-mini aib-pdel">✕</button></div>`).join('') || '<div class="empty-note">No platforms listed yet.</div>'}</div>
+      <div class="aib-padd"><select id="aibPlatPick"><option value="">+ Add a platform…</option>${AI_PLATFORMS.filter(x => !used.has(x)).map(x => `<option>${escapeHtml(x)}</option>`).join('')}<option value="__other">Other…</option></select><input id="aibPlatOther" placeholder="Platform name" style="display:none;"><button class="mini-btn primary-mini" id="aibPlatAdd">Add</button></div>`;
+  } else if(aibTab === 'media'){
+    const vids = (p.links||[]).filter(l => videoEmbed(l.url));
+    body = `<div class="aib-hint">Screen recordings (Loom, YouTube, or a video in Google Drive), Google Docs and Sheets, API docs — anything that shows how it works today. For a phone video: upload it to Google Drive, then paste the share link here.</div>
+      ${vids.map(l => `<div class="aib-video"><div class="aib-vt">🎬 ${escapeHtml(l.label || 'Video')}</div><iframe src="${escapeAttr(videoEmbed(l.url))}" allowfullscreen loading="lazy"></iframe></div>`).join('')}
+      <div class="aib-links">${(p.links||[]).map(l => { const K = linkKind(l.url); return `<div class="aib-lrow" data-lid="${l.id}"><span class="aib-li">${K.icon}</span><a href="${escapeAttr(safeUrl(l.url))}" target="_blank" rel="noopener">${escapeHtml(l.label || K.label)}</a><span class="aib-lk">${K.label}${l.by ? ' · added by ' + aibWhoName(l.by) : ''}</span><button class="mini-btn danger-mini aib-ldel">✕</button></div>`; }).join('') || '<div class="empty-note">Nothing attached yet.</div>'}</div>
+      <div class="aib-ladd"><input id="aibLinkLabel" placeholder="Name (e.g. How we scrub sale pending today)"><input id="aibLinkUrl" placeholder="Paste link — Loom, YouTube, Google Drive, Doc, Sheet…" class="w2"><button class="mini-btn primary-mini" id="aibLinkAdd">+ Add</button></div>
+      <div class="aib-hint" style="margin-top:8px;">Need a new Google Doc or Sheet for this build? <a href="https://docs.new" target="_blank" rel="noopener">New Doc</a> · <a href="https://sheets.new" target="_blank" rel="noopener">New Sheet</a> — then paste its link above.</div>`;
+  } else if(aibTab === 'todos'){
+    const todos = (p.todos||[]).slice().sort((a,b) => a.done - b.done || (a.due||'9999').localeCompare(b.due||'9999'));
+    body = `<div class="aib-hint">Who owes what. Each person sees their own count on the build list.</div>
+      ${todos.map(t => `<div class="aib-trow ${t.done?'done':''}" data-tid="${t.id}"><input type="checkbox" class="aib-tchk" ${t.done?'checked':''}><span class="aib-tw ${t.who}">${aibWhoName(t.who)}</span><span class="aib-tt">${escapeHtml(t.text)}</span>${t.due ? `<span class="aib-td ${!t.done && t.due < localISODate() ? 'od' : ''}">${escapeHtml(shortDate(t.due))}</span>` : ''}<button class="mini-btn danger-mini aib-tdel">✕</button></div>`).join('') || '<div class="empty-note">No to-dos.</div>'}
+      <div class="aib-ladd"><input id="aibTodoText" placeholder="What needs to happen?" class="w2"><select id="aibTodoWho"><option value="shreya">Shreya</option><option value="rob">${OWNER_NAME}</option></select><input type="date" id="aibTodoDue"><button class="mini-btn primary-mini" id="aibTodoAdd">+ Add</button></div>`;
+  } else {
+    body = aibThreadInner(p.id);
+  }
+  return `<div class="aib-d-head">
+      <input id="aibName" class="aib-name" value="${escapeAttr(p.name)}">
+      <div class="aib-d-row">
+        <label>Type<select id="aibType">${AI_TYPES.map(t => `<option ${t===p.type?'selected':''}>${t}</option>`).join('')}</select></label>
+        <label>Status<select id="aibStatus">${AI_STATUSES.map(s => `<option value="${s.k}" ${s.k===p.status?'selected':''}>${s.label}</option>`).join('')}</select></label>
+        <label>Priority<select id="aibPri">${[1,2,3].map(n => `<option value="${n}" ${n===(p.priority||2)?'selected':''}>${['','High','Normal','Low'][n]}</option>`).join('')}</select></label>
+        <label>Lead<select id="aibOwner"><option value="shreya" ${p.owner==='shreya'?'selected':''}>Shreya</option><option value="rob" ${p.owner==='rob'?'selected':''}>${OWNER_NAME}</option></select></label>
+        <label>Target date<input type="date" id="aibTarget" value="${escapeAttr(p.target||'')}"></label>
+        <span class="aib-st big" style="background:${st.color};">${st.label}</span>
+      </div>
+    </div>
+    <div class="aib-tabs">${tabs.map(([k,l]) => `<button class="aib-tab ${aibTab===k?'on':''}" data-t="${k}">${l}${k==='messages' && un ? ` <span class="asg-dot">${un}</span>` : ''}${k==='todos' && openT ? ` <span class="aib-cnt">${openT}</span>` : ''}</button>`).join('')}</div>
+    <div class="aib-body">${body}</div>
+    <div class="aib-foot">${p.updatedBy ? `Last edited by ${aibWhoName(p.updatedBy)} ${p.u ? escapeHtml(fmtTs(new Date(p.u).toISOString())) : ''}` : ''}${getAccessTier() !== 'builder' ? ` <button class="mini-btn danger-mini" id="aibDelete">Delete build</button>` : ''}</div>`;
+}
+function aibThreadInner(pid){
+  const msgs = aibThread(pid);
+  return `<div class="aib-thread" id="aibThread">${msgs.length ? msgs.map(m => `<div class="asg-msg ${m.from === aibWho() ? 'mine' : ''}"><div class="asg-msg-who">${aibWhoName(m.from)} · ${escapeHtml(fmtTs(m.ts))}</div><div class="asg-msg-text">${escapeHtml(m.text).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')}</div></div>`).join('') : '<div class="asg-m-empty">No messages yet. Questions, updates, links — it all goes here.</div>'}</div>
+    <div class="asg-m-send"><textarea id="aibMsg" rows="2" placeholder="Message ${aibWho()==='rob' ? 'Shreya' : OWNER_NAME}… (Enter to send, Shift+Enter for a new line)"></textarea><button class="asg-send-btn" id="aibSend">Send</button></div>`;
+}
+function aibThreadHtml(pid, title){ return `<div class="aib-d-head"><div class="aib-name static">💬 ${escapeHtml(title)}</div></div><div class="aib-body">${aibThreadInner(pid)}</div>`; }
+function wireAibThread(pid){
+  const th = document.getElementById('aibThread'); if(th) th.scrollTop = th.scrollHeight;
+  const send = async () => { const ta = document.getElementById('aibMsg'); if(await aibPost(pid, ta.value)){ await aibMarkSeen(pid); renderAiBuilds(); } };
+  const sb = document.getElementById('aibSend'); if(sb) sb.onclick = send;
+  const ta = document.getElementById('aibMsg'); if(ta) ta.onkeydown = e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send(); } };
+  if(aibUnread(pid)) aibMarkSeen(pid);
+}
+function wireAibDetail(p){
+  const view = document.getElementById('aiBuildsView'); const q = s => view.querySelector(s);
+  const save = async (rerender) => { aibTouch(p); await saveAib(); if(rerender) renderAiBuilds(); };
+  q('#aibName').onchange = e => { p.name = e.target.value.trim() || 'Untitled build'; save(true); };
+  q('#aibType').onchange = e => { p.type = e.target.value; save(true); };
+  q('#aibStatus').onchange = e => { p.status = e.target.value; save(true); };
+  q('#aibPri').onchange = e => { p.priority = +e.target.value; save(true); };
+  q('#aibOwner').onchange = e => { p.owner = e.target.value; save(false); };
+  q('#aibTarget').onchange = e => { p.target = e.target.value; save(false); };
+  view.querySelectorAll('.aib-tab').forEach(b => b.onclick = () => { aibTab = b.dataset.t; renderAiBuilds(); });
+  const del = q('#aibDelete'); if(del) del.onclick = async () => {
+    if(!(await appConfirm('Delete this build and everything in it?', 'Delete'))) return;
+    AIB.projects = AIB.projects.filter(x => x.id !== p.id); AIB.deleted[p.id] = Date.now(); aibSel = '';
+    await saveAib(); renderAiBuilds();
+  };
+  if(aibTab === 'brief'){
+    view.querySelectorAll('[data-bk]').forEach(t => t.onchange = () => { p.brief = p.brief || {}; p.brief[t.dataset.bk] = t.value; save(false); showToast('Saved'); });
+    view.querySelectorAll('[data-ak]').forEach(t => t.onchange = () => { p.agent = p.agent || {}; p.agent[t.dataset.ak] = t.value; save(false); showToast('Saved'); });
+  } else if(aibTab === 'workflow'){
+    p.steps = p.steps || [];
+    view.querySelectorAll('.aib-srow').forEach(r => { const i = +r.dataset.i;
+      r.querySelectorAll('[data-sf]').forEach(f => f.onchange = () => { p.steps[i][f.dataset.sf] = f.value; save(true); });
+      r.querySelector('.aib-up').onclick = () => { [p.steps[i-1], p.steps[i]] = [p.steps[i], p.steps[i-1]]; save(true); };
+      r.querySelector('.aib-down').onclick = () => { [p.steps[i+1], p.steps[i]] = [p.steps[i], p.steps[i+1]]; save(true); };
+      r.querySelector('.aib-sdel').onclick = () => { p.steps.splice(i, 1); save(true); };
+    });
+    q('#aibAddStep').onclick = () => { const last = p.steps[p.steps.length-1]; p.steps.push({ id:newAibId('st-'), actor: last ? last.actor : 'person', who:'', action:'', platform:'', output:'' }); save(true).then(() => { const rows = document.querySelectorAll('.aib-srow [data-sf="action"]'); if(rows.length) rows[rows.length-1].focus(); }); };
+  } else if(aibTab === 'platforms'){
+    p.platforms = p.platforms || [];
+    view.querySelectorAll('.aib-prow').forEach(r => { const i = +r.dataset.i;
+      r.querySelectorAll('[data-pf]').forEach(f => f.onchange = () => { p.platforms[i][f.dataset.pf] = f.value; save(f.dataset.pf === 'access'); });
+      r.querySelector('.aib-pdel').onclick = () => { p.platforms.splice(i, 1); save(true); };
+    });
+    const pick = q('#aibPlatPick'), other = q('#aibPlatOther');
+    pick.onchange = () => { other.style.display = pick.value === '__other' ? '' : 'none'; };
+    q('#aibPlatAdd').onclick = () => { const name = pick.value === '__other' ? other.value.trim() : pick.value; if(!name) return; p.platforms.push({ name, access:'none', notes:'' }); save(true); };
+  } else if(aibTab === 'media'){
+    p.links = p.links || [];
+    q('#aibLinkAdd').onclick = () => { const url = q('#aibLinkUrl').value.trim(); if(!url){ showToast('Paste a link'); return; } p.links.push({ id:newAibId('lk-'), label:q('#aibLinkLabel').value.trim(), url: safeUrl(url), by: aibWho(), ts:new Date().toISOString() }); save(true); };
+    view.querySelectorAll('.aib-ldel').forEach(b => b.onclick = () => { p.links = p.links.filter(l => l.id !== b.closest('[data-lid]').dataset.lid); save(true); });
+  } else if(aibTab === 'todos'){
+    p.todos = p.todos || [];
+    q('#aibTodoAdd').onclick = () => { const text = q('#aibTodoText').value.trim(); if(!text) return; p.todos.push({ id:newAibId('td-'), text, who:q('#aibTodoWho').value, due:q('#aibTodoDue').value, done:false, by: aibWho() }); save(true); };
+    q('#aibTodoText').onkeydown = e => { if(e.key === 'Enter') q('#aibTodoAdd').click(); };
+    view.querySelectorAll('.aib-trow').forEach(r => { const t = p.todos.find(x => x.id === r.dataset.tid); if(!t) return;
+      r.querySelector('.aib-tchk').onchange = e => { t.done = e.target.checked; t.doneAt = t.done ? new Date().toISOString() : ''; t.doneBy = aibWho(); save(true); };
+      r.querySelector('.aib-tdel').onclick = () => { p.todos = p.todos.filter(x => x.id !== t.id); save(true); };
+    });
+  } else if(aibTab === 'messages') wireAibThread(p.id);
+}
+
+// Shreya's builder code - Rob sets it; the server keeps only a keyed hash (see server.js).
+function openAibAccess(){
+  const m = asgModalEl(); m._onClose = null;
+  const has = !!SERVER_STATE['ai-builder-codehash'];
+  const link = location.origin + '/#ai';
+  m.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">Shreya’s access</div><button class="asg-m-x">✕</button></div>
+    <div class="asg-m-dod">Shreya gets her own code that opens <b>only</b> AI Builds — not the Owner Board, Setup, metrics or anything else that needs a code. ${has ? '<b style="color:#107c10;">A code is set.</b> Set a new one to replace it.' : '<b style="color:#d13438;">No code set yet.</b>'}</div>
+    <div class="asg-edit">
+      <label>New code for Shreya<input type="text" id="abCode" placeholder="At least 6 characters — don’t reuse your owner code"></label>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="abSave">Save code</button>${has ? '<button class="mini-btn danger-mini" id="abRevoke">Turn off her access</button>' : ''}</div>
+      <div class="asg-m-dod">Send her this link and the code: <b>${escapeHtml(link)}</b><br>The page opens straight into AI Builds; she enters the code once on her computer.</div>
+    </div>`;
+  m.querySelector('.asg-m-x').onclick = closeAsgModal;
+  m.querySelector('#abSave').onclick = async () => {
+    const c = m.querySelector('#abCode').value.trim();
+    if(c.length < 6){ showToast('Use at least 6 characters'); return; }
+    if(c === getAdminCode()){ showToast('Pick something different from your owner code'); return; }
+    const r = await fetch('/api/ai-builder-code', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ adminCode:getAdminCode(), code:c }) });
+    if(r.ok){ SERVER_STATE['ai-builder-codehash'] = 'set'; showToast('Shreya\u2019s code saved'); closeAsgModal(); } else { const j = await r.json().catch(() => ({})); showToast(j.error || 'Not saved'); }
+  };
+  const rv = m.querySelector('#abRevoke'); if(rv) rv.onclick = async () => { await fetch('/api/ai-builder-code', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ adminCode:getAdminCode(), code:'' }) }); delete SERVER_STATE['ai-builder-codehash']; showToast('Her access is off'); closeAsgModal(); };
+  m.classList.add('show');
 }
 // ======================================================================================
 
@@ -6166,7 +6661,8 @@ async function renderOwnerBoard(){
     ${bodyHtml || `<div class="empty-note">${emptyMsg}</div>`}
   `;
 
-  let html = `<div class="monthly-header"><h1>Owner Board</h1></div>
+  let html = `<div class="monthly-header ob-head"><h1>Owner Board</h1><button class="mini-btn primary-mini ob-ai-btn" id="obAiBtn">\ud83e\udd16 AI Builds${(aibTotalUnread() + aibMyTodos()) ? ` <span class="asg-dot">${aibTotalUnread() + aibMyTodos()}</span>` : ''}</button></div>
+    ${googleLauncherHtml('obGoogle')}
     <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 10px;">
       Everything that needs your attention in one place: what's assigned to you, completed work
       still waiting on your sign-off, everything overdue across the team, metrics and meetings
@@ -6371,6 +6867,8 @@ async function renderOwnerBoard(){
 
   view.innerHTML = html;
   wireOwnerAssignSections();
+  wireGoogleLauncher('obGoogle', renderOwnerBoard);
+  const obAi = document.getElementById('obAiBtn'); if(obAi) obAi.onclick = () => openAiBuilds();
 
   const selEl = document.getElementById('ownerSelfSelect');
   if(selEl) selEl.onchange = async (e) => {
@@ -7545,6 +8043,7 @@ function closeOtherPanels(except){
   if(except !== 'propmaint' && propMaintShown){ propMaintShown = false; document.getElementById('propMaintToggleBtn').classList.remove('active'); document.getElementById('propMaintView').classList.remove('show'); }
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'suggestions' && suggestionsShown){ suggestionsShown = false; document.getElementById('suggestionsToggleBtn').classList.remove('active'); document.getElementById('suggestionsView').classList.remove('show'); }
+  if(except !== 'aibuilds' && aibShown){ aibShown = false; const ab = document.getElementById('aiBuildsToggleBtn'); if(ab) ab.classList.remove('active'); document.getElementById('aiBuildsView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
   if(except !== 'training' && trainingShown){ trainingShown = false; document.getElementById('trainingToggleBtn').classList.remove('active'); document.getElementById('trainingView').classList.remove('show'); }
@@ -7553,7 +8052,7 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || (typeof aibShown !== 'undefined' && aibShown) || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // The Messages beacon/panel and Suggestion Box only belong on the employee's own daily page -
@@ -8208,6 +8707,9 @@ document.getElementById('suggAgainBtn').onclick = () => {
 
 applyAdminVisibility();
 renderAll();
+document.getElementById('aiBuildsToggleBtn').onclick = () => { if(aibShown) closeAiBuilds(); else openAiBuilds(); };
+// Shreya's link (…/#ai) opens straight into AI Builds.
+if(location.hash === '#ai') setTimeout(() => openAiBuilds(), 900);
 </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 // shared JSON key/value API that both apps talk to instead of localStorage --
 // that's what makes the data live and shared across every employee/device.
 const http = require('http');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
@@ -26,13 +27,22 @@ const MANAGER_CODE = process.env.MANAGER_CODE || 'dailysmgr2026';
 if (!process.env.MANAGER_CODE) {
   console.warn('WARNING: MANAGER_CODE env var not set - using insecure default. Set MANAGER_CODE in Railway variables.');
 }
-// Returns 'owner' | 'manager' | null for a given submitted code.
+// Returns 'owner' | 'manager' | 'builder' | null for a given submitted code.
+// 'builder' (update-33) is Shreya's AI Builds code: Rob sets it from inside the app through
+// /api/ai-builder-code; only an HMAC of it (keyed with the server's owner code, so the public
+// store can't be brute-forced offline) is kept as 'ai-builder-codehash'. It unlocks the 'ai-*'
+// keys and nothing else.
+function builderHash(code) { return crypto.createHmac('sha256', 'dailys-builder:' + ADMIN_CODE).update(code).digest('hex'); }
 function codeTier(code) {
   if (typeof code !== 'string' || !code) return null;
   if (code === ADMIN_CODE) return 'owner';
   if (code === MANAGER_CODE) return 'manager';
+  const h = store['ai-builder-codehash'];
+  if (typeof h === 'string' && h.length === 64 && builderHash(code) === h) return 'builder';
   return null;
 }
+// AI Builds keys: owner or builder only (not managers). The builder code hash itself: owner only.
+function isAiKey(key) { return key.startsWith('ai-'); }
 // Keys only ever written by staff actions (Setup / Meetings / Metrics / Training / Team
 // Targets admin panels). Employees never legitimately write these, so they're safe to
 // hard-gate server-side. Both the owner code and the manager code unlock these -- Projects
@@ -44,7 +54,7 @@ function codeTier(code) {
 // to write a suggestion without a code). It's owner-tier only in the UI (see isOwnerAdmin()/
 // requireOwner() in index.html), but either code unlocks it here same as every other key in
 // this set - the client is what keeps managers out of it.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs', 'owner-change-requests', 'assigned-tasks', 'dailys-handoff', 'owner-week-plan', 'assigned-owner-seen', 'owner-schedule', 'owner-mytasks']);
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs', 'owner-change-requests', 'assigned-tasks', 'dailys-handoff', 'owner-week-plan', 'assigned-owner-seen', 'owner-schedule', 'owner-mytasks', 'owner-quicklinks']);
 
 function loadStore() {
   try {
@@ -154,6 +164,18 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: tier !== null, tier });
     }
 
+    if (pathname === '/api/ai-builder-code' && req.method === 'POST') {
+      // Owner sets or clears Shreya's AI Builds code.
+      const body = await readBody(req);
+      if (!body || codeTier(body.adminCode) !== 'owner') return sendJson(res, 403, { error: 'owner code required' });
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!code) { delete store['ai-builder-codehash']; persist(); return sendJson(res, 200, { ok: true, cleared: true }); }
+      if (code.length < 6 || code === ADMIN_CODE || code === MANAGER_CODE) return sendJson(res, 400, { error: 'pick a different code (6+ characters)' });
+      store['ai-builder-codehash'] = builderHash(code);
+      persist();
+      return sendJson(res, 200, { ok: true });
+    }
+
     if (pathname === '/api/state' && req.method === 'GET') {
       return sendJson(res, 200, store);
     }
@@ -166,7 +188,12 @@ const server = http.createServer(async (req, res) => {
       if (typeof key !== 'string' || !key) {
         return sendJson(res, 400, { error: 'key is required' });
       }
-      if (ADMIN_ONLY_KEYS.has(key) && codeTier(adminCode) === null) {
+      const tier = codeTier(adminCode);
+      if (key === 'ai-builder-codehash') {
+        return sendJson(res, 403, { error: 'use /api/ai-builder-code' });
+      } else if (isAiKey(key)) {
+        if (tier !== 'owner' && tier !== 'builder') return sendJson(res, 403, { error: 'AI Builds code required' });
+      } else if (ADMIN_ONLY_KEYS.has(key) && tier !== 'owner' && tier !== 'manager') {
         return sendJson(res, 403, { error: 'admin or manager code required' });
       }
       if (value === null || value === undefined) {
