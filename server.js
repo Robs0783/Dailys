@@ -54,7 +54,7 @@ function isAiKey(key) { return key.startsWith('ai-'); }
 // to write a suggestion without a code). It's owner-tier only in the UI (see isOwnerAdmin()/
 // requireOwner() in index.html), but either code unlocks it here same as every other key in
 // this set - the client is what keeps managers out of it.
-const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs', 'owner-change-requests', 'assigned-tasks', 'dailys-handoff', 'owner-week-plan', 'assigned-owner-seen', 'owner-schedule', 'owner-mytasks', 'owner-quicklinks']);
+const ADMIN_ONLY_KEYS = new Set(['roster', 'meetings', 'metrics', 'training', 'targets', 'metric-categories', 'departments', 'vendor-meetings', 'vendor-meeting-categories', 'social-media', 'other-properties', 'property-team', 'property-jobs', 'owner-change-requests', 'assigned-tasks', 'dailys-handoff', 'owner-week-plan', 'assigned-owner-seen', 'owner-schedule', 'owner-mytasks', 'owner-quicklinks', 'owner-worklists']);
 
 function loadStore() {
   try {

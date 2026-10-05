@@ -446,6 +446,23 @@
   .jl-loch{ font-size:12.5px; font-weight:700; padding:2px 0; } .jl-loch span{ color:#a19f9d; font-weight:600; margin-left:4px; }
   .om-row{ cursor:pointer; } .om-row:hover{ background:#fafafa; }
   .myt-row.job .myt-text .job-pri{ vertical-align:1px; margin-right:2px; }
+  .wl-head{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; background:#fafafa; border:1px solid var(--win-border); border-radius:9px; padding:10px 12px; margin:4px 0 10px; }
+  .wl-head b{ font-size:15px; } .wl-trade{ font-size:11px; color:var(--win-text-secondary); border:1px solid var(--win-border-strong); border-radius:10px; padding:1px 7px; margin-left:4px; }
+  .wl-contact{ font-size:11.5px; color:var(--win-text-secondary); margin-top:3px; } .wl-contact a{ color:#0f6cbd; }
+  .wl-send{ display:flex; gap:5px; align-items:center; flex-wrap:wrap; } .wl-send > span{ font-size:11.5px; color:var(--win-text-secondary); font-weight:600; }
+  .myt-newworker{ border-style:dashed !important; color:#0f6cbd !important; }
+  body.wl-live-mode > *:not(#wlLive):not(.toast):not(#toast){ display:none !important; }
+  body.wl-live-mode{ background:#f4f5f7; }
+  .wlv{ max-width:640px; margin:0 auto; padding:16px 14px 40px; font-family:'Segoe UI',Arial,sans-serif; }
+  .wlv-top h1{ font-size:24px; margin:0; } .wlv-sub{ font-size:13px; color:#605e5c; margin:2px 0 14px; } .wlv-sub a{ color:#0f6cbd; }
+  .wlv-ph{ font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#8a5a00; margin:14px 0 6px; }
+  .wlv-item{ display:flex; gap:10px; align-items:center; background:#fff; border:1px solid #e1dfdd; border-radius:10px; padding:12px; margin-bottom:8px; }
+  .wlv-item.urgent{ border-left:5px solid #d13438; } .wlv-item.high{ border-left:5px solid #e8890c; } .wlv-item.done{ opacity:.55; } .wlv-item.done .wlv-t{ text-decoration:line-through; }
+  .wlv-main{ flex:1; min-width:0; } .wlv-t{ font-size:16px; font-weight:600; } .wlv-n{ font-size:13px; color:#605e5c; margin-top:3px; white-space:pre-wrap; }
+  .wlv-d{ font-size:12.5px; font-weight:700; color:#605e5c; margin-top:3px; } .wlv-d.od{ color:#d13438; }
+  .wlv-u{ color:#d13438; font-size:12px; } .wlv-h{ color:#e8890c; font-size:12px; }
+  .wlv-done, .wlv-undo{ font:inherit; font-size:15px; font-weight:700; border:none; border-radius:9px; padding:12px 16px; background:#107c10; color:#fff; cursor:pointer; }
+  .wlv-undo{ background:#e1dfdd; color:#333; } .wlv-card{ background:#fff; border-radius:10px; padding:20px; text-align:center; font-size:16px; }
   .myt-f{ display:flex; flex-direction:column; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--win-text-secondary); gap:2px; }
   .myt-f input, .myt-f select, #mytQuickRepCustom{ border:1px solid var(--win-border-strong); border-radius:8px; padding:7px 8px; font:inherit; font-size:12.5px; text-transform:none; letter-spacing:0; font-weight:400; color:var(--win-text); }
   #mytQuickRepCustom{ align-self:flex-end; width:150px; }
@@ -1329,6 +1346,7 @@ async function refreshServerState(){
     catch(e){ ASSIGNED_OWNER_SEEN = {}; }
     MYT = mytParse(SERVER_STATE['owner-mytasks']);
     AIB = aibParse(SERVER_STATE['ai-builds']);
+    WL = wlParse(SERVER_STATE['owner-worklists']);
     try{ OWNER_QUICKLINKS = SERVER_STATE['owner-quicklinks'] ? JSON.parse(SERVER_STATE['owner-quicklinks']) : []; }catch(e){ OWNER_QUICKLINKS = []; }
     try{ OWNER_SCHEDULE = SERVER_STATE['owner-schedule'] ? JSON.parse(SERVER_STATE['owner-schedule']) : []; }
     catch(e){ console.error('Bad schedule data, resetting', e); OWNER_SCHEDULE = []; }
@@ -3157,7 +3175,7 @@ function renderMyTasks(){
       <label class="myt-f">Priority<select id="mytQuickPri"><option value="4">None</option><option value="1">P1 \u2014 urgent</option><option value="2">P2 \u2014 high</option><option value="3">P3 \u2014 normal</option></select></label>
       <label class="myt-f">Repeats<select id="mytQuickRep"><option value="">Doesn\u2019t repeat</option><option>every day</option><option>every workday</option><option>every week</option><option>every other week</option><option>every month</option><option>every other month</option><option>every 3 months</option><option>every year</option><option value="__custom">Custom\u2026</option></select></label>
       <input type="text" id="mytQuickRepCustom" placeholder="e.g. every tue, fri" style="display:none;">
-      <label class="myt-f">List<select id="mytQuickList"><optgroup label="My lists">${MYT_LISTS.map(l => `<option value="${l.k}">${escapeHtml(l.label)}</option>`).join('')}</optgroup><optgroup label="Send to maintenance"><option value="__maint">\ud83d\udd27 Maintenance (anyone)</option>${(PROPERTY_TEAM||[]).map(p => `<option value="__crew:${p.id}">\ud83d\udc77 ${escapeHtml(p.name)}</option>`).join('')}</optgroup></select></label>
+      <label class="myt-f">List<select id="mytQuickList"><optgroup label="My lists">${MYT_LISTS.map(l => `<option value="${l.k}">${escapeHtml(l.label)}</option>`).join('')}</optgroup>${WL.workers.length ? `<optgroup label="Worker lists">${WL.workers.map(w => `<option value="__wl:${w.id}">\ud83d\udc77 ${escapeHtml(w.name)}</option>`).join('')}</optgroup>` : ''}<optgroup label="Send to maintenance"><option value="__maint">\ud83d\udd27 Maintenance (anyone)</option>${(PROPERTY_TEAM||[]).map(p => `<option value="__crew:${p.id}">\ud83d\udc77 ${escapeHtml(p.name)}</option>`).join('')}</optgroup></select></label>
       <label class="myt-f" id="mytWhereWrap" style="display:none;">Location<input type="text" id="mytWhere" list="mytLocList" placeholder="Pick or type a new one">${locationDatalist('mytLocList')}</label>
       <button class="mini-btn primary-mini" id="mytAddBtn">+ Add task</button>
     </div>
@@ -3170,13 +3188,16 @@ function renderMyTasks(){
       ${tab('done', 'Completed', 0)}
       <span class="myt-sep"></span>
       ${tab('maint', '\ud83d\udd27 Maintenance', (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j)).length)}
-      ${(PROPERTY_TEAM||[]).map(p => tab('crew:' + p.id, '\ud83d\udc77 ' + p.name, (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j) && j.assignedTo === p.id).length)).join('')}
+      ${(PROPERTY_TEAM||[]).map(p => tab('crew:' + p.id, '\ud83d\udd27 ' + p.name, (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j) && j.assignedTo === p.id).length)).join('')}
+      <span class="myt-sep"></span>
+      ${WL.workers.map(w => tab('wl:' + w.id, '\ud83d\udc77 ' + w.name, wlOpenItems(w.id).length)).join('')}
+      <button class="myt-tab myt-newworker" title="Start a list for someone who works for you">+ Worker list</button>
       <input type="search" id="mytSearch" placeholder="Search all tasks\u2026" value="${escapeAttr(mytSearch)}">
       <button class="myt-tab myt-print" data-p="today" title="Print today's schedule and tasks">\ud83d\udda8 Today</button>
       <button class="myt-tab myt-print" data-p="tomorrow" title="Print tomorrow's schedule and tasks">\ud83d\udda8 Tomorrow</button>
     </div>
     <div class="myt-body">
-      ${(mytView === 'maint' || mytView.startsWith('crew:')) ? (() => {
+      ${mytView.startsWith('wl:') ? wlTabHtml(mytView.slice(3)) : (mytView === 'maint' || mytView.startsWith('crew:')) ? (() => {
         const who = mytView.startsWith('crew:') ? mytView.slice(5) : '';
         const js = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j) && (!who || j.assignedTo === who));
         const jrow = j => { const person = (PROPERTY_TEAM||[]).find(x => x.id === j.assignedTo); return `<div class="myt-row job" data-jid="${j.id}"><button class="myt-chk myt-jchk" style="--pc:${(JOB_PRI[j.priority||'normal']||JOB_PRI.normal).color};" aria-label="Mark done"></button><div class="myt-main"><div class="myt-text myt-jtext">${jobPriBadge(j)} ${escapeHtml(j.text)}</div><div class="myt-meta">${j.date ? `<span class="myt-due ${j.date < today ? 'od' : j.date === today ? 'td' : ''}">${j.date === today ? 'Today' : escapeHtml(shortDate(j.date))}</span>` : '<span>No day set</span>'}${!who && person ? `<span>\ud83d\udc77 ${escapeHtml(person.name)}</span>` : ''}${j.timeOfDay==='AM'||j.timeOfDay==='PM' ? `<span>${j.timeOfDay}</span>` : ''}</div></div></div>`; };
@@ -3193,6 +3214,8 @@ function renderMyTasks(){
   if(mytView.startsWith('list:')) listSel.value = mytView.slice(5);
   if(mytView === 'maint') listSel.value = '__maint';
   if(mytView.startsWith('crew:')) listSel.value = '__crew:' + mytView.slice(5);
+  if(mytView.startsWith('wl:')){ listSel.value = '__wl:' + mytView.slice(3); wireWlTab(mytView.slice(3), renderMyTasks); }
+  const nwb = wrap.querySelector('.myt-newworker'); if(nwb) nwb.onclick = () => openWorkerEdit(null, id => { if(id) mytView = 'wl:' + id; renderMyTasks(); });
   const syncTarget = () => { const toJob = listSel.value.startsWith('__'); $('mytWhereWrap').style.display = toJob ? '' : 'none'; $('mytQuickRep').closest('.myt-f').style.display = toJob ? 'none' : ''; };
   listSel.onchange = syncTarget; syncTarget();
   wrap.querySelectorAll('.myt-jtext').forEach(el => el.onclick = () => openJobEdit(el.closest('[data-jid]').dataset.jid, () => { renderMyTasks(); renderOwnerMaint(); }));
@@ -3204,6 +3227,15 @@ function renderMyTasks(){
   });
   const add = async () => {
     const raw = $('mytQuick').value.trim(); if(!raw) return;
+    if(listSel.value.startsWith('__wl:')){
+      const wid = listSel.value.slice(5), fp = +$('mytQuickPri').value;
+      const keepWhere = $('mytWhere').value, keepDate = $('mytQuickDue').value;
+      if(await addWlItem(wid, { text: raw, where: keepWhere, date: keepDate, priority: fp === 1 ? 'urgent' : fp === 2 ? 'high' : 'normal' })){
+        mytView = 'wl:' + wid; renderMyTasks();
+        const w2 = document.getElementById('mytWhere'); if(w2) w2.value = keepWhere; const d2 = document.getElementById('mytQuickDue'); if(d2) d2.value = keepDate; const qi = document.getElementById('mytQuick'); if(qi) qi.focus();
+      }
+      return;
+    }
     if(listSel.value.startsWith('__')){
       const who = listSel.value.startsWith('__crew:') ? listSel.value.slice(7) : '';
       const fp = +$('mytQuickPri').value;
@@ -3229,7 +3261,7 @@ function renderMyTasks(){
   $('mytQuickRep').onchange = e => { $('mytQuickRepCustom').style.display = e.target.value === '__custom' ? '' : 'none'; };
   $('mytQuick').onkeydown = e => { if(e.key === 'Enter') add(); };
   let st; $('mytSearch').oninput = e => { clearTimeout(st); st = setTimeout(() => { mytSearch = e.target.value; renderMyTasks(); const s = document.getElementById('mytSearch'); if(s){ s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 250); };
-  wrap.querySelectorAll('.myt-tab:not(.myt-print)').forEach(b => b.onclick = () => { mytView = b.dataset.v; mytSearch = ''; renderMyTasks(); });
+  wrap.querySelectorAll('.myt-tab:not(.myt-print):not(.myt-newworker)').forEach(b => b.onclick = () => { mytView = b.dataset.v; mytSearch = ''; renderMyTasks(); });
   wrap.querySelectorAll('.myt-print').forEach(b => b.onclick = () => printMyDay(b.dataset.p === 'today' ? today : addDaysISO(today, 1)));
   wrap.querySelectorAll('.myt-gh').forEach(b => b.onclick = () => { mytCollapsed[b.dataset.ck] = !mytCollapsed[b.dataset.ck]; renderMyTasks(); });
   const idOf = el => el.closest('[data-id]').dataset.id;
@@ -3964,6 +3996,194 @@ function openAibAccess(){
   };
   const rv = m.querySelector('#abRevoke'); if(rv) rv.onclick = async () => { await fetch('/api/ai-builder-code', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ adminCode:getAdminCode(), code:'' }) }); delete SERVER_STATE['ai-builder-codehash']; showToast('Her access is off'); closeAsgModal(); };
   m.classList.add('show');
+}
+// ======================================================================================
+
+// ======================================================================================
+// ---- Worker lists (update-35): lists Rob builds for people who work for him outside the
+// dealerships (e.g. Shane, construction). Separate from the maintenance crew. Each worker has
+// a phone + email; items are organized by property (same property names as maintenance) with
+// an optional day, priority and notes. Send a list by print, email, text, copy, or a live link
+// the worker opens on his phone and checks items off (his check-offs go to an open-write key
+// 'worklist-done:<itemId>', so he needs no code). The lists themselves: 'owner-worklists'
+// (owner/manager-gated), merge-on-save like My tasks. ----
+let WL = { workers:[], items:[], deleted:{} };
+function wlParse(raw){ let o = null; try{ o = raw ? JSON.parse(raw) : null; }catch(e){} o = o || {}; return { workers: Array.isArray(o.workers) ? o.workers : [], items: Array.isArray(o.items) ? o.items : [], deleted: o.deleted || {} }; }
+function wlMerge(a, b){
+  const deleted = { ...(b.deleted||{}) };
+  Object.entries(a.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
+  const mergeArr = (x, y) => { const m = new Map(); [y||[], x||[]].forEach(arr => arr.forEach(it => { const c = m.get(it.id); if(!c || (it.u||0) >= (c.u||0)) m.set(it.id, it); })); return [...m.values()].filter(it => !(deleted[it.id] && deleted[it.id] >= (it.u||0))); };
+  return { workers: mergeArr(a.workers, b.workers), items: mergeArr(a.items, b.items), deleted };
+}
+async function saveWL(){
+  try{ const fresh = await (await fetch('/api/state')).json(); WL = wlMerge(WL, wlParse(fresh['owner-worklists'])); Object.keys(fresh).forEach(k => { if(k.startsWith('worklist-done:')) SERVER_STATE[k] = fresh[k]; }); }catch(e){}
+  const ok = await storSet('owner-worklists', JSON.stringify(WL), true);
+  if(!ok) showToast('Not saved — owner code required');
+  return ok;
+}
+function wlTouch(x){ x.u = Date.now(); return x; }
+function newWlId(p){ return (p||'wl-') + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function wlWorker(id){ return WL.workers.find(w => w.id === id); }
+function wlDoneInfo(it){ if(it.done) return { at: it.doneAt||'' }; const raw = SERVER_STATE['worklist-done:' + it.id]; if(!raw) return null; try{ const o = JSON.parse(raw); return o && o.done ? o : null; }catch(e){ return null; } }
+function wlOpenItems(wid){ return WL.items.filter(i => i.workerId === wid && !wlDoneInfo(i)); }
+function wlPropName(it){ return it.propertyId ? maintPropName(it.propertyId) : (it.property || 'No property'); }
+function wlGroups(items){
+  const m = new Map();
+  items.slice().sort((a,b) => wlPropName(a).localeCompare(wlPropName(b)) || (a.date||'9999').localeCompare(b.date||'9999') || jobRank(a) - jobRank(b)).forEach(it => { const k = wlPropName(it); if(!m.has(k)) m.set(k, []); m.get(k).push(it); });
+  return m;
+}
+function wlLink(w){ return location.origin + '/#wl=' + w.token; }
+function wlPlainText(w, items){
+  const g = wlGroups(items); let out = `${w.name} — work list (${new Date().toLocaleDateString()})\n`;
+  g.forEach((arr, prop) => { out += `\n${prop.toUpperCase()}\n`; arr.forEach(it => { out += `[ ] ${it.priority==='urgent' ? 'URGENT: ' : it.priority==='high' ? 'HIGH: ' : ''}${it.text}${it.date ? ' (' + shortDate(it.date) + ')' : ''}${it.notes ? ' — ' + it.notes : ''}\n`; }); });
+  out += `\nLive list (check items off here): ${wlLink(w)}\n`;
+  return out;
+}
+function wlPrint(w, items){
+  const g = wlGroups(items); const esc = escapeHtml;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(w.name)} — work list</title><style>
+    body{ font-family:'Segoe UI',Arial,sans-serif; margin:28px 34px; color:#111; font-size:13px; } h1{ font-size:20px; margin:0; } .sub{ color:#666; margin:2px 0 14px; }
+    h2{ font-size:13px; text-transform:uppercase; letter-spacing:.06em; border-bottom:2px solid #111; padding-bottom:3px; margin:18px 0 6px; }
+    li{ list-style:none; display:flex; gap:8px; padding:6px 0; border-bottom:1px solid #e3e3e3; } ul{ padding:0; margin:0; }
+    .bx{ width:14px; height:14px; border:1.5px solid #111; border-radius:2px; flex-shrink:0; margin-top:1px; } .t{ flex:1; } .d{ color:#555; font-size:11.5px; white-space:nowrap; } .p{ color:#b00; font-weight:700; } .n{ color:#555; font-size:11.5px; display:block; }
+    @media print{ button{ display:none; } body{ margin:12mm; } }</style></head><body>
+    <button onclick="window.print()" style="float:right;padding:6px 14px;">Print</button>
+    <h1>${esc(w.name)} — work list</h1><div class="sub">${esc(new Date().toLocaleDateString(undefined,{ weekday:'long', month:'long', day:'numeric' }))} · ${items.length} item${items.length===1?'':'s'}</div>
+    ${[...g.entries()].map(([prop, arr]) => `<h2>${esc(prop)}</h2><ul>${arr.map(it => `<li><span class="bx"></span><span class="t">${it.priority==='urgent' ? '<span class="p">URGENT</span> ' : it.priority==='high' ? '<span class="p">HIGH</span> ' : ''}${esc(it.text)}${it.notes ? `<span class="n">${esc(it.notes)}</span>` : ''}</span>${it.date ? `<span class="d">${esc(shortDate(it.date))}</span>` : ''}</li>`).join('')}</ul>`).join('')}
+    <script>setTimeout(function(){ window.print(); }, 400);<\/script></body></html>`;
+  const win = window.open('', '_blank'); if(!win){ showToast('Allow pop-ups for Dailys to print'); return; }
+  win.document.open(); win.document.write(html); win.document.close();
+}
+function openWorkerEdit(wid, after){
+  const w = wid ? wlWorker(wid) : null;
+  const m = asgModalEl(); m._onClose = null;
+  m.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">${w ? 'Edit worker' : 'New worker list'}</div><button class="asg-m-x">✕</button></div>
+    <div class="asg-edit">
+      <label>Name<input type="text" id="wkName" value="${escapeAttr(w ? w.name : '')}" placeholder="e.g. Shane"></label>
+      <label>What they do<input type="text" id="wkTrade" value="${escapeAttr(w ? (w.trade||'') : '')}" placeholder="e.g. Construction"></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;min-width:150px;">Cell phone (for texting the list)<input type="tel" id="wkPhone" value="${escapeAttr(w ? (w.phone||'') : '')}" placeholder="315-555-1234"></label>
+        <label style="flex:1;min-width:150px;">Email<input type="email" id="wkEmail" value="${escapeAttr(w ? (w.email||'') : '')}"></label>
+      </div>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="wkSave">Save</button>${w ? '<button class="mini-btn danger-mini" id="wkDel">Remove worker</button>' : ''}</div>
+    </div>`;
+  const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  q('#wkSave').onclick = async () => {
+    const name = q('#wkName').value.trim(); if(!name){ showToast('Enter a name'); return; }
+    const vals = { name, trade:q('#wkTrade').value.trim(), phone:q('#wkPhone').value.trim(), email:q('#wkEmail').value.trim() };
+    let id = wid;
+    if(w) Object.assign(w, vals), wlTouch(w);
+    else { id = newWlId('wk-'); WL.workers.push(wlTouch({ id, ...vals, token: Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10), createdAt:new Date().toISOString() })); }
+    if(await saveWL()) showToast('Saved');
+    closeAsgModal(); if(after) after(id);
+  };
+  const del = q('#wkDel'); if(del) del.onclick = async () => {
+    if(!(await appConfirm(`Remove ${w.name} and all of his list items?`, 'Remove'))) return;
+    const now = Date.now(); WL.deleted[w.id] = now; WL.items.filter(i => i.workerId === w.id).forEach(i => { WL.deleted[i.id] = now; });
+    WL.workers = WL.workers.filter(x => x.id !== w.id); WL.items = WL.items.filter(i => i.workerId !== w.id);
+    await saveWL(); closeAsgModal(); if(after) after('');
+  };
+  m.classList.add('show');
+}
+function openWlItemEdit(iid, after){
+  const it = WL.items.find(x => x.id === iid); if(!it) return;
+  const m = asgModalEl(); m._onClose = null;
+  m.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">👷 ${escapeHtml((wlWorker(it.workerId)||{}).name || '')} — item</div><button class="asg-m-x">✕</button></div>
+    <div class="asg-edit">
+      <label>What needs to be done<input type="text" id="wiText" value="${escapeAttr(it.text)}"></label>
+      <label>Notes / details for him<textarea id="wiNotes" rows="3" style="border:1px solid #c8c6c4;border-radius:6px;padding:7px 9px;font:inherit;font-size:13px;">${escapeHtml(it.notes||'')}</textarea></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:2;min-width:170px;">Property<input type="text" id="wiWhere" list="wiLocList" value="${escapeAttr(wlPropName(it))}">${locationDatalist('wiLocList')}</label>
+        <label style="flex:1;min-width:130px;">Day<input type="date" id="wiDate" value="${escapeAttr(it.date||'')}"></label>
+        <label style="flex:1;min-width:110px;">Priority<select id="wiPri">${['normal','high','urgent'].map(k => `<option value="${k}" ${(it.priority||'normal')===k?'selected':''}>${k[0].toUpperCase()+k.slice(1)}</option>`).join('')}</select></label>
+      </div>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="wiSave">Save</button><button class="mini-btn" id="wiDone">${wlDoneInfo(it) ? 'Reopen' : 'Mark done'}</button><button class="mini-btn danger-mini" id="wiDel">Delete</button></div>
+    </div>`;
+  const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  const fin = async () => { wlTouch(it); await saveWL(); closeAsgModal(); if(after) after(); };
+  q('#wiSave').onclick = async () => { const t = q('#wiText').value.trim(); if(!t) return; it.text = t; it.notes = q('#wiNotes').value; it.propertyId = await ensureMaintProp(q('#wiWhere').value); it.date = q('#wiDate').value; it.priority = q('#wiPri').value; await fin(); };
+  q('#wiDone').onclick = async () => {
+    if(wlDoneInfo(it)){ it.done = false; it.doneAt = ''; if(SERVER_STATE['worklist-done:' + it.id]){ await storSet('worklist-done:' + it.id, null); delete SERVER_STATE['worklist-done:' + it.id]; } }
+    else { it.done = true; it.doneAt = new Date().toISOString(); }
+    await fin();
+  };
+  q('#wiDel').onclick = async () => { WL.items = WL.items.filter(x => x.id !== it.id); WL.deleted[it.id] = Date.now(); await saveWL(); closeAsgModal(); if(after) after(); };
+  m.classList.add('show');
+}
+async function addWlItem(wid, { text, where, date, priority, notes }){
+  const propertyId = await ensureMaintProp(where);
+  if(!propertyId){ showToast('Pick or type a property'); return false; }
+  WL.items.push(wlTouch({ id:newWlId('wi-'), workerId:wid, text, notes:notes||'', propertyId, date:date||'', priority:priority||'normal', done:false, createdAt:new Date().toISOString() }));
+  const ok = await saveWL();
+  if(ok) showToast('Added to ' + (wlWorker(wid)||{}).name + '’s list — ' + maintPropName(propertyId));
+  return ok;
+}
+// Body of the 👷 <worker> tab inside My tasks.
+function wlTabHtml(wid){
+  const w = wlWorker(wid); if(!w) return '<div class="empty-note">Worker not found.</div>';
+  const open = wlOpenItems(wid);
+  const done = WL.items.filter(i => i.workerId === wid && wlDoneInfo(i)).sort((a,b) => String(wlDoneInfo(b).at||'').localeCompare(String(wlDoneInfo(a).at||''))).slice(0, 20);
+  const today = localISODate();
+  const row = it => `<div class="myt-row job" data-wi="${it.id}"><button class="myt-chk wl-chk" style="--pc:${(JOB_PRI[it.priority||'normal']||JOB_PRI.normal).color};" aria-label="Done"></button><div class="myt-main"><div class="myt-text wl-text">${jobPriBadge(it)} ${escapeHtml(it.text)}</div><div class="myt-meta">${it.date ? `<span class="myt-due ${it.date < today ? 'od' : it.date === today ? 'td' : ''}">${it.date === today ? 'Today' : escapeHtml(shortDate(it.date))}</span>` : ''}${it.notes ? `<span>📝 ${escapeHtml(it.notes.slice(0,60))}${it.notes.length > 60 ? '…' : ''}</span>` : ''}</div></div></div>`;
+  const g = wlGroups(open);
+  return `<div class="wl-head">
+      <div><b>👷 ${escapeHtml(w.name)}</b>${w.trade ? ` <span class="wl-trade">${escapeHtml(w.trade)}</span>` : ''}<div class="wl-contact">${w.phone ? '📱 ' + escapeHtml(w.phone) : 'No phone'} · ${w.email ? '✉ ' + escapeHtml(w.email) : 'No email'} <a href="#" class="wl-editw">edit</a></div></div>
+      <div class="wl-send">
+        <span>Send ${open.length} open:</span>
+        <button class="mini-btn wl-print">🖨 Print</button>
+        <button class="mini-btn wl-email">✉ Email</button>
+        <button class="mini-btn wl-text">📱 Text</button>
+        <button class="mini-btn wl-copy">📋 Copy</button>
+        <button class="mini-btn primary-mini wl-live">🔗 Live link</button>
+      </div>
+    </div>
+    ${open.length ? [...g.entries()].map(([prop, arr]) => `<div class="jl-loc"><div class="jl-loch">📍 ${escapeHtml(prop)} <span>${arr.length}</span></div>${arr.map(row).join('')}</div>`).join('') : '<div class="empty-note">Nothing on his list. Add items above — pick his name in the List box.</div>'}
+    ${done.length ? `<div class="mj-donehd" style="color:#8a8886;">Recently done</div>` + done.map(it => `<div class="myt-row done" data-wi="${it.id}"><button class="myt-chk wl-chk" aria-label="Reopen">✓</button><div class="myt-main"><div class="myt-text wl-text">${escapeHtml(it.text)}</div><div class="myt-meta"><span>${escapeHtml(wlPropName(it))}</span>${wlDoneInfo(it).by === 'worker' ? `<span>checked off by ${escapeHtml(w.name)}</span>` : ''}</div></div></div>`).join('') : ''}`;
+}
+function wireWlTab(wid, rerender){
+  const w = wlWorker(wid); if(!w) return;
+  const open = () => wlOpenItems(wid);
+  const $q = s => document.querySelector('#obTasksWrap ' + s);
+  const e = $q('.wl-editw'); if(e) e.onclick = ev => { ev.preventDefault(); openWorkerEdit(wid, rerender); };
+  $q('.wl-print').onclick = () => wlPrint(w, open());
+  $q('.wl-email').onclick = () => { if(!w.email){ showToast('Add his email first (edit)'); openWorkerEdit(wid, rerender); return; } location.href = 'mailto:' + encodeURIComponent(w.email) + '?subject=' + encodeURIComponent('Work list — ' + new Date().toLocaleDateString()) + '&body=' + encodeURIComponent(wlPlainText(w, open())); };
+  $q('.wl-text').onclick = () => { if(!w.phone){ showToast('Add his cell number first (edit)'); openWorkerEdit(wid, rerender); return; } location.href = 'sms:' + w.phone.replace(/[^\d+]/g,'') + '?&body=' + encodeURIComponent(`Your work list: ${wlLink(w)}`); };
+  $q('.wl-copy').onclick = async () => { try{ await navigator.clipboard.writeText(wlPlainText(w, open())); showToast('List copied — paste it anywhere'); }catch(err){ showToast('Copy blocked by the browser'); } };
+  $q('.wl-live').onclick = async () => { try{ await navigator.clipboard.writeText(wlLink(w)); showToast('Live link copied — text it to him once; it always shows his current list'); }catch(err){ prompt('His live list link:', wlLink(w)); } };
+  document.querySelectorAll('#obTasksWrap .wl-text').forEach(el => el.onclick = () => openWlItemEdit(el.closest('[data-wi]').dataset.wi, rerender));
+  document.querySelectorAll('#obTasksWrap .wl-chk').forEach(b => b.onclick = async () => {
+    const it = WL.items.find(x => x.id === b.closest('[data-wi]').dataset.wi); if(!it) return;
+    if(wlDoneInfo(it)){ it.done = false; it.doneAt = ''; if(SERVER_STATE['worklist-done:' + it.id]){ await storSet('worklist-done:' + it.id, null); delete SERVER_STATE['worklist-done:' + it.id]; } }
+    else { it.done = true; it.doneAt = new Date().toISOString(); }
+    wlTouch(it); await saveWL(); rerender();
+  });
+}
+
+// ---- The worker's own live list (…/#wl=<token>): phone-friendly, check items off, no code.
+async function renderWorkerLivePage(token){
+  document.body.classList.add('wl-live-mode');
+  let host = document.getElementById('wlLive');
+  if(!host){ host = document.createElement('div'); host.id = 'wlLive'; document.body.appendChild(host); }
+  const draw = async () => {
+    try{ SERVER_STATE = await (await fetch('/api/state')).json(); }catch(e){}
+    WL = wlParse(SERVER_STATE['owner-worklists']);
+    try{ PROPERTIES = SERVER_STATE['other-properties'] ? JSON.parse(SERVER_STATE['other-properties']) : []; }catch(e){}
+    const w = WL.workers.find(x => x.token === token);
+    if(!w){ host.innerHTML = '<div class="wlv-card"><h1>List not found</h1><p>Ask Rob for a new link.</p></div>'; return; }
+    const open = wlOpenItems(w.id), g = wlGroups(open), today = localISODate();
+    const doneToday = WL.items.filter(i => i.workerId === w.id && wlDoneInfo(i) && wlDoneInfo(i).at && localISODate(new Date(wlDoneInfo(i).at)) === today);
+    host.innerHTML = `<div class="wlv">
+      <div class="wlv-top"><h1>${escapeHtml(w.name)}’s list</h1><div class="wlv-sub">${open.length} to do · updated live from Rob · <a href="#" id="wlvRefresh">refresh</a></div></div>
+      ${open.length ? [...g.entries()].map(([prop, arr]) => `<div class="wlv-prop"><div class="wlv-ph">📍 ${escapeHtml(prop)}</div>${arr.map(it => `<div class="wlv-item ${it.priority||''}" data-wi="${it.id}"><div class="wlv-main"><div class="wlv-t">${it.priority==='urgent' ? '<b class="wlv-u">URGENT</b> ' : it.priority==='high' ? '<b class="wlv-h">HIGH</b> ' : ''}${escapeHtml(it.text)}</div>${it.notes ? `<div class="wlv-n">${escapeHtml(it.notes)}</div>` : ''}${it.date ? `<div class="wlv-d ${it.date < today ? 'od' : ''}">${it.date === today ? 'Today' : escapeHtml(shortDate(it.date))}</div>` : ''}</div><button class="wlv-done">Done</button></div>`).join('')}</div>`).join('') : '<div class="wlv-card">All caught up 👍</div>'}
+      ${doneToday.length ? `<div class="wlv-ph" style="margin-top:18px;">Done today</div>` + doneToday.map(it => `<div class="wlv-item done" data-wi="${it.id}"><div class="wlv-main"><div class="wlv-t">${escapeHtml(it.text)}</div><div class="wlv-n">${escapeHtml(wlPropName(it))}</div></div><button class="wlv-undo">Undo</button></div>`).join('') : ''}
+    </div>`;
+    host.querySelector('#wlvRefresh').onclick = e => { e.preventDefault(); draw(); };
+    host.querySelectorAll('.wlv-done').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = '✓'; await storSet('worklist-done:' + b.closest('[data-wi]').dataset.wi, JSON.stringify({ done:true, at:new Date().toISOString(), by:'worker' })); draw(); });
+    host.querySelectorAll('.wlv-undo').forEach(b => b.onclick = async () => { await storSet('worklist-done:' + b.closest('[data-wi]').dataset.wi, null); draw(); });
+  };
+  await draw();
 }
 // ======================================================================================
 
@@ -8851,6 +9071,8 @@ renderAll();
 document.getElementById('aiBuildsToggleBtn').onclick = () => { if(aibShown) closeAiBuilds(); else openAiBuilds(); };
 // Shreya's link (…/#ai) opens straight into AI Builds.
 if(location.hash === '#ai') setTimeout(() => openAiBuilds(), 900);
+// A worker's live list link (…/#wl=<token>) shows only his list - phone friendly, no code.
+if(location.hash.startsWith('#wl=')) renderWorkerLivePage(location.hash.slice(4));
 </script>
 </body>
 </html>
