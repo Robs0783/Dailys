@@ -436,6 +436,16 @@
   .aib-ov-tile b{ display:block; font-size:22px; color:var(--c); } .aib-ov-tile span{ font-size:11.5px; color:var(--win-text-secondary); }
   .aib-ov-row{ display:flex; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
   .aib-ov-row > span:first-child{ flex:1; } .aib-ov-p{ font-size:11.5px; color:var(--win-text-secondary); }
+  .job-date{ font-size:11px; font-weight:700; color:var(--win-text-secondary); white-space:nowrap; }
+  .job-date.od{ color:#d13438; } .job-date.td{ color:#107c10; }
+  .main .job-date{ color:#c8ccd1; } .main .job-date.od{ color:#ff6b6b; } .main .job-date.td{ color:#57c785; }
+  .main .mj-off{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#ffb020; border:1px solid #6b5a2a; border-radius:4px; padding:0 4px; }
+  .main .mj-chip.who.on{ background:#7cb7ff; border-color:#7cb7ff; }
+  .jl-cat{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#8a5a00; margin:10px 0 2px; }
+  .jl-loc{ border-left:3px solid #ffd27a; padding-left:8px; margin:4px 0 8px; }
+  .jl-loch{ font-size:12.5px; font-weight:700; padding:2px 0; } .jl-loch span{ color:#a19f9d; font-weight:600; margin-left:4px; }
+  .om-row{ cursor:pointer; } .om-row:hover{ background:#fafafa; }
+  .myt-row.job .myt-text .job-pri{ vertical-align:1px; margin-right:2px; }
   .myt-f{ display:flex; flex-direction:column; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--win-text-secondary); gap:2px; }
   .myt-f input, .myt-f select, #mytQuickRepCustom{ border:1px solid var(--win-border-strong); border-radius:8px; padding:7px 8px; font:inherit; font-size:12.5px; text-transform:none; letter-spacing:0; font-weight:400; color:var(--win-text); }
   #mytQuickRepCustom{ align-self:flex-end; width:150px; }
@@ -3147,7 +3157,8 @@ function renderMyTasks(){
       <label class="myt-f">Priority<select id="mytQuickPri"><option value="4">None</option><option value="1">P1 \u2014 urgent</option><option value="2">P2 \u2014 high</option><option value="3">P3 \u2014 normal</option></select></label>
       <label class="myt-f">Repeats<select id="mytQuickRep"><option value="">Doesn\u2019t repeat</option><option>every day</option><option>every workday</option><option>every week</option><option>every other week</option><option>every month</option><option>every other month</option><option>every 3 months</option><option>every year</option><option value="__custom">Custom\u2026</option></select></label>
       <input type="text" id="mytQuickRepCustom" placeholder="e.g. every tue, fri" style="display:none;">
-      <label class="myt-f">List<select id="mytQuickList">${MYT_LISTS.map(l => `<option value="${l.k}">${escapeHtml(l.label)}</option>`).join('')}</select></label>
+      <label class="myt-f">List<select id="mytQuickList"><optgroup label="My lists">${MYT_LISTS.map(l => `<option value="${l.k}">${escapeHtml(l.label)}</option>`).join('')}</optgroup><optgroup label="Send to maintenance"><option value="__maint">\ud83d\udd27 Maintenance (anyone)</option>${(PROPERTY_TEAM||[]).map(p => `<option value="__crew:${p.id}">\ud83d\udc77 ${escapeHtml(p.name)}</option>`).join('')}</optgroup></select></label>
+      <label class="myt-f" id="mytWhereWrap" style="display:none;">Location<input type="text" id="mytWhere" list="mytLocList" placeholder="Pick or type a new one">${locationDatalist('mytLocList')}</label>
       <button class="mini-btn primary-mini" id="mytAddBtn">+ Add task</button>
     </div>
     <div class="myt-hint">Tip: you can also type it all in one line \u2014 <b>fri</b> or <b>10/15</b> for the date, <b>!1</b> for priority, <b>every week</b> to repeat, <b>#pers</b> for the list.</div>
@@ -3157,12 +3168,20 @@ function renderMyTasks(){
       ${MYT_LISTS.map(l => tab('list:'+l.k, l.label, counts['list:'+l.k], l.color)).join('')}
       <span class="myt-sep"></span>
       ${tab('done', 'Completed', 0)}
+      <span class="myt-sep"></span>
+      ${tab('maint', '\ud83d\udd27 Maintenance', (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j)).length)}
+      ${(PROPERTY_TEAM||[]).map(p => tab('crew:' + p.id, '\ud83d\udc77 ' + p.name, (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j) && j.assignedTo === p.id).length)).join('')}
       <input type="search" id="mytSearch" placeholder="Search all tasks\u2026" value="${escapeAttr(mytSearch)}">
       <button class="myt-tab myt-print" data-p="today" title="Print today's schedule and tasks">\ud83d\udda8 Today</button>
       <button class="myt-tab myt-print" data-p="tomorrow" title="Print tomorrow's schedule and tasks">\ud83d\udda8 Tomorrow</button>
     </div>
     <div class="myt-body">
-      ${rows.length === 0 ? `<div class="empty-note">${q ? 'No tasks match.' : mytView === 'today' ? 'Nothing due today. 👍' : 'Nothing here.'}</div>` : keys.map(k => {
+      ${(mytView === 'maint' || mytView.startsWith('crew:')) ? (() => {
+        const who = mytView.startsWith('crew:') ? mytView.slice(5) : '';
+        const js = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j) && (!who || j.assignedTo === who));
+        const jrow = j => { const person = (PROPERTY_TEAM||[]).find(x => x.id === j.assignedTo); return `<div class="myt-row job" data-jid="${j.id}"><button class="myt-chk myt-jchk" style="--pc:${(JOB_PRI[j.priority||'normal']||JOB_PRI.normal).color};" aria-label="Mark done"></button><div class="myt-main"><div class="myt-text myt-jtext">${jobPriBadge(j)} ${escapeHtml(j.text)}</div><div class="myt-meta">${j.date ? `<span class="myt-due ${j.date < today ? 'od' : j.date === today ? 'td' : ''}">${j.date === today ? 'Today' : escapeHtml(shortDate(j.date))}</span>` : '<span>No day set</span>'}${!who && person ? `<span>\ud83d\udc77 ${escapeHtml(person.name)}</span>` : ''}${j.timeOfDay==='AM'||j.timeOfDay==='PM' ? `<span>${j.timeOfDay}</span>` : ''}</div></div></div>`; };
+        return js.length ? `<div class="myt-hint">${who ? escapeHtml(((PROPERTY_TEAM||[]).find(x => x.id === who)||{}).name || '') + '\u2019s jobs' : 'All open maintenance jobs'}, stacked by location. Click a job to change its day, location or who has it.</div>` + jobsByLocationHtml(js, jrow) : '<div class="empty-note">No open jobs here.</div>';
+      })() : rows.length === 0 ? `<div class="empty-note">${q ? 'No tasks match.' : mytView === 'today' ? 'Nothing due today. 👍' : 'Nothing here.'}</div>` : keys.map(k => {
         const list = groups.get(k); const ck = mytView + '|' + k; const col = mytCollapsed[ck];
         return `<div class="myt-group ${k==='Overdue'?'od':''}"><button class="myt-gh" data-ck="${escapeAttr(ck)}">${col ? '▸' : '▾'} ${escapeHtml(k)} <span>${list.length}</span></button>
           ${col ? '' : list.map(row).join('')}</div>`;
@@ -3172,8 +3191,26 @@ function renderMyTasks(){
   const $ = id => document.getElementById(id);
   const listSel = $('mytQuickList');
   if(mytView.startsWith('list:')) listSel.value = mytView.slice(5);
+  if(mytView === 'maint') listSel.value = '__maint';
+  if(mytView.startsWith('crew:')) listSel.value = '__crew:' + mytView.slice(5);
+  const syncTarget = () => { const toJob = listSel.value.startsWith('__'); $('mytWhereWrap').style.display = toJob ? '' : 'none'; $('mytQuickRep').closest('.myt-f').style.display = toJob ? 'none' : ''; };
+  listSel.onchange = syncTarget; syncTarget();
+  wrap.querySelectorAll('.myt-jtext').forEach(el => el.onclick = () => openJobEdit(el.closest('[data-jid]').dataset.jid, () => { renderMyTasks(); renderOwnerMaint(); }));
+  wrap.querySelectorAll('.myt-jchk').forEach(b => b.onclick = async () => {
+    const jid = b.closest('[data-jid]').dataset.jid; await refetchPropertyJobs();
+    const j = PROPERTY_JOBS.find(x => x.id === jid); if(!j) return;
+    j.status = 'Done'; j.completedAt = isoDate(new Date()); await savePropMaintJobs(); showToast('Job done');
+    renderMyTasks(); renderOwnerMaint();
+  });
   const add = async () => {
     const raw = $('mytQuick').value.trim(); if(!raw) return;
+    if(listSel.value.startsWith('__')){
+      const who = listSel.value.startsWith('__crew:') ? listSel.value.slice(7) : '';
+      const fp = +$('mytQuickPri').value;
+      const ok = await addMaintJob({ text: raw, where: $('mytWhere').value, date: $('mytQuickDue').value, priority: fp === 1 ? 'urgent' : fp === 2 ? 'high' : 'normal', who, tod:'NA' });
+      if(ok){ const keepWhere = $('mytWhere').value, keepDate = $('mytQuickDue').value, keepList = listSel.value; renderMyTasks(); renderOwnerMaint(); const l = document.getElementById('mytQuickList'); if(l){ l.value = keepList; l.onchange(); } const w = document.getElementById('mytWhere'); if(w) w.value = keepWhere; const d = document.getElementById('mytQuickDue'); if(d) d.value = keepDate; const qi = document.getElementById('mytQuick'); if(qi) qi.focus(); }
+      return;
+    }
     const p = mytQuickParse(raw);
     if(!/\s#/.test(' ' + raw)) p.list = listSel.value;
     const fDue = $('mytQuickDue').value, fPri = +$('mytQuickPri').value, fRepSel = $('mytQuickRep').value;
@@ -3196,7 +3233,7 @@ function renderMyTasks(){
   wrap.querySelectorAll('.myt-print').forEach(b => b.onclick = () => printMyDay(b.dataset.p === 'today' ? today : addDaysISO(today, 1)));
   wrap.querySelectorAll('.myt-gh').forEach(b => b.onclick = () => { mytCollapsed[b.dataset.ck] = !mytCollapsed[b.dataset.ck]; renderMyTasks(); });
   const idOf = el => el.closest('[data-id]').dataset.id;
-  wrap.querySelectorAll('.myt-chk').forEach(b => b.onclick = async () => {
+  wrap.querySelectorAll('.myt-chk:not(.myt-jchk)').forEach(b => b.onclick = async () => {
     const t = MYT.tasks.find(x => x.id === idOf(b)); if(!t) return;
     if(t.done){ t.done = false; t.doneAt = ''; }
     else if(t.recur){
@@ -3206,7 +3243,7 @@ function renderMyTasks(){
     } else { t.done = true; t.doneAt = new Date().toISOString(); }
     mytTouch(t); await saveMyTasks(); renderMyTasks();
   });
-  wrap.querySelectorAll('.myt-text').forEach(el => el.onclick = () => openMyTask(idOf(el)));
+  wrap.querySelectorAll('.myt-text:not(.myt-jtext)').forEach(el => el.onclick = () => openMyTask(idOf(el)));
   wrap.querySelectorAll('.myt-sched').forEach(b => b.onclick = () => {
     const t = MYT.tasks.find(x => x.id === idOf(b)); if(!t) return;
     const catMap = { personal:'personal', ai:'ai', properties:'offsite', construction:'offsite', followup:'admin', inbox:'admin' };
@@ -3290,8 +3327,92 @@ async function refetchPropertyJobs(){
   }catch(e){}
 }
 
+// Update-34: jobs carry an optional date; locations are On site (the two stores) or Off site
+// (every other property). Typing a new location name anywhere creates that property, so picking
+// the same place again stacks its jobs together.
+function maintIsOffsite(id){ return !MAINT_BUILTIN.some(b => b.id === id); }
+function maintPropLabel(p){ return p.name + (maintIsOffsite(p.id) ? ' (off site)' : ''); }
+async function ensureMaintProp(name){
+  const n = String(name||'').trim().replace(/\s*\(off site\)\s*$/i, ''); if(!n) return '';
+  const hit = allMaintProps().find(p => p.name.toLowerCase() === n.toLowerCase());
+  if(hit) return hit.id;
+  try{ const fresh = await (await fetch('/api/state')).json(); PROPERTIES = fresh['other-properties'] ? JSON.parse(fresh['other-properties']) : PROPERTIES; }catch(e){}
+  const again = allMaintProps().find(p => p.name.toLowerCase() === n.toLowerCase()); if(again) return again.id;
+  const p = { id:newPropertyId(), name:n, createdAt:isoDate(new Date()) };
+  PROPERTIES.push(p); await savePropMaintProperties();
+  return p.id;
+}
+async function ensureCrew(name){
+  const n = String(name||'').trim(); if(!n) return '';
+  const hit = (PROPERTY_TEAM||[]).find(p => p.name.toLowerCase() === n.toLowerCase()); if(hit) return hit.id;
+  const p = { id:newPropTeamId(), name:n, createdAt:isoDate(new Date()) };
+  PROPERTY_TEAM.push(p); await savePropMaintTeam(); return p.id;
+}
+function jobDateChip(j){
+  if(!j.date) return '';
+  const today = localISODate();
+  const cls = j.date < today ? 'od' : j.date === today ? 'td' : '';
+  return `<span class="job-date ${cls}">${j.date === today ? 'Today' : escapeHtml(shortDate(j.date))}</span>`;
+}
+function jobSort(a, b){ return (a.date||'9999').localeCompare(b.date||'9999') || jobRank(a) - jobRank(b) || (a.createdAt||'').localeCompare(b.createdAt||''); }
+// Open jobs grouped On site / Off site, then by location (stacked), date order inside.
+function jobsByLocationHtml(jobs, rowFn){
+  const groups = [['On site', MAINT_BUILTIN], ['Off site', PROPERTIES||[]]];
+  let html = '';
+  groups.forEach(([title, props]) => {
+    const blocks = props.map(p => ({ p, js: jobs.filter(j => j.propertyId === p.id).sort(jobSort) })).filter(x => x.js.length);
+    if(!blocks.length) return;
+    html += `<div class="jl-cat">${title}</div>` + blocks.map(({p, js}) => `<div class="jl-loc"><div class="jl-loch">📍 ${escapeHtml(p.name)} <span>${js.length}</span></div>${js.map(rowFn).join('')}</div>`).join('');
+  });
+  const orphan = jobs.filter(j => !allMaintProps().some(p => p.id === j.propertyId));
+  if(orphan.length) html += `<div class="jl-cat">No location</div>` + orphan.map(rowFn).join('');
+  return html;
+}
+function locationDatalist(id){ return `<datalist id="${id}">${allMaintProps().map(p => `<option value="${escapeAttr(p.name)}">${maintIsOffsite(p.id) ? 'Off site' : 'On site'}</option>`).join('')}</datalist>`; }
+
+function openJobEdit(jid, after){
+  const j = (PROPERTY_JOBS||[]).find(x => x.id === jid); if(!j) return;
+  const m = asgModalEl(); m._onClose = null;
+  m.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">🔧 Maintenance job</div><button class="asg-m-x">✕</button></div>
+    <div class="asg-edit">
+      <label>Job<input type="text" id="jeText" value="${escapeAttr(j.text)}"></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:2;min-width:180px;">Location<input type="text" id="jeWhere" list="jeLocList" value="${escapeAttr(maintPropName(j.propertyId))}">${locationDatalist('jeLocList')}</label>
+        <label style="flex:1;min-width:130px;">Day<input type="date" id="jeDate" value="${escapeAttr(j.date||'')}"></label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <label style="flex:1;">Priority<select id="jePri">${['normal','high','urgent'].map(k => `<option value="${k}" ${(j.priority||'normal')===k?'selected':''}>${k[0].toUpperCase()+k.slice(1)}</option>`).join('')}</select></label>
+        <label style="flex:1;">Who<select id="jeWho"><option value="">Unassigned</option>${(PROPERTY_TEAM||[]).map(p => `<option value="${p.id}" ${p.id===j.assignedTo?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>
+        <label style="flex:1;">When<select id="jeTod">${[['NA','Any time'],['AM','AM'],['PM','PM']].map(([k,l]) => `<option value="${k}" ${k===(j.timeOfDay||'NA')?'selected':''}>${l}</option>`).join('')}</select></label>
+      </div>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="jeSave">Save</button><button class="mini-btn" id="jeDone">${pjDoneInfo(j) ? 'Reopen' : 'Mark done'}</button><button class="mini-btn danger-mini" id="jeDel">Delete</button></div>
+    </div>`;
+  const q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  const finish = async () => { await savePropMaintJobs(); closeAsgModal(); if(after) after(); };
+  q('#jeSave').onclick = async () => {
+    const text = q('#jeText').value.trim(); if(!text){ showToast('Describe the job'); return; }
+    const pid = await ensureMaintProp(q('#jeWhere').value); if(!pid){ showToast('Pick a location'); return; }
+    await refetchPropertyJobs(); const cur = PROPERTY_JOBS.find(x => x.id === jid); if(!cur){ closeAsgModal(); return; }
+    Object.assign(cur, { text, propertyId:pid, date:q('#jeDate').value, priority:q('#jePri').value, assignedTo:q('#jeWho').value, timeOfDay:q('#jeTod').value });
+    await finish(); showToast('Saved');
+  };
+  q('#jeDone').onclick = async () => {
+    await refetchPropertyJobs(); const cur = PROPERTY_JOBS.find(x => x.id === jid); if(!cur) return;
+    if(pjDoneInfo(cur)){ cur.status = 'Open'; cur.completedAt = ''; if(SERVER_STATE['property-job-done:' + jid]){ await storSet('property-job-done:' + jid, null); delete SERVER_STATE['property-job-done:' + jid]; } }
+    else { cur.status = 'Done'; cur.completedAt = isoDate(new Date()); }
+    await finish();
+  };
+  q('#jeDel').onclick = async () => {
+    if(!(await appConfirm('Delete this job?', 'Delete'))) return;
+    await refetchPropertyJobs(); PROPERTY_JOBS = PROPERTY_JOBS.filter(x => x.id !== jid); await finish();
+  };
+  m.classList.add('show');
+}
+
 // Crew-facing panel at the very top of the Maintenance page: priority jobs first.
 let maintJobsFilter = 'all';
+let maintJobsWho = 'all';
 function renderMaintJobsPanel(){
   const wrap = document.getElementById('maintJobsWrap'); if(!wrap) return;
   const mainEl = document.querySelector('.main');
@@ -3302,25 +3423,33 @@ function renderMaintJobsPanel(){
   const open = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j));
   const doneToday = (PROPERTY_JOBS||[]).filter(j => { const d = pjDoneInfo(j); return d && d.at && localISODate(new Date(d.at)) === today && j.status !== 'Done'; });
   const props = allMaintProps().filter(p => open.some(j => j.propertyId === p.id));
-  let rows = open.filter(j => maintJobsFilter === 'all' || j.propertyId === maintJobsFilter);
-  rows.sort((a,b) => jobRank(a) - jobRank(b) || (a.timeOfDay==='AM'?0:a.timeOfDay==='PM'?1:2) - (b.timeOfDay==='AM'?0:b.timeOfDay==='PM'?1:2) || (a.createdAt||'').localeCompare(b.createdAt||''));
+  const people = (PROPERTY_TEAM||[]).filter(p => open.some(j => j.assignedTo === p.id));
+  let rows = open.filter(j => (maintJobsFilter === 'all' || j.propertyId === maintJobsFilter) && (maintJobsWho === 'all' || j.assignedTo === maintJobsWho));
+  // Due today/overdue (or undated) first, by priority; dated-later jobs after.
+  const nowRows = rows.filter(j => !j.date || j.date <= today).sort((a,b) => jobRank(a) - jobRank(b) || (a.date||'').localeCompare(b.date||''));
+  const laterRows = rows.filter(j => j.date && j.date > today).sort(jobSort);
   const urgentN = open.filter(j => j.priority === 'urgent').length;
+  const row = j => {
+    const person = (PROPERTY_TEAM||[]).find(p => p.id === j.assignedTo);
+    return `<div class="mj-row pri-${j.priority||'normal'}" data-jid="${j.id}">
+      ${jobPriBadge(j)}
+      <div class="mj-main"><div class="mj-text">${escapeHtml(j.text)}</div>
+        <div class="mj-meta">📍 ${escapeHtml(maintPropName(j.propertyId))}${maintIsOffsite(j.propertyId) ? ' <span class="mj-off">off site</span>' : ''}${person ? ' · ' + escapeHtml(person.name) : ''}${j.timeOfDay==='AM'||j.timeOfDay==='PM' ? ' · ' + j.timeOfDay : ''}</div></div>
+      ${jobDateChip(j)}
+      <button class="mini-btn primary-mini mj-done">Done</button>
+    </div>`;
+  };
   wrap.innerHTML = `<section class="dpanel mj-panel">
     <div class="dpanel-head"><div class="h-maintjobs">🔧 Jobs — do these first</div>
       <div class="dpanel-sub">${open.length} open${urgentN ? ` · <b style="color:#ff6b6b;">${urgentN} urgent</b>` : ''}</div></div>
-    ${open.length ? `<div class="mj-chips"><button class="mj-chip ${maintJobsFilter==='all'?'on':''}" data-f="all">All ${open.length}</button>${props.map(p => `<button class="mj-chip ${maintJobsFilter===p.id?'on':''}" data-f="${p.id}">${escapeHtml(p.name)} ${open.filter(j => j.propertyId === p.id).length}</button>`).join('')}</div>` : ''}
-    ${rows.length ? rows.map(j => {
-      const person = (PROPERTY_TEAM||[]).find(p => p.id === j.assignedTo);
-      return `<div class="mj-row pri-${j.priority||'normal'}" data-jid="${j.id}">
-        ${jobPriBadge(j)}
-        <div class="mj-main"><div class="mj-text">${escapeHtml(j.text)}</div>
-          <div class="mj-meta">📍 ${escapeHtml(maintPropName(j.propertyId))}${person ? ' · ' + escapeHtml(person.name) : ''}${j.timeOfDay==='AM'||j.timeOfDay==='PM' ? ' · ' + j.timeOfDay : ''}</div></div>
-        <button class="mini-btn primary-mini mj-done">Done</button>
-      </div>`;
-    }).join('') : `<div class="empty-note">${open.length ? 'Nothing open here.' : 'No open jobs — nice work.'}</div>`}
+    ${open.length ? `<div class="mj-chips"><button class="mj-chip ${maintJobsFilter==='all'?'on':''}" data-f="all">All places</button>${props.map(p => `<button class="mj-chip ${maintJobsFilter===p.id?'on':''}" data-f="${p.id}">${escapeHtml(p.name)} ${open.filter(j => j.propertyId === p.id).length}</button>`).join('')}</div>` : ''}
+    ${people.length ? `<div class="mj-chips"><button class="mj-chip who ${maintJobsWho==='all'?'on':''}" data-w="all">Everyone</button>${people.map(p => `<button class="mj-chip who ${maintJobsWho===p.id?'on':''}" data-w="${p.id}">${escapeHtml(p.name)} ${open.filter(j => j.assignedTo === p.id).length}</button>`).join('')}</div>` : ''}
+    ${nowRows.length ? nowRows.map(row).join('') : `<div class="empty-note">${open.length ? 'Nothing due right now here.' : 'No open jobs — nice work.'}</div>`}
+    ${laterRows.length ? `<div class="mj-donehd">Coming up</div>` + laterRows.map(row).join('') : ''}
     ${doneToday.length ? `<div class="mj-donehd">Finished today</div>` + doneToday.map(j => `<div class="mj-row done" data-jid="${j.id}"><div class="mj-main"><div class="mj-text">${escapeHtml(j.text)}</div><div class="mj-meta">${escapeHtml(maintPropName(j.propertyId))}</div></div><button class="mini-btn mj-undo">Undo</button></div>`).join('') : ''}
   </section>`;
-  wrap.querySelectorAll('.mj-chip').forEach(b => b.onclick = () => { maintJobsFilter = b.dataset.f; renderMaintJobsPanel(); });
+  wrap.querySelectorAll('.mj-chip[data-f]').forEach(b => b.onclick = () => { maintJobsFilter = b.dataset.f; renderMaintJobsPanel(); });
+  wrap.querySelectorAll('.mj-chip[data-w]').forEach(b => b.onclick = () => { maintJobsWho = b.dataset.w; renderMaintJobsPanel(); });
   wrap.querySelectorAll('.mj-done').forEach(b => b.onclick = async () => {
     const id = b.closest('[data-jid]').dataset.jid; b.disabled = true;
     const ok = await storSet('property-job-done:' + id, JSON.stringify({ done:true, at:new Date().toISOString(), by: myKey() }));
@@ -3333,38 +3462,50 @@ function renderMaintJobsPanel(){
   });
 }
 
-// Owner Board quick add - send a job to the crew in one line.
+// Owner Board quick add - send a job to the crew in one line; open jobs stack by location.
+async function addMaintJob({ text, where, date, priority, who, tod }){
+  const propertyId = await ensureMaintProp(where);
+  if(!propertyId){ showToast('Pick or type a location'); return false; }
+  await refetchPropertyJobs();
+  PROPERTY_JOBS.push({ id:newPropJobId(), propertyId, assignedTo:who||'', text, timeOfDay:tod||'NA', priority:priority||'normal', date:date||'', status:'Open', createdAt:isoDate(new Date()), completedAt:'' });
+  const ok = await savePropMaintJobs();
+  showToast('Sent to maintenance — ' + maintPropName(propertyId) + (date ? ' · ' + shortDate(date) : ''));
+  return ok !== false;
+}
+let omLastWhere = '';
 function renderOwnerMaint(){
   const wrap = document.getElementById('obMaintWrap'); if(!wrap) return;
-  const open = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j)).sort((a,b) => jobRank(a) - jobRank(b));
-  const top = open.slice(0, 6);
+  const open = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j));
+  const row = j => { const person = (PROPERTY_TEAM||[]).find(p => p.id === j.assignedTo); return `<div class="om-row" data-jid="${j.id}">${jobPriBadge(j)}<span class="om-t">${escapeHtml(j.text)}</span>${person ? `<span class="om-p">${escapeHtml(person.name)}</span>` : ''}${jobDateChip(j)}</div>`; };
   wrap.innerHTML = `<div class="task-card om-card">
     <div class="om-add">
-      <input type="text" id="omText" placeholder="Maintenance job… e.g. Fix leaking sink in CC break room">
-      <label class="myt-f">Where<select id="omWhere">${allMaintProps().map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}</select></label>
+      <input type="text" id="omText" placeholder="Maintenance job… e.g. Fix leaking sink in break room">
+      <label class="myt-f">Location<input type="text" id="omWhere" list="omLocList" value="${escapeAttr(omLastWhere)}" placeholder="Pick or type a new one">${locationDatalist('omLocList')}</label>
+      <label class="myt-f">Day<input type="date" id="omDate"></label>
       <label class="myt-f">Priority<select id="omPri"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></label>
-      <label class="myt-f">Who<select id="omWho"><option value="">Unassigned</option>${(PROPERTY_TEAM||[]).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}</select></label>
+      <label class="myt-f">Who<select id="omWho"><option value="">Anyone on the crew</option>${(PROPERTY_TEAM||[]).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}</select></label>
       <label class="myt-f">When<select id="omTod"><option value="NA">Any time</option><option value="AM">AM</option><option value="PM">PM</option></select></label>
       <button class="mini-btn primary-mini" id="omAdd">+ Send to maintenance</button>
     </div>
     <div class="om-list">
-      <div class="om-lh">${open.length} open job${open.length===1?'':'s'}${open.length ? ' — highest priority first' : ''} <button class="mini-btn" id="omOpenAll">Open all jobs</button></div>
-      ${top.map(j => `<div class="om-row">${jobPriBadge(j)}<span class="om-t">${escapeHtml(j.text)}</span><span class="om-p">${escapeHtml(maintPropName(j.propertyId))}</span></div>`).join('')}
-      ${open.length > top.length ? `<div class="om-more">+ ${open.length - top.length} more</div>` : ''}
+      <div class="om-lh">${open.length} open job${open.length===1?'':'s'} — stacked by location <button class="mini-btn" id="omOpenAll">Open all jobs</button></div>
+      ${open.length ? jobsByLocationHtml(open, row) : '<div class="empty-note">No open jobs.</div>'}
     </div>
   </div>`;
   const $ = id => document.getElementById(id);
   const add = async () => {
     const text = $('omText').value.trim(); if(!text){ showToast('Describe the job'); return; }
-    await refetchPropertyJobs();
-    PROPERTY_JOBS.push({ id:newPropJobId(), propertyId:$('omWhere').value, assignedTo:$('omWho').value, text, timeOfDay:$('omTod').value, priority:$('omPri').value, status:'Open', createdAt:isoDate(new Date()), completedAt:'' });
-    await savePropMaintJobs();
-    showToast('Sent to maintenance — ' + maintPropName($('omWhere').value));
-    renderOwnerMaint(); const t = document.getElementById('omText'); if(t) t.focus();
+    omLastWhere = $('omWhere').value.trim();
+    if(await addMaintJob({ text, where:omLastWhere, date:$('omDate').value, priority:$('omPri').value, who:$('omWho').value, tod:$('omTod').value })){
+      const keepDate = $('omDate').value, keepWho = $('omWho').value;
+      renderOwnerMaint(); $('omDate').value = keepDate; $('omWho').value = keepWho; $('omText').focus();
+      if(mytView.startsWith('crew:') || mytView === 'maint') renderMyTasks();
+    }
   };
   $('omAdd').onclick = add;
   $('omText').onkeydown = e => { if(e.key === 'Enter') add(); };
   $('omOpenAll').onclick = () => { const b = document.getElementById('propMaintToggleBtn'); if(b) b.click(); };
+  wrap.querySelectorAll('.om-row[data-jid]').forEach(r => r.onclick = () => openJobEdit(r.dataset.jid, () => { renderOwnerMaint(); renderMyTasks(); }));
 }
 
 // ---- Print my day: today's or tomorrow's schedule + tasks on one clean page.
@@ -6135,6 +6276,7 @@ async function renderPropertyMaintenance(){
       <select id="newPmJobPri" title="Priority" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
       </select>
+      <input type="date" id="newPmJobDate" title="Day" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:7px;font-size:12.5px;">
       <select id="newPmJobAssignee" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
         <option value="">Unassigned</option>${teamOpts}
       </select>
@@ -6162,7 +6304,9 @@ async function renderPropertyMaintenance(){
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         ${jobPriBadge(j)}
         <span style="font-size:13px;flex:1;min-width:160px;">${escapeHtml(j.text)}</span>
+        ${jobDateChip(j)}
         ${pmTodBadge(j.timeOfDay)}
+        <button class="mini-btn pm-job-edit">Edit</button>
         <select class="pm-job-pri" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:3px;font-size:11px;">
           ${['normal','high','urgent'].map(k => `<option value="${k}" ${(j.priority||'normal')===k?'selected':''}>${k[0].toUpperCase()+k.slice(1)}</option>`).join('')}
         </select>
@@ -6172,13 +6316,7 @@ async function renderPropertyMaintenance(){
       </div>
     </div>`;
   };
-  allMaintProps().forEach(prop => {
-    const jobs = open.filter(j => j.propertyId === prop.id).sort((a,b) => jobRank(a) - jobRank(b));
-    if(!jobs.length) return;
-    html += `<div class="dept-section"><div class="dept-title">${escapeHtml(prop.name)}</div>${jobs.map(jobCard).join('')}</div>`;
-  });
-  const orphaned = open.filter(j => !allMaintProps().some(p => p.id === j.propertyId));
-  if(orphaned.length) html += `<div class="dept-section"><div class="dept-title">No property on file</div>${orphaned.map(jobCard).join('')}</div>`;
+  html += jobsByLocationHtml(open, jobCard);
 
   html += `<details id="pmCompletedDetails" ${pmCompletedExpanded ? 'open' : ''} style="margin-top:10px;border:1px solid var(--win-border);border-radius:8px;background:var(--win-surface);">
     <summary style="cursor:pointer;padding:8px 12px;font-weight:600;font-size:12.5px;">Completed (${done.length})</summary>
@@ -6276,9 +6414,10 @@ function wirePropertyMaintenanceHandlers(view){
     const text = (document.getElementById('newPmJobText').value || '').trim();
     const timeOfDay = document.getElementById('newPmJobTod').value;
     const priority = document.getElementById('newPmJobPri').value;
+    const date = document.getElementById('newPmJobDate').value;
     if(!propertyId || !text){ showToast('Pick a property and describe the job'); return; }
     await refetchPropertyJobs();
-    PROPERTY_JOBS.push({ id: newPropJobId(), propertyId, assignedTo, text, timeOfDay, priority, status: 'Open', createdAt: isoDate(new Date()), completedAt: '' });
+    PROPERTY_JOBS.push({ id: newPropJobId(), propertyId, assignedTo, text, timeOfDay, priority, date, status: 'Open', createdAt: isoDate(new Date()), completedAt: '' });
     await savePropMaintJobs();
     await renderPropertyMaintenance();
   };
@@ -6295,6 +6434,8 @@ function wirePropertyMaintenanceHandlers(view){
       await savePropMaintJobs();
       await renderPropertyMaintenance();
     };
+    const editBtn = row.querySelector('.pm-job-edit');
+    if(editBtn) editBtn.onclick = () => openJobEdit(jid, () => renderPropertyMaintenance());
     const priSel = row.querySelector('.pm-job-pri');
     if(priSel) priSel.onchange = async () => {
       const j = findJob(); if(!j) return;
