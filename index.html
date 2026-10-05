@@ -2643,7 +2643,31 @@ function schedMeetingBlocks(iso){
   return out;
 }
 function schedAllBlocksOn(iso){ return schedBlocks().filter(b => b.date === iso).concat(schedMeetingBlocks(iso)); }
-async function saveOwnerSchedule(){ const ok = await storSet('owner-schedule', JSON.stringify(OWNER_SCHEDULE), true); if(!ok) showToast('Not saved — owner code required'); return ok; }
+// Merge-on-save (same idea as My projects): re-read the server copy and combine block-by-block
+// (newest edit `u` wins, deletions kept as tombstones in the __prefs row) so a stale open tab
+// can never wipe blocks added elsewhere.
+function schedMerge(a, b){
+  const pa = a.find(x => x.id === '__prefs') || {}, pb = b.find(x => x.id === '__prefs') || {};
+  const deleted = { ...(pb.deleted||{}) };
+  Object.entries(pa.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
+  const meetings = { ...(pb.meetings||{}) };
+  Object.entries(pa.meetings||{}).forEach(([id, m]) => { if(!meetings[id] || (m.u||0) >= (meetings[id].u||0)) meetings[id] = m; });
+  const byId = new Map();
+  [b, a].forEach(arr => arr.forEach(x => { if(x.id === '__prefs') return; const cur = byId.get(x.id); if(!cur || (x.u||0) >= (cur.u||0)) byId.set(x.id, x); }));
+  const blocks = [...byId.values()].filter(x => !(deleted[x.id] && deleted[x.id] >= (x.u||0)));
+  return blocks.concat([{ id:'__prefs', meetings, deleted }]);
+}
+function schedDelete(ids){ const p = schedPrefs(); if(!p.deleted) p.deleted = {}; const now = Date.now(); ids.forEach(id => { p.deleted[id] = now; }); OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => !ids.includes(x.id)); }
+async function saveOwnerSchedule(){
+  try{
+    const fresh = await (await fetch('/api/state')).json();
+    let remote = []; try{ remote = fresh['owner-schedule'] ? JSON.parse(fresh['owner-schedule']) : []; }catch(e){}
+    OWNER_SCHEDULE = schedMerge(OWNER_SCHEDULE, Array.isArray(remote) ? remote : []);
+  }catch(e){ /* offline: save what we have */ }
+  const ok = await storSet('owner-schedule', JSON.stringify(OWNER_SCHEDULE), true);
+  if(!ok) showToast('Not saved \u2014 owner code required');
+  return ok;
+}
 function hmToMin(hm){ const [h,m] = String(hm||'0:0').split(':').map(Number); return h*60 + (m||0); }
 function minToHm(n){ n = Math.max(0, Math.min(24*60-1, n)); return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); }
 function fmt12(hm){ const n = hmToMin(hm); let h = Math.floor(n/60), m = n%60; const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (m ? ':' + String(m).padStart(2,'0') : '') + ap; }
@@ -2804,7 +2828,7 @@ function renderOwnerSchedule(){
     const reps = parseInt($('schRepeat').value, 10) || 1;
     const series = reps > 1 ? newSchedId() : '';
     for(let i = 0; i < reps; i++){
-      OWNER_SCHEDULE.push({ id:newSchedId(), title, cat:catEl.value, date:addDaysISO(date, 7*i), start, end, loc:locEl.value, locText:$('schLocText').value.trim(), with: catEl.value==='oneonone' ? withEl.value : '', project: projEl.style.display === 'none' ? '' : projEl.value, notes:$('schNotes').value.trim(), done:false, series });
+      OWNER_SCHEDULE.push({ id:newSchedId(), title, cat:catEl.value, date:addDaysISO(date, 7*i), start, end, loc:locEl.value, locText:$('schLocText').value.trim(), with: catEl.value==='oneonone' ? withEl.value : '', project: projEl.style.display === 'none' ? '' : projEl.value, notes:$('schNotes').value.trim(), done:false, series, u:Date.now() });
     }
     if(await saveOwnerSchedule()) showToast(reps > 1 ? `Blocked ${reps} weeks` : 'Blocked');
     schedPrefill = null;
@@ -2816,7 +2840,7 @@ function renderOwnerSchedule(){
     schedPrefill = { title:'Vendor: ' + v.dataset.vendor, cat:'vendor', date:v.dataset.date, loc:'vendor' };
     renderOwnerSchedule(); const t = document.getElementById('schStart'); if(t) t.focus();
   });
-  wrap.querySelectorAll('.sch-unhide').forEach(b => b.onclick = async () => { const p = schedPrefs(); if(p.meetings[b.dataset.mid]) p.meetings[b.dataset.mid].hidden = false; await saveOwnerSchedule(); renderOwnerSchedule(); });
+  wrap.querySelectorAll('.sch-unhide').forEach(b => b.onclick = async () => { const p = schedPrefs(); if(p.meetings[b.dataset.mid]){ p.meetings[b.dataset.mid].hidden = false; p.meetings[b.dataset.mid].u = Date.now(); } await saveOwnerSchedule(); renderOwnerSchedule(); });
   wrap.querySelectorAll('.sch-blk').forEach(el => el.onclick = () => el.dataset.mtg ? openSchedMeeting(el.dataset.mtg, el.dataset.mdate) : openSchedBlock(el.dataset.sid));
   wrap.querySelectorAll('.sch-prep').forEach(el => el.onclick = () => {
     window.open(gcalLink(el.dataset.ptitle, el.dataset.pdate, el.dataset.ps, el.dataset.pe, el.dataset.pnote, ''), '_blank', 'noopener');
@@ -3138,7 +3162,7 @@ function openSchedMeeting(meetingId, iso){
   const refresh = () => { const d = parseInt(q('#smDur').value,10); q('#smGcal').href = gcalLink(blk.title, iso, blk.start, minToHm(hmToMin(blk.start)+d), 'Dailys meeting', [SCHED_LOCS[q('#smLoc').value], q('#smLocText').value].filter(Boolean).join(' \u2014 ')); };
   m.querySelectorAll('input,select').forEach(i => i.addEventListener('input', refresh)); refresh();
   q('#smSave').onclick = async () => {
-    prefs.meetings[meetingId] = { loc: q('#smLoc').value, locText: q('#smLocText').value.trim(), dur: parseInt(q('#smDur').value,10), hidden: q('#smHide').checked };
+    prefs.meetings[meetingId] = { loc: q('#smLoc').value, locText: q('#smLocText').value.trim(), dur: parseInt(q('#smDur').value,10), hidden: q('#smHide').checked, u: Date.now() };
     if(await saveOwnerSchedule()) showToast(q('#smHide').checked ? 'Hidden from your schedule' : 'Saved');
     closeAsgModal(); renderOwnerSchedule();
   };
@@ -3197,19 +3221,19 @@ function openSchedBlock(id){
     const v = { title:q('#seTitle').value.trim(), cat:q('#seCat').value, date:q('#seDate').value, start:q('#seStart').value, end:q('#seEnd').value, loc:q('#seLoc').value, locText:q('#seLocText').value.trim(), notes:q('#seNotes').value.trim(), project:q('#seProj').value };
     if(!v.title || !v.date || hmToMin(v.end) <= hmToMin(v.start)){ showToast('Check the title and times'); return; }
     const np = q('#seNoPrep'); if(np) v.noPrep = np.checked;
-    Object.assign(b, v);
+    Object.assign(b, v); b.u = Date.now();
     if(await saveOwnerSchedule()) showToast('Saved');
     closeAsgModal(); renderOwnerSchedule();
   };
   const op = q('#seOpenProj'); if(op) op.onclick = () => openProjectInPlanner(b.project);
   q('#seDel').onclick = async () => {
-    OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => x.id !== b.id);
+    schedDelete([b.id]);
     if(await saveOwnerSchedule()) showToast('Deleted');
     closeAsgModal(); renderOwnerSchedule();
   };
   const ds = q('#seDelSeries');
   if(ds) ds.onclick = async () => {
-    OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => !(x.series === b.series && x.date >= b.date));
+    schedDelete(OWNER_SCHEDULE.filter(x => x.series === b.series && x.date >= b.date).map(x => x.id));
     if(await saveOwnerSchedule()) showToast('Deleted repeats');
     closeAsgModal(); renderOwnerSchedule();
   };
