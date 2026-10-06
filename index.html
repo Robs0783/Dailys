@@ -268,6 +268,35 @@
   .ob-chain-txt{ font-size:12px; font-weight:600; margin:2px 0; }
   .ob-chain-st{ font-size:10.5px; color:var(--win-text-secondary); }
 
+
+  /* -- update-38: Training Center look -- */
+  #trainingLibraryView{ background:#f6f4ef; }
+  .tl-wrap{ max-width:1100px; margin:0 auto; font-family:'Work Sans','Segoe UI',sans-serif; color:#1f2328; }
+  .tl-hero{ border-radius:16px; padding:28px 30px; margin:4px 0 26px; color:#fff;
+    background:linear-gradient(120deg,#e8590c 0%,#c2255c 45%,#5f3dc4 100%); box-shadow:0 10px 30px rgba(95,61,196,.25); }
+  .tl-hero-kicker{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.85; }
+  .tl-hero-title{ font-family:'Oswald','Arial Narrow',sans-serif; font-weight:700; font-size:44px; line-height:1.05; letter-spacing:.02em; text-transform:uppercase; margin:6px 0 8px; color:#fff; }
+  .tl-hero-sub{ font-size:14px; opacity:.95; }
+  .tl-empty{ background:#fff; border-radius:12px; padding:24px; text-align:center; color:#605e5c; }
+  .tl-section{ margin-bottom:28px; }
+  .tl-sec-head{ display:flex; align-items:center; gap:10px; margin:0 0 12px; }
+  .tl-sec-head h2{ font-family:'Oswald','Arial Narrow',sans-serif; font-weight:600; font-size:24px; letter-spacing:.03em; text-transform:uppercase; margin:0; color:var(--tl-c); }
+  .tl-sec-dot{ width:12px; height:12px; border-radius:4px; background:var(--tl-c); }
+  .tl-sec-count{ font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:#fff; background:var(--tl-c); border-radius:20px; padding:1px 9px; }
+  .tl-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+  .tl-card{ position:relative; display:flex; flex-direction:column; gap:6px; background:#fff; border-radius:14px; padding:16px 16px 14px 20px; text-decoration:none; color:#1f2328;
+    border:1px solid #ebe7df; box-shadow:0 2px 6px rgba(0,0,0,.05); transition:transform .12s ease, box-shadow .12s ease; overflow:hidden; min-height:130px; }
+  .tl-card::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--tl-c); }
+  .tl-card:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.10); }
+  .tl-card-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .tl-icon{ font-size:22px; line-height:1; }
+  .tl-kind{ font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--tl-c); }
+  .tl-badge{ font-size:10.5px; font-weight:700; border-radius:20px; padding:2px 8px; background:#f1ecfa; color:#5f3dc4; }
+  .tl-badge.tl-done{ background:#dff6dd; color:#0e5c0e; }
+  .tl-card-title{ font-size:16px; font-weight:700; line-height:1.3; }
+  .tl-card-meta{ font-size:12px; color:#605e5c; min-height:14px; }
+  .tl-cta{ margin-top:auto; align-self:flex-start; font-size:12.5px; font-weight:700; color:#fff; background:var(--tl-c); border-radius:20px; padding:6px 14px; }
+  @media (max-width:600px){ .tl-hero{ padding:22px 18px; } .tl-hero-title{ font-size:34px; } }
   /* -- update-37: in-app training -- */
   .trn-modal{ max-width:760px !important; }
   .trn-body{ overflow-y:auto; margin:12px 0 8px; padding-right:4px; font-size:13.5px; line-height:1.5; color:#1f2328; }
@@ -8266,40 +8295,59 @@ function trainingVisibleToCurrentEmployee(t){
   return t.roleTags.some(tag => label.includes(tag));
 }
 
+// Training Library (update-38): colorful "training center" look. Same visibility rules as
+// before - only the presentation changed. Each section gets its own color; each card shows
+// what kind of training it is (doc / video / lesson / quiz) with a big Open button.
+const TRN_LIB_COLORS = ['#e8590c','#1971c2','#2f9e44','#9c36b5','#c2255c','#0c8599','#f08c00','#5f3dc4'];
+function trnLibColor(name){ let h = 0; String(name).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return TRN_LIB_COLORS[h % TRN_LIB_COLORS.length]; }
+function trnLibKind(t){
+  if(t.quiz && t.quiz.length) return { icon:'✅', label:'Quiz', cta:'Take quiz' };
+  if(t.content) return { icon:'📘', label:'Lesson', cta:'Start lesson' };
+  const u = String(t.url||'');
+  if(/docs\.google\.com\/document/.test(u)) return { icon:'📄', label:'Training guide', cta:'Open guide' };
+  if(/docs\.google\.com\/(spreadsheets|presentation)/.test(u)) return { icon:'📊', label:'Google file', cta:'Open' };
+  if(/youtu|vimeo|loom|guidde|video/i.test(u) || /video|guidde/i.test(t.type||'')) return { icon:'▶️', label:'Video', cta:'Watch' };
+  return { icon:'🔗', label:t.type && t.type !== 'Other' ? t.type : 'Link', cta:'Open' };
+}
 async function renderTrainingLibrary(){
   await refreshServerState();
   trnLoadExtras();
   const view = document.getElementById('trainingLibraryView');
   const loc = LOCATIONS[currentLoc];
   const emp = loc && loc.data[currentEmployee];
-  const empLabel = emp ? ((emp.name ? emp.name + ' — ' : '') + emp.label) : 'the selected role';
+  const empLabel = emp ? (emp.name || emp.label) : 'the selected person';
   const me = currentLoc + '::' + currentEmployee;
-  let html = `
-    <div class="monthly-header"><h1>Training Library</h1></div>
-    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
-      Showing training for <b>${escapeHtml(empLabel)}</b>${isStaff() ? ' — staff access unlocked, so manager-only items are included' : ''}.
-      Lessons open right here in Dailys. Switch who's selected in the sidebar to see what someone else sees.
-    </p>`;
   const visible = TRAINING.filter(trainingVisibleToCurrentEmployee);
-  if(visible.length === 0) html += `<div class="empty-note">No training for this role yet.</div>`;
-  const groups = [...new Set(visible.map(t => t.track || (t.platform || 'Uncategorized')))];
+  const groups = [...new Set(visible.map(t => t.track || (t.platform || 'General')))];
+  let html = `<div class="tl-wrap">
+    <div class="tl-hero">
+      <div class="tl-hero-kicker">Bridgeland &amp; Candy Cars</div>
+      <h1 class="tl-hero-title">Training Center</h1>
+      <div class="tl-hero-sub">Training for <b>${escapeHtml(empLabel)}</b>${isStaff() ? ' · manager items included' : ''} · ${visible.length} item${visible.length===1?'':'s'}</div>
+    </div>`;
+  if(!visible.length) html += `<div class="tl-empty">No training here yet for this person.</div>`;
   groups.forEach(g => {
-    const items = visible.filter(t => (t.track || (t.platform || 'Uncategorized')) === g).sort((a,b) => (a.order||0) - (b.order||0));
-    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(g)}</div>`;
+    const color = trnLibColor(g);
+    const items = visible.filter(t => (t.track || (t.platform || 'General')) === g).sort((a,b) => (a.order||0) - (b.order||0));
+    html += `<section class="tl-section" style="--tl-c:${color};">
+      <div class="tl-sec-head"><span class="tl-sec-dot"></span><h2>${escapeHtml(g)}</h2><span class="tl-sec-count">${items.length}</span></div>
+      <div class="tl-grid">`;
     items.forEach(t => {
+      const k = trnLibKind(t);
       const metric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
       const inApp = !!(t.content || (t.quiz && t.quiz.length));
       const st = inApp && t.track && (TRAINING_ASSIGN[t.track] || []).includes(me) ? trnStatus(t, me) : null;
-      const kind = t.quiz && t.quiz.length ? 'Quiz' : (t.content ? 'Lesson' : (t.type || 'Link'));
-      const inner = `<div style="font-weight:600;font-size:13px;">${st ? (st.done ? '<span style="color:var(--kpi-good);">✓</span> ' : '○ ') : ''}${escapeHtml(t.title)}
-          <span style="font-weight:400;color:var(--win-text-secondary);font-size:11.5px;"> · ${escapeHtml(kind)}${t.minutes ? ' · ' + escapeHtml(String(t.minutes)) + ' min' : ''}${st ? ' · ' + escapeHtml(st.label) : ''}</span>
-          ${t.managersOnly ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Managers only</span>` : ''}</div>
-        ${metric ? `<div style="font-size:11.5px;color:var(--win-text-secondary);margin-top:3px;">KPI: ${escapeHtml(metric.name)}</div>` : ''}`;
+      const body = `<div class="tl-card-top"><span class="tl-icon">${k.icon}</span><span class="tl-kind">${escapeHtml(k.label)}</span>${t.managersOnly ? '<span class="tl-badge">Managers</span>' : ''}${st && st.done ? '<span class="tl-badge tl-done">✓ Done</span>' : ''}</div>
+        <div class="tl-card-title">${escapeHtml(t.title)}</div>
+        <div class="tl-card-meta">${t.minutes ? escapeHtml(String(t.minutes)) + ' min' : ''}${metric ? (t.minutes ? ' · ' : '') + 'KPI: ' + escapeHtml(metric.name) : ''}</div>
+        <span class="tl-cta">${escapeHtml(k.cta)} →</span>`;
       html += inApp
-        ? `<a href="#" class="task-card trn-lib-open" data-id="${t.id}" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">${inner}</a>`
-        : `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" class="task-card" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">${inner}</a>`;
+        ? `<a href="#" class="tl-card trn-lib-open" data-id="${t.id}">${body}</a>`
+        : `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" class="tl-card">${body}</a>`;
     });
+    html += `</div></section>`;
   });
+  html += `</div>`;
   view.innerHTML = html;
   view.querySelectorAll('.trn-lib-open').forEach(a => a.onclick = (e) => {
     e.preventDefault();
