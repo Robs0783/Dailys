@@ -276,6 +276,44 @@
   .ob-chain-st{ font-size:10.5px; color:var(--win-text-secondary); }
 
 
+
+  /* -- update-42: My Day -- */
+  .md-wrap{ background:#fff; border:1px solid var(--win-border); border-radius:14px; padding:16px; box-shadow:var(--shadow-1); font-family:'Work Sans','Segoe UI',sans-serif; }
+  .md-loading{ padding:14px; color:var(--win-text-secondary); }
+  .md-top{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+  .md-kicker{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#d13438; font-weight:700; }
+  .md-date{ font-family:'Oswald','Arial Narrow',sans-serif; font-size:26px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; line-height:1.1; }
+  .md-sum{ font-size:13px; color:var(--win-text-secondary); margin-top:2px; }
+  .md-nav{ display:flex; gap:6px; flex-wrap:wrap; }
+  .md-start{ margin:12px 0 6px; padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--mc) 12%, #fff); border-left:5px solid var(--mc); font-size:14px; }
+  .md-empty{ margin:12px 0; padding:12px; border-radius:10px; background:#f6f4ef; font-size:13px; }
+  .md-warn{ margin:6px 0; padding:8px 10px; border-radius:8px; background:#fff4ce; font-size:12.5px; }
+  .md-plan{ margin:10px 0 4px; }
+  .md-h{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--win-text-secondary); margin-bottom:4px; }
+  .md-h2{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--mc,#605e5c); margin:10px 0 4px; }
+  .md-wrap ul{ list-style:none; padding:0; margin:0; }
+  .md-plan-li{ display:flex; align-items:center; gap:8px; padding:5px 2px; border-bottom:1px solid #eee; font-size:13.5px; }
+  .md-plan-li span{ flex:1; } .md-plan-li.done span{ text-decoration:line-through; color:#8a8886; }
+  .md-tick{ width:22px; height:22px; border-radius:6px; border:1.5px solid #8a8886; background:#fff; cursor:pointer; font-size:12px; color:#107c10; flex-shrink:0; }
+  .md-x{ border:none; background:none; color:#a19f9d; font-size:16px; cursor:pointer; }
+  .md-add{ display:flex; gap:6px; margin-top:6px; } .md-add input{ flex:1; min-width:0; border:1px solid var(--win-border-strong); border-radius:7px; padding:7px 9px; font-size:13px; }
+  .md-gen{ font-size:12px; color:#8a8886; font-style:italic; margin:8px 0 8px 14px; }
+  .md-stop{ margin:12px 0; padding:12px 14px; border-radius:12px; border:1px solid #ebe7df; border-left:6px solid var(--mc); background:#fff; }
+  .md-stop-head{ display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:12.5px; }
+  .md-time{ font-family:'JetBrains Mono',monospace; font-weight:700; }
+  .md-loc{ font-weight:700; color:var(--mc); }
+  .md-title{ font-size:16px; font-weight:700; margin:3px 0 2px; }
+  .md-notes{ font-size:12.5px; color:#605e5c; white-space:pre-wrap; }
+  .md-dim{ color:#8a8886; font-weight:400; font-size:12px; }
+  .md-hi{ color:#d13438; font-size:11px; }
+  .md-more summary{ cursor:pointer; font-size:12.5px; color:#0f6cbd; padding:6px 0; }
+  .md-sub li{ padding:4px 0; border-bottom:1px solid #f0eeea; font-size:13px; }
+  .md-person{ padding:6px 0; border-bottom:1px solid #f0eeea; }
+  .md-pname{ font-size:13.5px; font-weight:600; }
+  .md-chips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+  .md-chip{ font-size:11px; font-weight:600; border-radius:20px; padding:2px 8px; background:#f3f2f1; color:#605e5c; }
+  .md-chip.sev2{ background:#fde7e9; color:#a4262c; } .md-chip.sev1{ background:#fff4ce; color:#8a5a00; } .md-chip.ok{ background:#dff6dd; color:#0e5c0e; }
+  @media (max-width:760px){ .md-wrap{ padding:12px; } .md-date{ font-size:22px; } .md-nav{ width:100%; } .md-nav .mini-btn{ flex:1; } }
   /* -- update-38: Training Center look -- */
   #trainingLibraryView{ background:#f6f4ef; }
   .tl-wrap{ max-width:1100px; margin:0 auto; font-family:'Work Sans','Segoe UI',sans-serif; color:#1f2328; }
@@ -2442,6 +2480,8 @@ function asgNeedsOwner(t){ return !assignedDoneInfo(t.id) && (assignedProgress(t
 function ownerAssignSectionsHtml(){
   const hdr = (t, sub) => `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">${t}</div>${sub ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:-4px 0 8px 2px;">${sub}</p>` : ''}`;
   return `
+    ${hdr('📍 My Day', 'Your day from My schedule, stop by stop, with who needs a tune-up and what’s open at each place. Add what you want to get done, then print it or pull it up on your phone.')}
+    <div id="obMyDayWrap"></div>
     <div id="obWeekWrap"></div>
     ${hdr('My tasks', 'Everything on your plate, personal and business, in one place. Add it with a date and priority, check it off, block time for it, or hand it to someone.')}
     <div id="obTasksWrap"></div>
@@ -2846,6 +2886,7 @@ function renderHandoffChecklist(){
 
 function refreshOwnerAssign(){
   renderOwnerWeek(); renderMyTasks(); renderOwnerMaint(); renderOwnerSchedule(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
+  renderMyDay();
 }
 function wireOwnerAssignSections(){
   refreshOwnerAssign();
@@ -2962,10 +3003,12 @@ function schedMerge(a, b){
   Object.entries(pa.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
   const meetings = { ...(pb.meetings||{}) };
   Object.entries(pa.meetings||{}).forEach(([id, m]) => { if(!meetings[id] || (m.u||0) >= (meetings[id].u||0)) meetings[id] = m; });
+  const dayPlan = { ...(pb.dayPlan||{}) };
+  Object.entries(pa.dayPlan||{}).forEach(([d, v]) => { if(!dayPlan[d] || (v.u||0) >= (dayPlan[d].u||0)) dayPlan[d] = v; });
   const byId = new Map();
   [b, a].forEach(arr => arr.forEach(x => { if(x.id === '__prefs') return; const cur = byId.get(x.id); if(!cur || (x.u||0) >= (cur.u||0)) byId.set(x.id, x); }));
   const blocks = [...byId.values()].filter(x => !(deleted[x.id] && deleted[x.id] >= (x.u||0)));
-  return blocks.concat([{ id:'__prefs', meetings, deleted }]);
+  return blocks.concat([{ id:'__prefs', meetings, deleted, dayPlan }]);
 }
 function schedDelete(ids){ const p = schedPrefs(); if(!p.deleted) p.deleted = {}; const now = Date.now(); ids.forEach(id => { p.deleted[id] = now; }); OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => !ids.includes(x.id)); }
 async function saveOwnerSchedule(){
@@ -3714,6 +3757,232 @@ function renderOwnerMaint(){
 }
 
 // ---- Print my day: today's or tomorrow's schedule + tasks on one clean page.
+// ======================================================================================
+// ---- My Day (update-42). Rob's day from My Schedule (his blocks + Dailys meetings), one card
+// per stop in time order, with what needs him there pulled in automatically:
+//   Bridgeland / Candy Cars stop -> people at that store who need a tune-up (Dailys left blank,
+//     overdue/stuck assigned tasks, overdue meeting action items, metrics not entered) + open
+//     maintenance jobs there.
+//   Job site / vendor / other stop -> open maintenance jobs + worker-list items at that property.
+//   One-on-one (any location, incl. phone) -> that person's tune-up card + open tasks.
+//   Dailys meeting -> its open action items.
+// Plus Rob's own plan lines (for the day, or for one stop), stored in the schedule's __prefs row
+// (dayPlan[iso] = {items:[{id,t,done,stop}], u}) so it rides on the same owner-gated, merge-on-save key.
+// ======================================================================================
+let myDayIso = null;
+const MD_LOC_STYLE = {
+  bridgeland:{ color:'#d13438', icon:'🏢', label:'Bridgeland' },
+  candycars: { color:'#0f6cbd', icon:'🚗', label:'Candy Cars' },
+  jobsite:   { color:'#d97706', icon:'🏗️', label:'Job site' },
+  vendor:    { color:'#7c3aed', icon:'🤝', label:'Off site' },
+  other:     { color:'#7c3aed', icon:'📍', label:'Off site' },
+  phone:     { color:'#0d9488', icon:'💻', label:'Online / phone' },
+  home:      { color:'#64748b', icon:'🏠', label:'Home' },
+};
+function mdLocStyle(b){ return MD_LOC_STYLE[b.loc] || MD_LOC_STYLE.other; }
+function mdPlan(iso){ const p = schedPrefs(); if(!p.dayPlan) p.dayPlan = {}; if(!p.dayPlan[iso]) p.dayPlan[iso] = { items: [], u: 0 }; return p.dayPlan[iso]; }
+function mdNewId(){ return 'mdp-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+async function mdSavePlan(iso){ mdPlan(iso).u = Date.now(); return saveOwnerSchedule(); }
+// Most recent business days (Mon-Sat) before `fromIso`, newest first.
+function mdPrevBusinessDays(fromIso, n){
+  const out = []; let d = isoToDate(fromIso);
+  while(out.length < n){ d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 12); if(d.getDay() !== 0) out.push(d); }
+  return out;
+}
+// Everyone on the roster who works at a store (that store's tab + Both Locations).
+function mdPeopleAt(storeKey){
+  const out = [];
+  [storeKey, 'both'].forEach(lk => { const L = LOCATIONS[lk]; if(!L) return; L.data.forEach((e, i) => { if(!e.archived) out.push(lk + '::' + i); }); });
+  return out;
+}
+// Why someone needs a tune-up. Sync once statuses for the look-back days are in statusCache.
+async function mdPersonIssues(key){
+  const [lk, idxStr] = key.split('::'); const idx = parseInt(idxStr, 10);
+  const L = LOCATIONS[lk]; const emp = L && L.data[idx];
+  if(!emp) return null;
+  const reasons = []; let score = 0;
+  // Dailys: last 5 business days - a day counts as "left blank" when under half its tasks were marked.
+  const countable = (emp.tasks||[]).filter(t => t.cadence !== 'Awareness');
+  if(countable.length){
+    const days = mdPrevBusinessDays(localISODate(), 5);
+    let blank = 0, lastFill = null;
+    for(let i = 0; i < days.length; i++){
+      const d = days[i];
+      const st = await loadStatuses(lk, idx, isoDate(d));
+      const apply = countable.filter(t => taskAppliesOnDate(t, d));
+      if(!apply.length) continue;
+      const filled = apply.filter(t => st[t.id]).length;
+      const pct = Math.round(filled / apply.length * 100);
+      if(lastFill === null) lastFill = { pct, d };
+      if(pct < 50) blank++;
+    }
+    if(blank >= 2){ reasons.push({ t:`Dailys blank ${blank} of last 5 days`, sev:2 }); score += blank; }
+    else if(lastFill && lastFill.pct < 50){ reasons.push({ t:`Dailys only ${lastFill.pct}% done ${shortDate(isoDate(lastFill.d))}`, sev:1 }); score += 1; }
+  }
+  const today = localISODate();
+  const mine = ASSIGNED_TASKS.filter(t => t.assignee === key && !assignedDoneInfo(t.id));
+  const overdue = mine.filter(t => t.due && t.due < today && !asgBlocker(t));
+  const stuck = mine.filter(t => assignedProgress(t.id).status === 'stuck');
+  if(overdue.length){ reasons.push({ t:`${overdue.length} overdue task${overdue.length>1?'s':''}`, sev:2 }); score += 2 * overdue.length; }
+  if(stuck.length){ reasons.push({ t:`Stuck on ${stuck.length}`, sev:2 }); score += 2 * stuck.length; }
+  const ai = overdueActionItemsGlobal().filter(x => (x.item.assignedLoc + '::' + x.item.assignedEmp) === key);
+  if(ai.length){ reasons.push({ t:`${ai.length} overdue meeting item${ai.length>1?'s':''}`, sev:1 }); score += ai.length; }
+  let metrics = [];
+  try{ metrics = metricsNotEntered().filter(x => (x.metric.assignedLoc + '::' + x.metric.assignedEmp) === key); }catch(e){}
+  if(metrics.length){ reasons.push({ t:`${metrics.length} metric${metrics.length>1?'s':''} not entered`, sev:1 }); score += metrics.length; }
+  return { key, name: emp.name || emp.label, label: emp.label, reasons, score, openTasks: mine };
+}
+function mdOpenJobsAt(propIdOrText){
+  const jobs = (PROPERTY_JOBS||[]).filter(j => !pjDoneInfo(j));
+  return jobs.filter(propIdOrText).sort((a,b) => jobRank(a) - jobRank(b));
+}
+function mdPropMatches(b){
+  // For off-site stops, match properties whose name appears in the stop's location text or title.
+  const hay = (String(b.locText||'') + ' ' + String(b.title||'')).toLowerCase();
+  const props = (typeof allMaintProps === 'function' ? allMaintProps() : []).filter(p => p.id !== 'bridgeland' && p.id !== 'candycars');
+  return props.filter(p => p.name && p.name.length > 2 && hay.includes(p.name.toLowerCase())).map(p => p.id);
+}
+// Everything pulled in for one stop. Returns { people:[issues], jobs:[], wl:[], actionItems:[] }.
+async function mdStopPull(b, iso){
+  const out = { people: [], jobs: [], wl: [], actionItems: [], person: null };
+  if(b.with){ out.person = await mdPersonIssues(b.with); }
+  if(b.loc === 'bridgeland' || b.loc === 'candycars'){
+    const ppl = await Promise.all(mdPeopleAt(b.loc).filter(k => k !== b.with).map(mdPersonIssues));
+    out.people = ppl.filter(p => p && p.reasons.length).sort((a,c) => c.score - a.score);
+    out.jobs = mdOpenJobsAt(j => j.propertyId === b.loc);
+  } else if(b.loc !== 'phone' && b.loc !== 'home'){
+    const ids = mdPropMatches(b);
+    out.jobs = mdOpenJobsAt(j => ids.length ? ids.includes(j.propertyId) : (j.propertyId !== 'bridgeland' && j.propertyId !== 'candycars' && j.date === iso));
+    out.wl = (WL && WL.items ? WL.items : []).filter(i => !wlDoneInfo(i) && (ids.length ? ids.includes(i.propertyId) : i.date === iso));
+  }
+  if(b.fromMeeting){
+    const mt = (MEETINGS||[]).find(m => m.id === b.fromMeeting);
+    (mt && mt.notesLog || []).forEach(entry => (entry.actionItems||[]).forEach(ai => { if(!actionItemDone(ai.id)) out.actionItems.push(ai); }));
+  }
+  return out;
+}
+
+function mdPersonCardHtml(p, big){
+  if(!p) return '';
+  const chips = p.reasons.length ? p.reasons.map(r => `<span class="md-chip sev${r.sev}">${escapeHtml(r.t)}</span>`).join('') : '<span class="md-chip ok">All caught up</span>';
+  const tasks = big && p.openTasks.length ? `<ul class="md-sub">${p.openTasks.slice(0,6).map(t => `<li>${t.priority==='high'?'<b class="md-hi">HIGH</b> ':''}${escapeHtml(t.text)}${t.due ? ` <span class="md-dim">· due ${escapeHtml(shortDate(t.due))}</span>` : ''}</li>`).join('')}</ul>` : '';
+  return `<div class="md-person"><div class="md-pname">👤 ${escapeHtml(p.name)}${p.name !== p.label ? ` <span class="md-dim">${escapeHtml(p.label)}</span>` : ''}</div><div class="md-chips">${chips}</div>${tasks}</div>`;
+}
+
+async function mdBuild(iso){
+  const { all, warnings } = schedDayItems(iso);
+  const stops = all.filter(x => x.kind === 'block');
+  const pulls = await Promise.all(stops.map(x => mdStopPull(x.b, iso)));
+  return { all, warnings, stops, pulls };
+}
+
+async function renderMyDay(){
+  const wrap = document.getElementById('obMyDayWrap'); if(!wrap) return;
+  if(!myDayIso) myDayIso = localISODate();
+  const iso = myDayIso, today = localISODate();
+  wrap.innerHTML = '<div class="md-loading">Building your day…</div>';
+  const { all, warnings, stops, pulls } = await mdBuild(iso);
+  const plan = mdPlan(iso);
+  const dayItems = plan.items.filter(i => !i.stop);
+  const first = stops[0];
+  const places = [...new Set(stops.map(x => mdLocStyle(x.b).label))];
+  const dt = isoToDate(iso);
+  const dayLabel = iso === today ? 'Today' : iso === addDaysISO(today, 1) ? 'Tomorrow' : dt.toLocaleDateString(undefined, { weekday:'long' });
+  // My tasks due/overdue that day (not tied to a stop)
+  const myt = (MYT && MYT.tasks ? MYT.tasks : []).filter(t => !t.done && t.due && (t.due === iso || (iso === today && t.due < today))).sort((a,b) => (a.pri||4) - (b.pri||4));
+  const planLine = it => `<li class="md-plan-li ${it.done?'done':''}" data-pid="${it.id}"><button class="md-tick" title="Done">${it.done?'✓':''}</button><span>${escapeHtml(it.t)}</span><button class="md-x" title="Remove">×</button></li>`;
+  let html = `<div class="md-wrap">
+    <div class="md-top">
+      <div><div class="md-kicker">${escapeHtml(dayLabel)}</div><div class="md-date">${escapeHtml(dt.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' }))}</div>
+        <div class="md-sum">${stops.length ? `${stops.length} stop${stops.length>1?'s':''} · ${escapeHtml(places.join(' → '))}` : 'Nothing on My Schedule yet'}</div></div>
+      <div class="md-nav"><button class="mini-btn" id="mdPrev">‹</button><button class="mini-btn ${iso===today?'primary-mini':''}" id="mdToday">Today</button><button class="mini-btn ${iso===addDaysISO(today,1)?'primary-mini':''}" id="mdTmrw">Tomorrow</button><button class="mini-btn" id="mdNext">›</button><button class="mini-btn" id="mdPrint">🖨 Print</button></div>
+    </div>
+    ${first ? `<div class="md-start" style="--mc:${mdLocStyle(first.b).color};"><b>Start here:</b> ${escapeHtml(fmt12(first.b.start))} · ${mdLocStyle(first.b).icon} ${escapeHtml(schedLocLabel(first.b) || mdLocStyle(first.b).label)} — ${escapeHtml(first.b.title)}</div>` : `<div class="md-empty">Add blocks in <b>My schedule</b> below (Bridgeland, Candy Cars, job site, off site, or online) and your day lays itself out here.</div>`}
+    ${warnings.length ? `<div class="md-warn">${warnings.map(w => escapeHtml(w.text)).join('<br>')}</div>` : ''}
+    <div class="md-plan"><div class="md-h">My plan for the day</div><ul>${dayItems.map(planLine).join('')}</ul>
+      <form class="md-add" data-stop=""><input type="text" placeholder="Add something you want to get done today…"><button class="mini-btn primary-mini">Add</button></form></div>`;
+  all.forEach(x => {
+    if(x.kind !== 'block'){
+      html += `<div class="md-gen">${escapeHtml(fmt12(minToHm(x.s)))} · ${x.kind === 'travel' ? '🚙' : '📝'} ${escapeHtml(x.title)}${x.note ? ' — ' + escapeHtml(x.note) : ''}</div>`;
+      return;
+    }
+    const b = x.b, i = stops.indexOf(x), p = pulls[i], ls = mdLocStyle(b);
+    const stopItems = plan.items.filter(it => it.stop === b.id);
+    const pulled = [];
+    if(p.person) pulled.push(`<div class="md-h2">Who you're meeting</div>` + mdPersonCardHtml(p.person, true));
+    if(p.actionItems.length) pulled.push(`<div class="md-h2">Open items from this meeting (${p.actionItems.length})</div><ul class="md-sub">${p.actionItems.slice(0,8).map(ai => `<li>${escapeHtml(ai.text)}${ai.deadline ? ` <span class="md-dim">· due ${escapeHtml(ai.deadline)}</span>` : ''}${(ai.assignedLoc!==undefined && ai.assignedLoc!==null && ai.assignedLoc!=='') ? ` <span class="md-dim">· ${escapeHtml(assigneeShort(ai.assignedLoc + '::' + ai.assignedEmp))}</span>` : ''}</li>`).join('')}</ul>`);
+    if(p.people.length) pulled.push(`<div class="md-h2">People who need a tune-up here (${p.people.length})</div>` + p.people.slice(0,5).map(pp => mdPersonCardHtml(pp, false)).join('')
+      + (p.people.length > 5 ? `<details class="md-more"><summary>+${p.people.length - 5} more</summary>${p.people.slice(5).map(pp => mdPersonCardHtml(pp, false)).join('')}</details>` : ''));
+    else if(b.loc === 'bridgeland' || b.loc === 'candycars') pulled.push(`<div class="md-h2">People</div><div class="md-dim">Everyone here is caught up in Dailys.</div>`);
+    if(p.jobs.length) pulled.push(`<div class="md-h2">Open maintenance jobs (${p.jobs.length})</div><ul class="md-sub">${p.jobs.slice(0,8).map(j => `<li>${JOB_PRI[j.priority||'normal'].label ? `<b class="md-hi">${JOB_PRI[j.priority].label}</b> ` : ''}${escapeHtml(j.text)} <span class="md-dim">· ${escapeHtml(maintPropName(j.propertyId))}</span></li>`).join('')}</ul>`);
+    if(p.wl.length) pulled.push(`<div class="md-h2">Worker list items (${p.wl.length})</div><ul class="md-sub">${p.wl.slice(0,8).map(it => { const w = (WL.workers||[]).find(x => x.id === it.workerId); return `<li>${escapeHtml(it.text)} <span class="md-dim">· ${escapeHtml(w ? w.name : '')}${it.propertyId ? ' · ' + escapeHtml(maintPropName(it.propertyId)) : ''}</span></li>`; }).join('')}</ul>`);
+    html += `<div class="md-stop" style="--mc:${ls.color};">
+      <div class="md-stop-head"><span class="md-time">${escapeHtml(fmt12(b.start))}–${escapeHtml(fmt12(b.end))}</span><span class="md-loc">${ls.icon} ${escapeHtml(schedLocLabel(b) || ls.label)}</span></div>
+      <div class="md-title">${escapeHtml(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ` <span class="md-dim">with ${escapeHtml(assigneeShort(b.with))}</span>` : ''}</div>
+      ${b.notes ? `<div class="md-notes">${escapeHtml(b.notes)}</div>` : ''}
+      <div class="md-h2">My plan for this stop</div><ul>${stopItems.map(planLine).join('')}</ul>
+      <form class="md-add" data-stop="${escapeAttr(b.id)}"><input type="text" placeholder="Add something to cover here…"><button class="mini-btn">Add</button></form>
+      ${pulled.join('')}
+    </div>`;
+  });
+  if(myt.length) html += `<div class="md-stop" style="--mc:#8a8886;"><div class="md-title">My tasks due ${iso===today?'today':'this day'} (${myt.length})</div><ul class="md-sub">${myt.slice(0,12).map(t => `<li>${t.pri && t.pri < 4 ? `<b class="md-hi">P${t.pri}</b> ` : ''}${escapeHtml(t.text)}${t.due < iso ? ` <span class="md-dim">· was due ${escapeHtml(shortDate(t.due))}</span>` : ''}</li>`).join('')}</ul></div>`;
+  html += `</div>`;
+  wrap.innerHTML = html;
+  const go = d => { myDayIso = d; renderMyDay(); };
+  wrap.querySelector('#mdPrev').onclick = () => go(addDaysISO(iso, -1));
+  wrap.querySelector('#mdNext').onclick = () => go(addDaysISO(iso, 1));
+  wrap.querySelector('#mdToday').onclick = () => go(today);
+  wrap.querySelector('#mdTmrw').onclick = () => go(addDaysISO(today, 1));
+  wrap.querySelector('#mdPrint').onclick = () => printMyDayPlan(iso);
+  wrap.querySelectorAll('.md-add').forEach(f => f.onsubmit = async (e) => {
+    e.preventDefault(); const inp = f.querySelector('input'); const t = inp.value.trim(); if(!t) return;
+    mdPlan(iso).items.push({ id: mdNewId(), t, done: false, stop: f.dataset.stop || '' });
+    inp.value = ''; await mdSavePlan(iso); renderMyDay();
+  });
+  wrap.querySelectorAll('.md-plan-li').forEach(li => {
+    const it = () => mdPlan(iso).items.find(x => x.id === li.dataset.pid);
+    li.querySelector('.md-tick').onclick = async () => { const x = it(); if(!x) return; x.done = !x.done; await mdSavePlan(iso); renderMyDay(); };
+    li.querySelector('.md-x').onclick = async () => { const pl = mdPlan(iso); pl.items = pl.items.filter(x => x.id !== li.dataset.pid); await mdSavePlan(iso); renderMyDay(); };
+  });
+}
+
+async function printMyDayPlan(iso){
+  const w = window.open('', '_blank'); if(!w){ showToast('Allow pop-ups for Dailys to print'); return; }
+  w.document.write('<p style="font-family:Arial">Building your day…</p>');
+  const { all, stops, pulls } = await mdBuild(iso);
+  const plan = mdPlan(iso), esc = escapeHtml, dt = isoToDate(iso);
+  const box = t => `<li><span class="bx"></span><span>${t}</span></li>`;
+  const person = p => p ? `<div class="pp"><b>${esc(p.name)}</b> — ${p.reasons.length ? p.reasons.map(r => esc(r.t)).join(' · ') : 'all caught up'}</div>` : '';
+  let body = `<h1>${esc(dt.toLocaleDateString(undefined,{ weekday:'long', month:'long', day:'numeric' }))}</h1>
+    <div class="sub">${stops.length} stop${stops.length===1?'':'s'}${stops[0] ? ' · start at ' + esc(fmt12(stops[0].b.start)) + ', ' + esc(schedLocLabel(stops[0].b) || mdLocStyle(stops[0].b).label) : ''}</div>`;
+  const dayItems = plan.items.filter(i => !i.stop);
+  if(dayItems.length) body += `<h2>My plan for the day</h2><ul>${dayItems.map(i => box(esc(i.t))).join('')}</ul>`;
+  all.forEach(x => {
+    if(x.kind !== 'block'){ body += `<div class="gen">${esc(fmt12(minToHm(x.s)))} · ${esc(x.title)}${x.note ? ' — ' + esc(x.note) : ''}</div>`; return; }
+    const b = x.b, p = pulls[stops.indexOf(x)], ls = mdLocStyle(b);
+    body += `<div class="stop" style="border-color:${ls.color}"><div class="sh"><b>${esc(fmt12(b.start))}–${esc(fmt12(b.end))}</b> · ${esc(schedLocLabel(b) || ls.label)}</div><div class="st">${esc(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ' — with ' + esc(assigneeShort(b.with)) : ''}</div>`;
+    const items = plan.items.filter(i => i.stop === b.id);
+    if(items.length) body += `<ul>${items.map(i => box(esc(i.t))).join('')}</ul>`;
+    if(p.person) body += person(p.person) + (p.person.openTasks.length ? `<ul>${p.person.openTasks.slice(0,6).map(t => box(esc(t.text))).join('')}</ul>` : '');
+    if(p.actionItems.length) body += `<div class="h3">Open meeting items</div><ul>${p.actionItems.slice(0,8).map(ai => box(esc(ai.text))).join('')}</ul>`;
+    if(p.people.length) body += `<div class="h3">Tune-ups</div>` + p.people.slice(0,8).map(person).join('');
+    if(p.jobs.length) body += `<div class="h3">Maintenance</div><ul>${p.jobs.slice(0,8).map(j => box(esc(j.text) + ' <i>(' + esc(maintPropName(j.propertyId)) + ')</i>')).join('')}</ul>`;
+    if(p.wl.length) body += `<div class="h3">Worker list</div><ul>${p.wl.slice(0,8).map(i => box(esc(i.text))).join('')}</ul>`;
+    body += `</div>`;
+  });
+  body += `<h2>Notes</h2><div class="notes"></div>`;
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>My day — ${esc(dt.toDateString())}</title><style>
+    body{ font-family:'Segoe UI',Arial,sans-serif; color:#111; margin:24px 30px; font-size:12.5px; } h1{ font-size:20px; margin:0; } .sub{ color:#666; margin:2px 0 12px; }
+    h2{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; border-bottom:2px solid #111; padding-bottom:3px; margin:16px 0 6px; }
+    .stop{ border-left:5px solid #888; padding:6px 10px; margin:10px 0; page-break-inside:avoid; } .sh{ color:#444; } .st{ font-size:14px; font-weight:700; margin:2px 0 4px; }
+    .h3{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:#555; margin:6px 0 2px; } .pp{ margin:2px 0; } .gen{ color:#777; font-style:italic; margin:4px 0 4px 15px; }
+    ul{ list-style:none; padding:0; margin:2px 0; } li{ display:flex; gap:7px; padding:3px 0; } .bx{ flex-shrink:0; width:12px; height:12px; border:1.5px solid #111; border-radius:2px; margin-top:1px; }
+    .notes{ border:1px solid #bbb; height:80px; border-radius:4px; } @media print{ body{ margin:11mm; } button{ display:none; } }
+  </style></head><body><button onclick="window.print()" style="float:right;padding:6px 14px;">Print</button>${body}<script>setTimeout(function(){ window.print(); }, 400);<\/script></body></html>`);
+  w.document.close();
+}
+
 function printMyDay(iso){
   const today = localISODate();
   const isToday = iso === today;
