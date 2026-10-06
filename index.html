@@ -113,7 +113,10 @@
   .toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; margin-right:4px; }
   .tb-btn{ border:1px solid var(--win-border-strong); background:#fff; border-radius:6px; padding:6px 14px;
     font-size:12.5px; font-weight:600; cursor:pointer; color:var(--win-text-secondary); }
-  .tb-btn:hover{ background:var(--win-accent-light); border-color:var(--win-accent); color:var(--win-accent); }
+  /* update-39: hover tint only on real mouse devices - on touch screens :hover 'sticks' to the last
+     tapped button, which made two buttons look lit at once. */
+  @media (hover:hover){ .tb-btn:hover:not(.active){ background:var(--win-accent-light); border-color:var(--win-accent); color:var(--win-accent); } }
+  .tb-btn:focus:not(:focus-visible){ outline:none; }
   .kpi-badge{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; color:#fff; white-space:nowrap; flex-shrink:0; cursor:default; }
   .kpi-badge.kpi-good{ background:var(--kpi-good); }
   .kpi-badge.kpi-risk{ background:var(--kpi-risk); }
@@ -625,7 +628,12 @@
   .ai-access{ display:none !important; }
   body.is-ai .ai-access{ display:inline-block !important; }
   body.is-owner .owner-only{ display:inline-block !important; }
-  #adminToggleBtn.is-locked-state{ background:var(--win-accent); color:#fff; border-color:var(--win-accent); }
+  /* update-39: unlocked Admin is a status chip (green outline), not a 'selected tab', so it never
+     looks like a second lit button. */
+  #adminToggleBtn.is-locked-state{ background:#fff; color:#107C10; border-color:#107C10; }
+  #adminToggleBtn.is-locked-state::before{ content:'\25CF  '; font-size:9px; vertical-align:1px; }
+  /* While an admin/library screen is open, the store switch is not the 'current page' - dim it. */
+  body.panel-open .loc-btn.active{ background:transparent; color:var(--win-text-secondary); box-shadow:inset 0 -2px 0 var(--win-border-strong); }
   .proj-card{ border:1px solid var(--win-border); border-radius:8px; background:var(--win-surface); margin-bottom:12px; }
   .proj-step-row{ border-top:1px solid var(--win-border); padding:10px 0; }
   .attach-chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid var(--win-border-strong); border-radius:5px; padding:3px 8px; font-size:11.5px; margin:2px 4px 2px 0; background:#fff; }
@@ -8806,6 +8814,7 @@ function closeOtherPanels(except){
 }
 function updatePanelVisibility(){
   const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || (typeof aibShown !== 'undefined' && aibShown) || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  document.body.classList.toggle('panel-open', !!anyShown);
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
   // The Messages beacon/panel and Suggestion Box only belong on the employee's own daily page -
