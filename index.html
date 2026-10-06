@@ -278,6 +278,62 @@
 
 
 
+
+  /* -- update-44: Planner page -- */
+  #plannerView{ background:#f6f4ef; }
+  .pl-wrap{ max-width:1500px; margin:0 auto; font-family:'Work Sans','Segoe UI',sans-serif; color:#1f2328; }
+  .pl-head{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:12px; }
+  .pl-head h1{ font-family:'Oswald','Arial Narrow',sans-serif; font-size:30px; text-transform:uppercase; letter-spacing:.03em; margin:0; }
+  .pl-tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  .pl-tab{ font:inherit; font-size:14px; font-weight:600; border:1px solid #d6d2c9; background:#fff; border-radius:22px; padding:8px 16px; cursor:pointer; color:#3b3a39; }
+  .pl-tab.on{ background:#1f2328; color:#fff; border-color:#1f2328; }
+  .pl-weeknav{ display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .pl-week{ display:grid; grid-template-columns:270px 1fr; gap:14px; align-items:start; }
+  .pl-pool{ background:#fff; border:1px solid #e6e1d7; border-radius:14px; padding:12px; position:sticky; top:0; }
+  .pl-ph{ font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase; letter-spacing:.03em; }
+  .pl-psub{ font-size:12px; color:#605e5c; margin-bottom:8px; }
+  .pl-pi{ border:1px solid #ebe7df; border-left:5px solid var(--pc); border-radius:10px; padding:8px 9px; margin-bottom:8px; background:#fff; }
+  .pl-pi.full{ opacity:.6; }
+  .pl-pi-top{ display:flex; justify-content:space-between; gap:6px; font-size:13.5px; font-weight:600; }
+  .pl-cnt{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--pc); font-weight:700; white-space:nowrap; }
+  .pl-pi-sub{ font-size:11.5px; color:#605e5c; display:flex; align-items:center; gap:6px; }
+  .pl-edit{ margin-left:auto; border:none; background:none; cursor:pointer; color:#605e5c; font-size:13px; }
+  .pl-drop{ display:flex; gap:4px; margin-top:6px; }
+  .pl-drop button{ flex:1; font:inherit; font-size:12px; font-weight:700; border:1px solid #d6d2c9; background:#faf9f7; border-radius:6px; padding:4px 0; cursor:pointer; }
+  .pl-drop button:hover{ background:var(--pc); color:#fff; border-color:var(--pc); }
+  .pl-newpool summary{ cursor:pointer; font-size:13px; color:#0f6cbd; font-weight:600; padding:6px 0; }
+  .pl-newpool form{ display:flex; flex-direction:column; gap:6px; }
+  .pl-newpool input, .pl-newpool select{ border:1px solid #d6d2c9; border-radius:7px; padding:6px 8px; font-size:13px; width:100%; }
+  .pl-row{ display:flex; gap:6px; } .pl-row label{ flex:1; font-size:11px; color:#605e5c; display:flex; flex-direction:column; gap:2px; }
+  .pl-days{ display:grid; grid-template-columns:repeat(6, minmax(150px,1fr)); gap:10px; }
+  .pl-day{ background:#fff; border:1px solid #e6e1d7; border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; min-height:260px; }
+  .pl-day.today{ border-color:#d13438; box-shadow:0 0 0 2px rgba(209,52,56,.15); }
+  .pl-dlink{ font:inherit; border:none; background:none; padding:0; cursor:pointer; font-family:'Oswald',sans-serif; font-size:17px; text-transform:uppercase; letter-spacing:.02em; text-align:left; color:#1f2328; }
+  .pl-dlink span{ font-family:'JetBrains Mono',monospace; font-size:12px; color:#8a8886; }
+  .pl-chips{ display:flex; gap:4px; flex-wrap:wrap; }
+  .pl-chip{ font:inherit; font-size:12.5px; border:1.5px solid color-mix(in srgb, var(--pc) 45%, #fff); background:#fff; color:#3b3a39; border-radius:18px; padding:5px 10px; cursor:pointer; }
+  .pl-chip.sm{ padding:3px 7px; font-size:14px; }
+  .pl-chip.on{ background:var(--pc); color:#fff; border-color:var(--pc); }
+  .pl-blocks{ display:flex; flex-direction:column; gap:4px; flex:1; }
+  .pl-b{ font:inherit; text-align:left; border:none; border-left:4px solid var(--pc); background:color-mix(in srgb, var(--pc) 9%, #fff); border-radius:6px; padding:5px 7px; cursor:pointer; display:flex; flex-direction:column; }
+  .pl-b:hover{ background:color-mix(in srgb, var(--pc) 18%, #fff); }
+  .pl-bt{ font-family:'JetBrains Mono',monospace; font-size:11px; color:#605e5c; } .pl-bn{ font-size:12.5px; font-weight:600; line-height:1.25; }
+  .pl-none{ font-size:12px; color:#a19f9d; padding:6px 0; }
+  .pl-qadd{ display:flex; gap:4px; flex-wrap:wrap; } .pl-qadd select{ flex:1 1 100%; min-width:0; border:1px solid #d6d2c9; border-radius:6px; font-size:12px; padding:4px; } .pl-qadd input{ flex:1; min-width:0; border:1px solid #d6d2c9; border-radius:6px; font-size:12px; padding:3px; }
+  .pl-daypick{ display:flex; gap:6px; align-items:center; margin-bottom:12px; overflow-x:auto; }
+  .pl-dp{ font:inherit; border:1px solid #d6d2c9; background:#fff; border-radius:10px; padding:6px 12px; cursor:pointer; display:flex; flex-direction:column; align-items:center; min-width:62px; }
+  .pl-dp span{ font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8886; } .pl-dp.today{ border-color:#d13438; } .pl-dp.on{ background:#1f2328; color:#fff; border-color:#1f2328; } .pl-dp.on span{ color:#ddd; }
+  #plDayWrap .md-nav button:not(#mdPrint){ display:none; }
+  .md-ts, .md-te{ font:inherit; font-size:12px; border:1px solid #d6d2c9; border-radius:5px; padding:1px 3px; width:96px; }
+  .md-editb{ border:none; background:none; cursor:pointer; color:#605e5c; }
+  .pl-team-sub{ font-size:13px; color:#605e5c; margin-bottom:8px; }
+  .pl-team{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:14px; }
+  .pl-tcol{ background:#fff; border:1px solid #e6e1d7; border-top:5px solid var(--pc); border-radius:14px; padding:12px 14px; }
+  .pl-th{ font-family:'Oswald',sans-serif; font-size:20px; text-transform:uppercase; color:var(--pc); margin-bottom:6px; } .pl-th span{ font-family:'Work Sans',sans-serif; font-size:12px; color:#605e5c; text-transform:none; margin-left:6px; }
+  .pl-open-btn{ font:inherit; display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left; cursor:pointer; border:none; border-radius:14px; padding:16px 18px; margin:14px 0 4px; color:#fff; font-family:'Oswald',sans-serif; font-size:24px; text-transform:uppercase; letter-spacing:.03em; background:linear-gradient(120deg,#d13438,#7c3aed); }
+  .pl-open-btn span{ font-family:'Work Sans',sans-serif; font-size:13px; text-transform:none; opacity:.9; letter-spacing:0; }
+  @media (max-width:1100px){ .pl-days{ grid-template-columns:repeat(3, minmax(150px,1fr)); } }
+  @media (max-width:760px){ .pl-week{ grid-template-columns:1fr; } .pl-pool{ position:static; } .pl-days{ grid-template-columns:1fr; } .pl-day{ min-height:0; } .pl-head h1{ font-size:24px; } .pl-tab{ padding:7px 12px; font-size:13px; } }
   /* -- update-43: Notes & ideas -- */
   .nt-wrap{ background:#fff; border:1px solid var(--win-border); border-radius:14px; padding:14px; box-shadow:var(--shadow-1); font-family:'Work Sans','Segoe UI',sans-serif; }
   .nt-add{ display:flex; gap:6px; flex-wrap:wrap; } .nt-add input{ flex:2; min-width:200px; border:1px solid var(--win-border-strong); border-radius:7px; padding:8px 10px; font-size:13.5px; }
@@ -987,6 +1043,7 @@
       <button class="tb-btn admin-only" id="propMaintToggleBtn">Maintenance Jobs</button>
       <button class="tb-btn admin-only" id="projectsToggleBtn">Projects</button>
       <button class="tb-btn admin-only" id="suggestionsToggleBtn">Suggestion Box</button>
+      <button class="tb-btn owner-only" id="plannerToggleBtn">🗓 Planner</button>
       <button class="tb-btn owner-only" id="ownerBoardToggleBtn">Owner Board</button>
       <button class="tb-btn ai-access" id="aiBuildsToggleBtn">&#x1F916; AI Builds</button>
       <button class="tb-btn admin-only" id="metricsToggleBtn">Metrics</button>
@@ -1103,6 +1160,7 @@
     <div class="monthly-view" id="propMaintView"></div>
     <div class="monthly-view" id="projectsView"></div>
     <div class="monthly-view" id="ownerBoardView"></div>
+    <div class="monthly-view" id="plannerView"></div>
     <div class="monthly-view" id="aiBuildsView"></div>
     <div class="monthly-view" id="metricsView"></div>
     <div class="monthly-view" id="trainingView"></div>
@@ -2496,17 +2554,12 @@ function asgNeedsOwner(t){ return !assignedDoneInfo(t.id) && (assignedProgress(t
 function ownerAssignSectionsHtml(){
   const hdr = (t, sub) => `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:22px 0 8px 2px;">${t}</div>${sub ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:-4px 0 8px 2px;">${sub}</p>` : ''}`;
   return `
-    ${hdr('📍 My Day', 'Your day from My schedule, stop by stop, with who needs a tune-up and what’s open at each place. Add what you want to get done, then print it or pull it up on your phone.')}
-    <div id="obMyDayWrap"></div>
-    ${hdr('🗒 Notes & ideas', 'Jot anything — an idea, or something to go over with a person or at a place. My Day shows it when you’re meeting that person or at that place.')}
-    <div id="obNotesWrap"></div>
+    <button class="pl-open-btn" id="obOpenPlanner">🗓 Open Planner <span>Week · Day · Team check · Notes &amp; ideas</span></button>
     <div id="obWeekWrap"></div>
     ${hdr('My tasks', 'Everything on your plate, personal and business, in one place. Add it with a date and priority, check it off, block time for it, or hand it to someone.')}
     <div id="obTasksWrap"></div>
     ${hdr('Maintenance \u2014 quick add', 'Send a job straight to the crew. It shows at the top of their Maintenance page, highest priority first.')}
     <div id="obMaintWrap"></div>
-    ${hdr('My schedule', 'Block your own time. Every block has a location; prep and travel time are added automatically. Send anything to Google Calendar with one click.')}
-    <div id="obSchedWrap"></div>
     ${hdr('Needs you', 'Anyone stuck, and any reply you haven’t read yet.')}
     <div id="obNeedsWrap"></div>
     ${hdr('Assign a task', 'One owner, one deadline, one line on what “done” looks like. Chain it behind another task if it can’t start until that’s finished.')}
@@ -2907,6 +2960,7 @@ function refreshOwnerAssign(){
   renderNotes(); renderMyDay();
 }
 function wireOwnerAssignSections(){
+  const op = document.getElementById('obOpenPlanner'); if(op) op.onclick = () => openPlanner();
   refreshOwnerAssign();
   renderHandoffChecklist();
 }
@@ -2941,12 +2995,12 @@ const SCHED_LOCS = {
   candycars:  'Candy Cars',
   jobsite:    'Job site',
   vendor:     "Vendor's office",
-  phone:      'Phone / Zoom',
+  phone:      'Online (home office)',
   home:       'Home',
   other:      'Other',
 };
 // Default location per category, so quick-add is one less pick most of the time.
-const SCHED_DEFAULT_LOC = { ai:'candycars', creative:'home', offsite:'jobsite', vendor:'vendor', company:'bridgeland', oneonone:'bridgeland', focus:'bridgeland', floor:'bridgeland', admin:'bridgeland', personal:'other', other:'bridgeland' };
+const SCHED_DEFAULT_LOC = { ai:'candycars', creative:'home', offsite:'jobsite', vendor:'vendor', company:'candycars', oneonone:'candycars', focus:'bridgeland', floor:'bridgeland', admin:'bridgeland', personal:'other', other:'bridgeland' };
 let schedWeekStart = null; // Monday ISO of the week being shown
 let schedPrefill = null;
 
@@ -2988,10 +3042,8 @@ function parseMeetingTimeHm(t){
 }
 function meetingDefaultLoc(title){
   const t = String(title||'');
-  if(/digital|zoom|teams|phone/i.test(t)) return 'phone';
-  const cc = /\bCC\b|candy/i.test(t), bl = /\bBL\b|bridgeland/i.test(t);
-  if(cc && !bl) return 'candycars';
-  return 'bridgeland';
+  if(/digital|zoom|teams|phone|online/i.test(t)) return 'phone';
+  return 'candycars'; // update-44: Rob holds in-store meetings at Candy Cars
 }
 // The Dailys Meetings that fall on a given day, shaped like schedule blocks.
 function schedMeetingBlocks(iso){
@@ -3023,10 +3075,15 @@ function schedMerge(a, b){
   Object.entries(pa.meetings||{}).forEach(([id, m]) => { if(!meetings[id] || (m.u||0) >= (meetings[id].u||0)) meetings[id] = m; });
   const dayPlan = { ...(pb.dayPlan||{}) };
   Object.entries(pa.dayPlan||{}).forEach(([d, v]) => { if(!dayPlan[d] || (v.u||0) >= (dayPlan[d].u||0)) dayPlan[d] = v; });
+  const poolMap = new Map();
+  [pb.pool||[], pa.pool||[]].forEach(arr => arr.forEach(x => { const cur = poolMap.get(x.id); if(!cur || (x.u||0) >= (cur.u||0)) poolMap.set(x.id, x); }));
+  const pool = [...poolMap.values()].filter(x => !(deleted[x.id] && deleted[x.id] >= (x.u||0)));
+  const dayPlaces = { ...(pb.dayPlaces||{}) };
+  Object.entries(pa.dayPlaces||{}).forEach(([d, v]) => { if(!dayPlaces[d] || (v.u||0) >= (dayPlaces[d].u||0)) dayPlaces[d] = v; });
   const byId = new Map();
   [b, a].forEach(arr => arr.forEach(x => { if(x.id === '__prefs') return; const cur = byId.get(x.id); if(!cur || (x.u||0) >= (cur.u||0)) byId.set(x.id, x); }));
   const blocks = [...byId.values()].filter(x => !(deleted[x.id] && deleted[x.id] >= (x.u||0)));
-  return blocks.concat([{ id:'__prefs', meetings, deleted, dayPlan }]);
+  return blocks.concat([{ id:'__prefs', meetings, deleted, dayPlan, pool, dayPlaces }]);
 }
 function schedDelete(ids){ const p = schedPrefs(); if(!p.deleted) p.deleted = {}; const now = Date.now(); ids.forEach(id => { p.deleted[id] = now; }); OWNER_SCHEDULE = OWNER_SCHEDULE.filter(x => !ids.includes(x.id)); }
 async function saveOwnerSchedule(){
@@ -3046,8 +3103,8 @@ function schedLocLabel(b){ const base = SCHED_LOCS[b.loc] || ''; return b.locTex
 // Physical place key - used to decide whether travel is needed between two blocks. Phone/Zoom
 // never needs travel; two job sites only count as the same place if the address text matches.
 function schedPlace(b){
-  if(b.loc === 'phone') return null;
-  if(b.loc === 'bridgeland' || b.loc === 'candycars' || b.loc === 'home') return b.loc;
+  if(b.loc === 'phone' || b.loc === 'home') return 'home'; // online meetings are taken from the home office
+  if(b.loc === 'bridgeland' || b.loc === 'candycars') return b.loc;
   return b.loc + ':' + String(b.locText||'').trim().toLowerCase();
 }
 function gcalLink(title, date, start, end, details, location){
@@ -3776,6 +3833,203 @@ function renderOwnerMaint(){
 
 // ---- Print my day: today's or tomorrow's schedule + tasks on one clean page.
 // ======================================================================================
+// ---- Planner (update-44): its own page (toolbar "🗓 Planner", owner only) instead of the long
+// Owner Board scroll. Four tabs:
+//   Week  - a POOL of weekly commitments (e.g. Shreya ×3, Bridgeland visit ×2, job site ×1) on the
+//           left; Mon-Sat day columns on the right. Each day: tap which places you're hitting
+//           (Bridgeland / Candy Cars / Job site / Off site / Home office), drop pool items onto days,
+//           click any block to change its time/place.
+//   Day   - one day: places, every stop with editable start/end times, plan lists, things to go over.
+//   Team  - what employees missed (Dailys blank, overdue/stuck tasks, meeting items, metrics), by store.
+//   Notes - Notes & ideas.
+// Data rides on the existing 'owner-schedule' key: blocks as before (pool-placed ones carry poolId),
+// __prefs.pool = [{id,title,cat,loc,locText,start,dur,perWeek,with,u}], __prefs.dayPlaces[iso] =
+// {places:[...], u}. schedMerge merges both.
+// ======================================================================================
+let plannerShown = false;
+let plTab = 'week';
+let plWeek = null;     // Monday ISO
+let plDay = null;      // ISO for Day/Team tabs
+const PL_PLACES = [
+  { k:'bridgeland', label:'Bridgeland',  color:'#d13438', icon:'🏢' },
+  { k:'candycars',  label:'Candy Cars',  color:'#0f6cbd', icon:'🚗' },
+  { k:'jobsite',    label:'Job site',    color:'#d97706', icon:'🏗️' },
+  { k:'other',      label:'Off site',    color:'#7c3aed', icon:'📍' },
+  { k:'home',       label:'Home office', color:'#0d9488', icon:'🏠' },
+];
+function plPlace(k){ return PL_PLACES.find(p => p.k === k) || (k === 'phone' ? PL_PLACES[4] : k === 'vendor' ? PL_PLACES[3] : PL_PLACES[3]); }
+function plPool(){ const p = schedPrefs(); if(!Array.isArray(p.pool)) p.pool = []; return p.pool; }
+function plDayPlaces(iso){ const p = schedPrefs(); if(!p.dayPlaces) p.dayPlaces = {}; return (p.dayPlaces[iso] && p.dayPlaces[iso].places) || []; }
+function plSetDayPlaces(iso, places){ const p = schedPrefs(); if(!p.dayPlaces) p.dayPlaces = {}; p.dayPlaces[iso] = { places, u: Date.now() }; }
+function plNewId(){ return 'pool-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function plWeekDays(mon){ return [0,1,2,3,4,5].map(i => addDaysISO(mon, i)); }
+function plPlacedCount(item, mon){
+  const days = plWeekDays(mon).concat([addDaysISO(mon, 6)]);
+  return schedBlocks().filter(b => days.includes(b.date) && (b.poolId === item.id || (!b.poolId && b.title === item.title))).length;
+}
+function plSeedPool(){
+  const pool = plPool(); if(pool.length) return false;
+  const now = Date.now();
+  [
+    { title:'AI time with Shreya', cat:'ai', loc:'candycars', start:'14:00', dur:60, perWeek:3 },
+    { title:'Creative projects (home office)', cat:'creative', loc:'home', start:'17:00', dur:120, perWeek:3 },
+    { title:'Bridgeland visit', cat:'floor', loc:'bridgeland', start:'09:00', dur:90, perWeek:2 },
+    { title:'Candy Cars visit', cat:'floor', loc:'candycars', start:'11:00', dur:90, perWeek:2 },
+    { title:'Job site visit', cat:'offsite', loc:'jobsite', start:'13:00', dur:90, perWeek:1 },
+    { title:'Online meeting', cat:'vendor', loc:'phone', start:'16:00', dur:60, perWeek:2 },
+  ].forEach((x, i) => pool.push({ id: plNewId() + i, locText:'', with:'', ...x, u: now }));
+  return true;
+}
+function schedAfterChange(){ try{ renderOwnerSchedule(); }catch(e){} if(plannerShown) renderPlanner(); }
+
+async function plAddFromPool(item, iso, start){
+  const s = start || item.start || '09:00';
+  OWNER_SCHEDULE.push({ id:newSchedId(), title:item.title, cat:item.cat||'other', date:iso, start:s, end:minToHm(hmToMin(s) + (item.dur||60)), loc:item.loc||'candycars', locText:item.locText||'', with:item.with||'', notes:'', poolId:item.id, u:Date.now() });
+  const places = plDayPlaces(iso); const pk = item.loc === 'phone' ? 'home' : item.loc === 'vendor' ? 'other' : item.loc;
+  if(pk && !places.includes(pk)) plSetDayPlaces(iso, places.concat([pk]));
+  return saveOwnerSchedule();
+}
+
+async function renderPlanner(){
+  const view = document.getElementById('plannerView'); if(!view) return;
+  if(!plWeek) plWeek = planWeekStart();
+  if(!plDay) plDay = localISODate();
+  if(plSeedPool()) await saveOwnerSchedule();
+  const today = localISODate();
+  const tabs = [['week','🗓 Week'],['day','📍 Day'],['team','👥 Team check'],['notes','🗒 Notes & ideas']];
+  view.innerHTML = `<div class="pl-wrap">
+    <div class="pl-head"><h1>Planner</h1>
+      <div class="pl-tabs">${tabs.map(([k,l]) => `<button class="pl-tab ${plTab===k?'on':''}" data-t="${k}">${l}</button>`).join('')}</div></div>
+    <div id="plBody"></div></div>`;
+  view.querySelectorAll('.pl-tab').forEach(b => b.onclick = () => { plTab = b.dataset.t; renderPlanner(); });
+  const body = view.querySelector('#plBody');
+  if(plTab === 'week') return plRenderWeek(body, today);
+  if(plTab === 'day'){ body.innerHTML = plDayPicker(today) + '<div id="plDayWrap"></div>'; plWireDayPicker(body); mdTarget = 'plDayWrap'; myDayIso = plDay; mdNoTeam = true; await renderMyDay(); return; }
+  if(plTab === 'team'){ body.innerHTML = plDayPicker(today) + '<div id="plTeamWrap"><div class="md-loading">Checking the team…</div></div>'; plWireDayPicker(body); return plRenderTeam(); }
+  if(plTab === 'notes'){ body.innerHTML = '<div id="plNotesWrap"></div>'; notesTarget = 'plNotesWrap'; renderNotes(); }
+}
+function plDayPicker(today){
+  const days = plWeekDays(plWeek);
+  if(!days.includes(plDay)) plDay = days.includes(today) ? today : days[0];
+  return `<div class="pl-daypick"><button class="mini-btn" data-wk="-7">‹</button>${days.map(d => { const dt = isoToDate(d); return `<button class="pl-dp ${d===plDay?'on':''} ${d===today?'today':''}" data-d="${d}"><b>${dt.toLocaleDateString(undefined,{ weekday:'short' })}</b><span>${dt.getMonth()+1}/${dt.getDate()}</span></button>`; }).join('')}<button class="mini-btn" data-wk="7">›</button></div>`;
+}
+function plWireDayPicker(root){
+  root.querySelectorAll('.pl-dp').forEach(b => b.onclick = () => { plDay = b.dataset.d; renderPlanner(); });
+  root.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { plWeek = addDaysISO(plWeek, parseInt(b.dataset.wk,10)); plDay = plWeek; renderPlanner(); });
+}
+function plPlaceChips(iso, small){
+  const sel = plDayPlaces(iso);
+  return `<div class="pl-chips">${PL_PLACES.map(p => `<button class="pl-chip ${sel.includes(p.k)?'on':''} ${small?'sm':''}" style="--pc:${p.color};" data-iso="${iso}" data-pk="${p.k}" title="${escapeAttr(p.label)}">${p.icon}${small ? '' : ' ' + escapeHtml(p.label)}</button>`).join('')}</div>`;
+}
+function plWirePlaceChips(root, after){
+  root.querySelectorAll('.pl-chip').forEach(c => c.onclick = async () => {
+    const iso = c.dataset.iso, k = c.dataset.pk; const cur = plDayPlaces(iso);
+    plSetDayPlaces(iso, cur.includes(k) ? cur.filter(x => x !== k) : cur.concat([k]));
+    await saveOwnerSchedule(); after();
+  });
+}
+
+function plRenderWeek(body, today){
+  const days = plWeekDays(plWeek);
+  const pool = plPool();
+  const opt = (v, l, s) => `<option value="${escapeAttr(v)}" ${v===s?'selected':''}>${escapeHtml(l)}</option>`;
+  const placeOpts = s => PL_PLACES.map(p => opt(p.k === 'home' ? 'phone' : p.k, p.icon + ' ' + (p.k === 'home' ? 'Online / home office' : p.label), s)).join('');
+  let html = `<div class="pl-weeknav"><button class="mini-btn" id="plPrevW">‹ Prev</button><b>Week of ${escapeHtml(shortDate(plWeek))}</b><button class="mini-btn" id="plThisW">This week</button><button class="mini-btn" id="plNextW">Next ›</button></div>
+  <div class="pl-week">
+    <aside class="pl-pool"><div class="pl-ph">Weekly pool</div><div class="pl-psub">Your regular commitments. Tap a day letter to drop one in.</div>
+      ${pool.map(it => { const n = plPlacedCount(it, plWeek), need = it.perWeek || 1, pp = plPlace(it.loc === 'phone' ? 'home' : it.loc);
+        return `<div class="pl-pi ${n >= need ? 'full' : ''}" style="--pc:${pp.color};" data-pid="${it.id}">
+          <div class="pl-pi-top"><span class="pl-pi-t">${pp.icon} ${escapeHtml(it.title)}</span><span class="pl-cnt">${n}/${need}</span></div>
+          <div class="pl-pi-sub">${escapeHtml(fmt12(it.start||'09:00'))} · ${it.dur||60} min${it.with ? ' · ' + escapeHtml(assigneeShort(it.with)) : ''}<button class="pl-edit" title="Edit">✎</button></div>
+          <div class="pl-drop">${days.map(d => `<button data-d="${d}" title="${escapeAttr(shortDate(d))}">${isoToDate(d).toLocaleDateString(undefined,{ weekday:'narrow' })}</button>`).join('')}</div></div>`; }).join('')}
+      <details class="pl-newpool"><summary>+ Add to pool</summary>
+        <form id="plPoolForm"><input id="ppTitle" placeholder="e.g. Visit Shreya, Walk Elm St…" required>
+          <select id="ppLoc">${placeOpts('candycars')}</select><input id="ppLocText" placeholder="Address / property (optional)">
+          <div class="pl-row"><label>Start<input type="time" id="ppStart" value="09:00" step="900"></label><label>Min<input type="number" id="ppDur" value="60" min="15" step="15"></label><label>×/wk<input type="number" id="ppPer" value="1" min="1" max="7"></label></div>
+          <select id="ppWith"><option value="">With… (optional)</option>${activeRosterTargets().map(t => opt(t.locKey+'::'+t.empIdx, t.label, '')).join('')}</select>
+          <button class="mini-btn primary-mini">Add</button></form></details>
+    </aside>
+    <div class="pl-days">${days.map(d => {
+      const dt = isoToDate(d); const items = schedAllBlocksOn(d).sort((a,b) => hmToMin(a.start) - hmToMin(b.start));
+      return `<div class="pl-day ${d===today?'today':''}">
+        <div class="pl-dh"><button class="pl-dlink" data-d="${d}">${escapeHtml(dt.toLocaleDateString(undefined,{ weekday:'long' }))} <span>${dt.getMonth()+1}/${dt.getDate()}</span></button></div>
+        ${plPlaceChips(d, true)}
+        <div class="pl-blocks">${items.length ? items.map(b => { const pp = plPlace(b.loc === 'phone' ? 'home' : b.loc); return `<button class="pl-b" style="--pc:${pp.color};" data-bid="${escapeAttr(b.id)}" data-mid="${escapeAttr(b.fromMeeting||'')}" data-d="${d}"><span class="pl-bt">${escapeHtml(fmt12(b.start))}</span><span class="pl-bn">${escapeHtml(b.title)}</span></button>`; }).join('') : '<div class="pl-none">Nothing yet</div>'}</div>
+        <form class="pl-qadd" data-d="${d}"><select>${pool.map(it => opt(it.id, it.title, '')).join('')}<option value="__custom">Something else…</option></select><input type="time" step="900"><button class="mini-btn">+</button></form>
+      </div>`; }).join('')}</div>
+  </div>`;
+  body.innerHTML = html;
+  body.querySelector('#plPrevW').onclick = () => { plWeek = addDaysISO(plWeek, -7); renderPlanner(); };
+  body.querySelector('#plNextW').onclick = () => { plWeek = addDaysISO(plWeek, 7); renderPlanner(); };
+  body.querySelector('#plThisW').onclick = () => { plWeek = planWeekStart(); renderPlanner(); };
+  plWirePlaceChips(body, renderPlanner);
+  body.querySelectorAll('.pl-dlink').forEach(b => b.onclick = () => { plDay = b.dataset.d; plTab = 'day'; renderPlanner(); });
+  body.querySelectorAll('.pl-b').forEach(b => b.onclick = () => { if(b.dataset.mid) openSchedMeeting(b.dataset.mid, b.dataset.d); else openSchedBlock(b.dataset.bid); });
+  body.querySelectorAll('.pl-pi').forEach(card => {
+    const it = () => plPool().find(x => x.id === card.dataset.pid);
+    card.querySelectorAll('.pl-drop button').forEach(btn => btn.onclick = async () => { const x = it(); if(!x) return; btn.disabled = true; if(await plAddFromPool(x, btn.dataset.d)) showToast('Added ' + shortDate(btn.dataset.d)); renderPlanner(); });
+    card.querySelector('.pl-edit').onclick = () => plEditPool(card.dataset.pid);
+  });
+  body.querySelector('#plPoolForm').onsubmit = async (e) => {
+    e.preventDefault(); const q = s => body.querySelector(s);
+    const loc = q('#ppLoc').value;
+    plPool().push({ id: plNewId(), title: q('#ppTitle').value.trim(), cat: loc === 'jobsite' || loc === 'other' ? 'offsite' : loc === 'phone' ? 'vendor' : 'floor', loc, locText: q('#ppLocText').value.trim(), start: q('#ppStart').value || '09:00', dur: parseInt(q('#ppDur').value,10) || 60, perWeek: parseInt(q('#ppPer').value,10) || 1, with: q('#ppWith').value, u: Date.now() });
+    if(q('#ppWith').value) plPool()[plPool().length-1].cat = 'oneonone';
+    await saveOwnerSchedule(); renderPlanner();
+  };
+  body.querySelectorAll('.pl-qadd').forEach(f => f.onsubmit = async (e) => {
+    e.preventDefault(); const d = f.dataset.d; const sel = f.querySelector('select').value; const t = f.querySelector('input').value;
+    if(sel === '__custom'){ plCustomBlock(d, t); return; }
+    const x = plPool().find(p => p.id === sel); if(!x) return;
+    if(await plAddFromPool(x, d, t || null)) showToast('Added'); renderPlanner();
+  });
+}
+function plCustomBlock(iso, start){
+  const title = (window.prompt('What is it? (e.g. Vendor lunch, Bank meeting)') || '').trim(); if(!title) return;
+  const s = start || '09:00';
+  const id = newSchedId();
+  OWNER_SCHEDULE.push({ id, title, cat:'other', date:iso, start:s, end:minToHm(hmToMin(s)+60), loc:'candycars', locText:'', with:'', notes:'', u:Date.now() });
+  saveOwnerSchedule().then(() => { renderPlanner(); openSchedBlock(id); });
+}
+function plEditPool(pid){
+  const it = plPool().find(x => x.id === pid); if(!it) return;
+  const el = asgModalEl(); el._onClose = null;
+  const opt = (v, l, s) => `<option value="${escapeAttr(v)}" ${v===s?'selected':''}>${escapeHtml(l)}</option>`;
+  el.querySelector('.asg-modal').innerHTML = `<div class="asg-m-head"><div class="asg-m-title">Weekly pool item</div><button class="asg-m-x">✕</button></div>
+    <div class="asg-edit">
+      <label>Title<input id="peTitle" value="${escapeAttr(it.title)}"></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;"><label style="flex:1;min-width:140px;">Place<select id="peLoc">${PL_PLACES.map(p => opt(p.k === 'home' ? 'phone' : p.k, p.icon + ' ' + (p.k === 'home' ? 'Online / home office' : p.label), it.loc)).join('')}</select></label>
+        <label style="flex:2;min-width:160px;">Address / property<input id="peLocText" value="${escapeAttr(it.locText||'')}"></label></div>
+      <div style="display:flex;gap:10px;"><label style="flex:1;">Usual start<input type="time" id="peStart" value="${escapeAttr(it.start||'09:00')}" step="900"></label><label style="flex:1;">Minutes<input type="number" id="peDur" value="${it.dur||60}" step="15" min="15"></label><label style="flex:1;">Times / week<input type="number" id="pePer" value="${it.perWeek||1}" min="1" max="7"></label></div>
+      <label>With<select id="peWith"><option value="">—</option>${activeRosterTargets().map(t => opt(t.locKey+'::'+t.empIdx, t.label, it.with||'')).join('')}</select></label>
+      <div class="sch-m-actions"><button class="mini-btn primary-mini" id="peSave">Save</button><button class="mini-btn danger-mini" id="peDel">Remove from pool</button></div>
+    </div>`;
+  const m = el.querySelector('.asg-modal'), q = s => m.querySelector(s);
+  q('.asg-m-x').onclick = closeAsgModal;
+  q('#peSave').onclick = async () => { Object.assign(it, { title:q('#peTitle').value.trim() || it.title, loc:q('#peLoc').value, locText:q('#peLocText').value.trim(), start:q('#peStart').value || '09:00', dur:parseInt(q('#peDur').value,10)||60, perWeek:parseInt(q('#pePer').value,10)||1, with:q('#peWith').value, u:Date.now() }); await saveOwnerSchedule(); closeAsgModal(); renderPlanner(); };
+  q('#peDel').onclick = async () => { const p = schedPrefs(); p.pool = plPool().filter(x => x.id !== pid); if(!p.deleted) p.deleted = {}; p.deleted[pid] = Date.now(); await saveOwnerSchedule(); closeAsgModal(); renderPlanner(); };
+  el.classList.add('show');
+}
+
+async function plRenderTeam(){
+  const wrap = document.getElementById('plTeamWrap'); if(!wrap) return;
+  await loadAllMetricEntriesSnapshot();
+  const chosen = plDayPlaces(plDay).filter(k => k === 'bridgeland' || k === 'candycars');
+  const stores = chosen.length ? chosen : ['bridgeland', 'candycars'];
+  let html = `<div class="pl-team-sub">${chosen.length ? `For the store${chosen.length>1?'s':''} you’re hitting ${escapeHtml(shortDate(plDay))}.` : `You haven’t picked a store for ${escapeHtml(shortDate(plDay))}, so here’s both.`} Dailys counts the last 5 workdays.</div><div class="pl-team">`;
+  for(const s of stores){
+    const pp = plPlace(s);
+    const ppl = (await Promise.all(mdPeopleAt(s).map(mdPersonIssues))).filter(Boolean).sort((a,b) => b.score - a.score);
+    const need = ppl.filter(p => p.reasons.length), ok = ppl.filter(p => !p.reasons.length);
+    html += `<section class="pl-tcol" style="--pc:${pp.color};"><div class="pl-th">${pp.icon} ${escapeHtml(pp.label)} <span>${need.length} need a tune-up</span></div>
+      ${need.map(p => mdPersonCardHtml(p, true)).join('') || '<div class="md-dim">Everyone’s caught up.</div>'}
+      ${ok.length ? `<details class="md-more"><summary>Caught up (${ok.length})</summary>${ok.map(p => `<div class="md-dim">✓ ${escapeHtml(p.name)}</div>`).join('')}</details>` : ''}</section>`;
+  }
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+// ======================================================================================
 // ---- Notes & ideas (update-43). Rob's catch-all for random ideas and "things to go over",
 // filed under a PERSON (roster line), a PLACE (Bridgeland, Candy Cars, any property) or just
 // "Idea". My Day pulls them in automatically: a one-on-one shows what to go over with that person,
@@ -3784,6 +4038,7 @@ function renderOwnerMaint(){
 //   { items:[{ id, t, target:'idea' | 'p:<loc::idx>' | 'pl:<propId>', done, doneAt, ts, u }], deleted:{id:ts} }
 // ======================================================================================
 let NOTES = { items: [], deleted: {} };
+let notesTarget = 'obNotesWrap';
 let notesView = 'open';   // open | idea | people | places | done
 let notesSearch = '';
 let notesLastTarget = 'idea';
@@ -3818,7 +4073,7 @@ function notesTargetOptions(sel){
     + `<optgroup label="People">${people.map(x => o(x.v, x.l)).join('')}</optgroup>`;
 }
 function renderNotes(){
-  const wrap = document.getElementById('obNotesWrap'); if(!wrap) return;
+  const wrap = document.getElementById(notesTarget); if(!wrap) return;
   const q = notesSearch.trim().toLowerCase();
   let items = NOTES.items.slice();
   if(notesView === 'done') items = items.filter(n => n.done);
@@ -3893,13 +4148,15 @@ function renderNotes(){
 // (dayPlan[iso] = {items:[{id,t,done,stop}], u}) so it rides on the same owner-gated, merge-on-save key.
 // ======================================================================================
 let myDayIso = null;
+let mdTarget = 'obMyDayWrap';
+let mdNoTeam = false;
 const MD_LOC_STYLE = {
   bridgeland:{ color:'#d13438', icon:'🏢', label:'Bridgeland' },
   candycars: { color:'#0f6cbd', icon:'🚗', label:'Candy Cars' },
   jobsite:   { color:'#d97706', icon:'🏗️', label:'Job site' },
   vendor:    { color:'#7c3aed', icon:'🤝', label:'Off site' },
   other:     { color:'#7c3aed', icon:'📍', label:'Off site' },
-  phone:     { color:'#0d9488', icon:'💻', label:'Online / phone' },
+  phone:     { color:'#0d9488', icon:'💻', label:'Online — home office' },
   home:      { color:'#64748b', icon:'🏠', label:'Home' },
 };
 function mdLocStyle(b){ return MD_LOC_STYLE[b.loc] || MD_LOC_STYLE.other; }
@@ -3972,7 +4229,7 @@ async function mdStopPull(b, iso){
   if(b.with) addNotes('p:' + b.with, '');
   if(b.with){ out.person = await mdPersonIssues(b.with); }
   if(b.loc === 'bridgeland' || b.loc === 'candycars'){
-    const ppl = await Promise.all(mdPeopleAt(b.loc).filter(k => k !== b.with).map(mdPersonIssues));
+    const ppl = mdNoTeam ? [] : await Promise.all(mdPeopleAt(b.loc).filter(k => k !== b.with).map(mdPersonIssues));
     out.people = ppl.filter(p => p && p.reasons.length).sort((a,c) => c.score - a.score);
     addNotes('pl:' + b.loc, '');
     mdPeopleAt(b.loc).filter(k => k !== b.with).forEach(k => addNotes('p:' + k, assigneeShort(k)));
@@ -3999,13 +4256,20 @@ function mdPersonCardHtml(p, big){
 
 async function mdBuild(iso){
   const { all, warnings } = schedDayItems(iso);
+  // update-44: places Rob picked for the day (Planner) that have no timed block yet still show as stops.
+  const placed = new Set(all.filter(x => x.kind === 'block').map(x => (x.b.loc === 'phone' ? 'home' : x.b.loc === 'vendor' ? 'other' : x.b.loc)));
+  (typeof plDayPlaces === 'function' ? plDayPlaces(iso) : []).forEach(k => {
+    if(placed.has(k)) return;
+    const pp = plPlace(k);
+    all.push({ kind:'block', untimed:true, s: 24*60, e: 24*60, b:{ id:'place:' + k + ':' + iso, title: pp.label + (k === 'home' ? '' : ' visit'), loc: k, locText:'', start:'', end:'', with:'', notes:'', cat:'other' } });
+  });
   const stops = all.filter(x => x.kind === 'block');
   const pulls = await Promise.all(stops.map(x => mdStopPull(x.b, iso)));
   return { all, warnings, stops, pulls };
 }
 
 async function renderMyDay(){
-  const wrap = document.getElementById('obMyDayWrap'); if(!wrap) return;
+  const wrap = document.getElementById(mdTarget); if(!wrap) return;
   if(!myDayIso) myDayIso = localISODate();
   const iso = myDayIso, today = localISODate();
   wrap.innerHTML = '<div class="md-loading">Building your day…</div>';
@@ -4025,7 +4289,8 @@ async function renderMyDay(){
         <div class="md-sum">${stops.length ? `${stops.length} stop${stops.length>1?'s':''} · ${escapeHtml(places.join(' → '))}` : 'Nothing on My Schedule yet'}</div></div>
       <div class="md-nav"><button class="mini-btn" id="mdPrev">‹</button><button class="mini-btn ${iso===today?'primary-mini':''}" id="mdToday">Today</button><button class="mini-btn ${iso===addDaysISO(today,1)?'primary-mini':''}" id="mdTmrw">Tomorrow</button><button class="mini-btn" id="mdNext">›</button><button class="mini-btn" id="mdPrint">🖨 Print</button></div>
     </div>
-    ${first ? `<div class="md-start" style="--mc:${mdLocStyle(first.b).color};"><b>Start here:</b> ${escapeHtml(fmt12(first.b.start))} · ${mdLocStyle(first.b).icon} ${escapeHtml(schedLocLabel(first.b) || mdLocStyle(first.b).label)} — ${escapeHtml(first.b.title)}</div>` : `<div class="md-empty">Add blocks in <b>My schedule</b> below (Bridgeland, Candy Cars, job site, off site, or online) and your day lays itself out here.</div>`}
+    ${mdNoTeam ? `<div class="md-h" style="margin-top:10px;">Where I'm going</div>` + plPlaceChips(iso, false) : ''}
+    ${first ? `<div class="md-start" style="--mc:${mdLocStyle(first.b).color};"><b>Start here:</b> ${first.untimed ? '' : escapeHtml(fmt12(first.b.start)) + ' · '}${mdLocStyle(first.b).icon} ${escapeHtml(schedLocLabel(first.b) || mdLocStyle(first.b).label)} — ${escapeHtml(first.b.title)}</div>` : `<div class="md-empty">Pick where you're going above, or add blocks in the <b>Week</b> tab (Bridgeland, Candy Cars, job site, off site, or online) and your day lays itself out here.</div>`}
     ${warnings.length ? `<div class="md-warn">${warnings.map(w => escapeHtml(w.text)).join('<br>')}</div>` : ''}
     <div class="md-plan"><div class="md-h">My plan for the day</div><ul>${dayItems.map(planLine).join('')}</ul>
       <form class="md-add" data-stop=""><input type="text" placeholder="Add something you want to get done today…"><button class="mini-btn primary-mini">Add</button></form></div>`;
@@ -4042,11 +4307,11 @@ async function renderMyDay(){
     if(p.actionItems.length) pulled.push(`<div class="md-h2">Open items from this meeting (${p.actionItems.length})</div><ul class="md-sub">${p.actionItems.slice(0,8).map(ai => `<li>${escapeHtml(ai.text)}${ai.deadline ? ` <span class="md-dim">· due ${escapeHtml(ai.deadline)}</span>` : ''}${(ai.assignedLoc!==undefined && ai.assignedLoc!==null && ai.assignedLoc!=='') ? ` <span class="md-dim">· ${escapeHtml(assigneeShort(ai.assignedLoc + '::' + ai.assignedEmp))}</span>` : ''}</li>`).join('')}</ul>`);
     if(p.people.length) pulled.push(`<div class="md-h2">People who need a tune-up here (${p.people.length})</div>` + p.people.slice(0,5).map(pp => mdPersonCardHtml(pp, false)).join('')
       + (p.people.length > 5 ? `<details class="md-more"><summary>+${p.people.length - 5} more</summary>${p.people.slice(5).map(pp => mdPersonCardHtml(pp, false)).join('')}</details>` : ''));
-    else if(b.loc === 'bridgeland' || b.loc === 'candycars') pulled.push(`<div class="md-h2">People</div><div class="md-dim">Everyone here is caught up in Dailys.</div>`);
+    else if(!mdNoTeam && (b.loc === 'bridgeland' || b.loc === 'candycars')) pulled.push(`<div class="md-h2">People</div><div class="md-dim">Everyone here is caught up in Dailys.</div>`);
     if(p.jobs.length) pulled.push(`<div class="md-h2">Open maintenance jobs (${p.jobs.length})</div><ul class="md-sub">${p.jobs.slice(0,8).map(j => `<li>${JOB_PRI[j.priority||'normal'].label ? `<b class="md-hi">${JOB_PRI[j.priority].label}</b> ` : ''}${escapeHtml(j.text)} <span class="md-dim">· ${escapeHtml(maintPropName(j.propertyId))}</span></li>`).join('')}</ul>`);
     if(p.wl.length) pulled.push(`<div class="md-h2">Worker list items (${p.wl.length})</div><ul class="md-sub">${p.wl.slice(0,8).map(it => { const w = (WL.workers||[]).find(x => x.id === it.workerId); return `<li>${escapeHtml(it.text)} <span class="md-dim">· ${escapeHtml(w ? w.name : '')}${it.propertyId ? ' · ' + escapeHtml(maintPropName(it.propertyId)) : ''}</span></li>`; }).join('')}</ul>`);
     html += `<div class="md-stop" style="--mc:${ls.color};">
-      <div class="md-stop-head"><span class="md-time">${escapeHtml(fmt12(b.start))}–${escapeHtml(fmt12(b.end))}</span><span class="md-loc">${ls.icon} ${escapeHtml(schedLocLabel(b) || ls.label)}</span></div>
+      <div class="md-stop-head"><span class="md-time">${x.untimed ? (mdNoTeam ? `Set a time: <input type="time" class="md-newt" data-pk="${escapeAttr(b.loc)}" data-title="${escapeAttr(b.title)}" step="900">` : 'No time set') : (mdNoTeam && !b.fromMeeting) ? `<input type="time" class="md-ts" data-bid="${escapeAttr(b.id)}" value="${escapeAttr(b.start)}" step="900">–<input type="time" class="md-te" data-bid="${escapeAttr(b.id)}" value="${escapeAttr(b.end)}" step="900">` : escapeHtml(fmt12(b.start)) + '–' + escapeHtml(fmt12(b.end))}${(mdNoTeam && !x.untimed) ? ` <button class="md-editb" data-bid="${escapeAttr(b.id)}" data-mid="${escapeAttr(b.fromMeeting||'')}" title="Edit">✎</button>` : ''}</span><span class="md-loc">${ls.icon} ${escapeHtml(b.loc === 'phone' ? 'Online — home office' : (schedLocLabel(b) || ls.label))}</span></div>
       <div class="md-title">${escapeHtml(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ` <span class="md-dim">with ${escapeHtml(assigneeShort(b.with))}</span>` : ''}</div>
       ${b.notes ? `<div class="md-notes">${escapeHtml(b.notes)}</div>` : ''}
       <div class="md-h2">My plan for this stop</div><ul>${stopItems.map(planLine).join('')}</ul>
@@ -4057,7 +4322,27 @@ async function renderMyDay(){
   if(myt.length) html += `<div class="md-stop" style="--mc:#8a8886;"><div class="md-title">My tasks due ${iso===today?'today':'this day'} (${myt.length})</div><ul class="md-sub">${myt.slice(0,12).map(t => `<li>${t.pri && t.pri < 4 ? `<b class="md-hi">P${t.pri}</b> ` : ''}${escapeHtml(t.text)}${t.due < iso ? ` <span class="md-dim">· was due ${escapeHtml(shortDate(t.due))}</span>` : ''}</li>`).join('')}</ul></div>`;
   html += `</div>`;
   wrap.innerHTML = html;
-  const go = d => { myDayIso = d; renderMyDay(); };
+  wrap.querySelectorAll('.md-ts, .md-te').forEach(inp => inp.onchange = async () => {
+    const blk = OWNER_SCHEDULE.find(x => x.id === inp.dataset.bid); if(!blk) return;
+    const s = wrap.querySelector(`.md-ts[data-bid="${blk.id}"]`).value, e = wrap.querySelector(`.md-te[data-bid="${blk.id}"]`).value;
+    if(!s || !e) return;
+    let ns = s, ne = e;
+    if(inp.classList.contains('md-ts')){ const len = hmToMin(blk.end) - hmToMin(blk.start); ne = minToHm(hmToMin(s) + Math.max(15, len)); }
+    if(hmToMin(ne) <= hmToMin(ns)){ showToast('End has to be after start'); return; }
+    blk.start = ns; blk.end = ne; blk.u = Date.now();
+    if(await saveOwnerSchedule()) showToast('Time updated');
+    renderMyDay();
+  });
+  wrap.querySelectorAll('.md-newt').forEach(inp => inp.onchange = async () => {
+    if(!inp.value) return;
+    const k = inp.dataset.pk;
+    OWNER_SCHEDULE.push({ id:newSchedId(), title:inp.dataset.title, cat: k === 'jobsite' || k === 'other' ? 'offsite' : k === 'home' ? 'admin' : 'floor', date:iso, start:inp.value, end:minToHm(hmToMin(inp.value) + 90), loc:k, locText:'', with:'', notes:'', u:Date.now() });
+    if(await saveOwnerSchedule()) showToast('Added to your day');
+    renderMyDay();
+  });
+  wrap.querySelectorAll('.md-editb').forEach(bt => bt.onclick = () => { if(bt.dataset.mid) openSchedMeeting(bt.dataset.mid, iso); else openSchedBlock(bt.dataset.bid); });
+  if(mdNoTeam) plWirePlaceChips(wrap, renderMyDay);
+  const go = d => { myDayIso = d; if(mdNoTeam){ plDay = d; } renderMyDay(); };
   wrap.querySelector('#mdPrev').onclick = () => go(addDaysISO(iso, -1));
   wrap.querySelector('#mdNext').onclick = () => go(addDaysISO(iso, 1));
   wrap.querySelector('#mdToday').onclick = () => go(today);
@@ -4087,13 +4372,13 @@ async function printMyDayPlan(iso){
   const box = t => `<li><span class="bx"></span><span>${t}</span></li>`;
   const person = p => p ? `<div class="pp"><b>${esc(p.name)}</b> — ${p.reasons.length ? p.reasons.map(r => esc(r.t)).join(' · ') : 'all caught up'}</div>` : '';
   let body = `<h1>${esc(dt.toLocaleDateString(undefined,{ weekday:'long', month:'long', day:'numeric' }))}</h1>
-    <div class="sub">${stops.length} stop${stops.length===1?'':'s'}${stops[0] ? ' · start at ' + esc(fmt12(stops[0].b.start)) + ', ' + esc(schedLocLabel(stops[0].b) || mdLocStyle(stops[0].b).label) : ''}</div>`;
+    <div class="sub">${stops.length} stop${stops.length===1?'':'s'}${stops[0] ? ' · start ' + (stops[0].untimed ? '' : 'at ' + esc(fmt12(stops[0].b.start))) + ', ' + esc(schedLocLabel(stops[0].b) || mdLocStyle(stops[0].b).label) : ''}</div>`;
   const dayItems = plan.items.filter(i => !i.stop);
   if(dayItems.length) body += `<h2>My plan for the day</h2><ul>${dayItems.map(i => box(esc(i.t))).join('')}</ul>`;
   all.forEach(x => {
     if(x.kind !== 'block'){ body += `<div class="gen">${esc(fmt12(minToHm(x.s)))} · ${esc(x.title)}${x.note ? ' — ' + esc(x.note) : ''}</div>`; return; }
     const b = x.b, p = pulls[stops.indexOf(x)], ls = mdLocStyle(b);
-    body += `<div class="stop" style="border-color:${ls.color}"><div class="sh"><b>${esc(fmt12(b.start))}–${esc(fmt12(b.end))}</b> · ${esc(schedLocLabel(b) || ls.label)}</div><div class="st">${esc(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ' — with ' + esc(assigneeShort(b.with)) : ''}</div>`;
+    body += `<div class="stop" style="border-color:${ls.color}"><div class="sh"><b>${x.untimed ? 'No time set' : esc(fmt12(b.start)) + '–' + esc(fmt12(b.end))}</b> · ${esc(schedLocLabel(b) || ls.label)}</div><div class="st">${esc(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ' — with ' + esc(assigneeShort(b.with)) : ''}</div>`;
     const items = plan.items.filter(i => i.stop === b.id);
     if(items.length) body += `<ul>${items.map(i => box(esc(i.t))).join('')}</ul>`;
     if(p.notes.length) body += `<div class="h3">Things to go over</div><ul>${p.notes.map(({n, who}) => box(esc(n.t) + (who ? ' <i>(' + esc(who) + ')</i>' : ''))).join('')}</ul>`;
@@ -4795,7 +5080,7 @@ function openSchedMeeting(meetingId, iso){
   q('#smSave').onclick = async () => {
     prefs.meetings[meetingId] = { loc: q('#smLoc').value, locText: q('#smLocText').value.trim(), dur: parseInt(q('#smDur').value,10), hidden: q('#smHide').checked, u: Date.now() };
     if(await saveOwnerSchedule()) showToast(q('#smHide').checked ? 'Hidden from your schedule' : 'Saved');
-    closeAsgModal(); renderOwnerSchedule();
+    closeAsgModal(); schedAfterChange();
   };
   el.classList.add('show');
 }
@@ -4854,19 +5139,19 @@ function openSchedBlock(id){
     const np = q('#seNoPrep'); if(np) v.noPrep = np.checked;
     Object.assign(b, v); b.u = Date.now();
     if(await saveOwnerSchedule()) showToast('Saved');
-    closeAsgModal(); renderOwnerSchedule();
+    closeAsgModal(); schedAfterChange();
   };
   const op = q('#seOpenProj'); if(op) op.onclick = () => openProjectInPlanner(b.project);
   q('#seDel').onclick = async () => {
     schedDelete([b.id]);
     if(await saveOwnerSchedule()) showToast('Deleted');
-    closeAsgModal(); renderOwnerSchedule();
+    closeAsgModal(); schedAfterChange();
   };
   const ds = q('#seDelSeries');
   if(ds) ds.onclick = async () => {
     schedDelete(OWNER_SCHEDULE.filter(x => x.series === b.series && x.date >= b.date).map(x => x.id));
     if(await saveOwnerSchedule()) showToast('Deleted repeats');
-    closeAsgModal(); renderOwnerSchedule();
+    closeAsgModal(); schedAfterChange();
   };
   el.classList.add('show');
 }
@@ -9283,6 +9568,7 @@ function closeOtherPanels(except){
   if(except !== 'projects' && projectsShown){ projectsShown = false; document.getElementById('projectsToggleBtn').classList.remove('active'); document.getElementById('projectsView').classList.remove('show'); }
   if(except !== 'suggestions' && suggestionsShown){ suggestionsShown = false; document.getElementById('suggestionsToggleBtn').classList.remove('active'); document.getElementById('suggestionsView').classList.remove('show'); }
   if(except !== 'aibuilds' && aibShown){ aibShown = false; const ab = document.getElementById('aiBuildsToggleBtn'); if(ab) ab.classList.remove('active'); document.getElementById('aiBuildsView').classList.remove('show'); }
+  if(except !== 'planner' && plannerShown){ plannerShown = false; document.getElementById('plannerToggleBtn').classList.remove('active'); document.getElementById('plannerView').classList.remove('show'); }
   if(except !== 'ownerboard' && ownerBoardShown){ ownerBoardShown = false; document.getElementById('ownerBoardToggleBtn').classList.remove('active'); document.getElementById('ownerBoardView').classList.remove('show'); }
   if(except !== 'metrics' && metricsShown){ metricsShown = false; document.getElementById('metricsToggleBtn').classList.remove('active'); document.getElementById('metricsView').classList.remove('show'); }
   if(except !== 'training' && trainingShown){ trainingShown = false; document.getElementById('trainingToggleBtn').classList.remove('active'); document.getElementById('trainingView').classList.remove('show'); }
@@ -9291,7 +9577,7 @@ function closeOtherPanels(except){
   if(except !== 'traininglib' && trainingLibraryShown){ trainingLibraryShown = false; document.getElementById('trainingLibraryToggleBtn').classList.remove('active'); document.getElementById('trainingLibraryView').classList.remove('show'); }
 }
 function updatePanelVisibility(){
-  const anyShown = monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || (typeof aibShown !== 'undefined' && aibShown) || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
+  const anyShown = plannerShown || monthlyShown || setupShown || onetimeReviewShown || meetingsShown || vendorMeetingsShown || socialShown || propMaintShown || projectsShown || suggestionsShown || ownerBoardShown || (typeof aibShown !== 'undefined' && aibShown) || metricsShown || trainingShown || targetsShown || dashboardShown || trainingLibraryShown;
   document.body.classList.toggle('panel-open', !!anyShown);
   document.querySelector('.sidebar').style.display = anyShown ? 'none' : '';
   document.querySelector('.main').style.display = anyShown ? 'none' : '';
@@ -9431,6 +9717,20 @@ document.getElementById('projectsToggleBtn').onclick = async () => {
   if(projectsShown) await renderProjects();
 };
 
+async function openPlanner(tab){
+  if(!(await requireOwner())) return;
+  closeOtherPanels('planner');
+  plannerShown = true; if(tab) plTab = tab;
+  document.getElementById('plannerToggleBtn').classList.add('active');
+  document.getElementById('plannerView').classList.add('show');
+  updatePanelVisibility();
+  await refreshServerState();
+  await renderPlanner();
+}
+document.getElementById('plannerToggleBtn').onclick = async () => {
+  if(plannerShown){ closeOtherPanels(''); plannerShown = false; document.getElementById('plannerToggleBtn').classList.remove('active'); document.getElementById('plannerView').classList.remove('show'); updatePanelVisibility(); return; }
+  await openPlanner();
+};
 document.getElementById('ownerBoardToggleBtn').onclick = async () => {
   if(!(await requireOwner())) return;
   closeOtherPanels('ownerboard');
