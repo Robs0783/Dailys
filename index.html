@@ -277,6 +277,21 @@
 
 
 
+
+  /* -- update-43: Notes & ideas -- */
+  .nt-wrap{ background:#fff; border:1px solid var(--win-border); border-radius:14px; padding:14px; box-shadow:var(--shadow-1); font-family:'Work Sans','Segoe UI',sans-serif; }
+  .nt-add{ display:flex; gap:6px; flex-wrap:wrap; } .nt-add input{ flex:2; min-width:200px; border:1px solid var(--win-border-strong); border-radius:7px; padding:8px 10px; font-size:13.5px; }
+  .nt-add select{ flex:1; min-width:170px; border:1px solid var(--win-border-strong); border-radius:7px; padding:7px; font-size:13px; }
+  .nt-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 4px; align-items:center; }
+  .nt-tabs input{ margin-left:auto; border:1px solid var(--win-border-strong); border-radius:7px; padding:6px 9px; font-size:12.5px; min-width:140px; }
+  .nt-c{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.75; }
+  .nt-empty{ padding:14px; color:var(--win-text-secondary); font-size:13px; }
+  .nt-group{ margin-top:10px; } .nt-gh{ font-size:13px; font-weight:700; margin-bottom:2px; }
+  .nt-wrap ul{ list-style:none; padding:0; margin:0; }
+  .nt-li{ display:flex; align-items:center; gap:8px; padding:6px 2px; border-bottom:1px solid #eee; font-size:13.5px; }
+  .nt-t{ flex:1; } .nt-d{ font-size:11px; color:#8a8886; white-space:nowrap; }
+  .nt-li.done .nt-t{ text-decoration:line-through; color:#8a8886; }
+  @media (max-width:760px){ .nt-tabs input{ margin-left:0; width:100%; } .nt-add input, .nt-add select{ min-width:0; flex-basis:100%; } }
   /* -- update-42: My Day -- */
   .md-wrap{ background:#fff; border:1px solid var(--win-border); border-radius:14px; padding:16px; box-shadow:var(--shadow-1); font-family:'Work Sans','Segoe UI',sans-serif; }
   .md-loading{ padding:14px; color:var(--win-text-secondary); }
@@ -1542,6 +1557,7 @@ async function refreshServerState(){
     MYT = mytParse(SERVER_STATE['owner-mytasks']);
     AIB = aibParse(SERVER_STATE['ai-builds']);
     WL = wlParse(SERVER_STATE['owner-worklists']);
+    NOTES = notesParse(SERVER_STATE['owner-notes']);
     try{ OWNER_QUICKLINKS = SERVER_STATE['owner-quicklinks'] ? JSON.parse(SERVER_STATE['owner-quicklinks']) : []; }catch(e){ OWNER_QUICKLINKS = []; }
     try{ OWNER_SCHEDULE = SERVER_STATE['owner-schedule'] ? JSON.parse(SERVER_STATE['owner-schedule']) : []; }
     catch(e){ console.error('Bad schedule data, resetting', e); OWNER_SCHEDULE = []; }
@@ -2482,6 +2498,8 @@ function ownerAssignSectionsHtml(){
   return `
     ${hdr('📍 My Day', 'Your day from My schedule, stop by stop, with who needs a tune-up and what’s open at each place. Add what you want to get done, then print it or pull it up on your phone.')}
     <div id="obMyDayWrap"></div>
+    ${hdr('🗒 Notes & ideas', 'Jot anything — an idea, or something to go over with a person or at a place. My Day shows it when you’re meeting that person or at that place.')}
+    <div id="obNotesWrap"></div>
     <div id="obWeekWrap"></div>
     ${hdr('My tasks', 'Everything on your plate, personal and business, in one place. Add it with a date and priority, check it off, block time for it, or hand it to someone.')}
     <div id="obTasksWrap"></div>
@@ -2886,7 +2904,7 @@ function renderHandoffChecklist(){
 
 function refreshOwnerAssign(){
   renderOwnerWeek(); renderMyTasks(); renderOwnerMaint(); renderOwnerSchedule(); renderOwnerNeeds(); renderAssignForm(); renderAssignTrack(); renderAssignChains(); renderAssignCalendar();
-  renderMyDay();
+  renderNotes(); renderMyDay();
 }
 function wireOwnerAssignSections(){
   refreshOwnerAssign();
@@ -3758,6 +3776,111 @@ function renderOwnerMaint(){
 
 // ---- Print my day: today's or tomorrow's schedule + tasks on one clean page.
 // ======================================================================================
+// ---- Notes & ideas (update-43). Rob's catch-all for random ideas and "things to go over",
+// filed under a PERSON (roster line), a PLACE (Bridgeland, Candy Cars, any property) or just
+// "Idea". My Day pulls them in automatically: a one-on-one shows what to go over with that person,
+// a store stop shows that store's notes + notes for people who work there, an off-site stop shows
+// that property's notes. Stored under 'owner-notes' (owner/manager-gated), merge-on-save.
+//   { items:[{ id, t, target:'idea' | 'p:<loc::idx>' | 'pl:<propId>', done, doneAt, ts, u }], deleted:{id:ts} }
+// ======================================================================================
+let NOTES = { items: [], deleted: {} };
+let notesView = 'open';   // open | idea | people | places | done
+let notesSearch = '';
+let notesLastTarget = 'idea';
+function notesParse(raw){ let o = null; try{ o = raw ? JSON.parse(raw) : null; }catch(e){} o = o || {}; return { items: Array.isArray(o.items) ? o.items : [], deleted: o.deleted || {} }; }
+function notesMerge(a, b){
+  const deleted = { ...(b.deleted||{}) };
+  Object.entries(a.deleted||{}).forEach(([id, ts]) => { deleted[id] = Math.max(deleted[id]||0, ts); });
+  const byId = new Map();
+  [b.items||[], a.items||[]].forEach(arr => arr.forEach(x => { const cur = byId.get(x.id); if(!cur || (x.u||0) >= (cur.u||0)) byId.set(x.id, x); }));
+  return { items: [...byId.values()].filter(x => !(deleted[x.id] && deleted[x.id] >= (x.u||0))), deleted };
+}
+async function saveNotes(){
+  try{ const fresh = await (await fetch('/api/state?ts=' + Date.now())).json(); NOTES = notesMerge(NOTES, notesParse(fresh['owner-notes'])); }catch(e){}
+  const ok = await storSet('owner-notes', JSON.stringify(NOTES), true);
+  if(!ok) showToast('Not saved — owner code required');
+  return ok;
+}
+function newNoteId(){ return 'note-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function noteTargetLabel(target){
+  if(!target || target === 'idea') return '💡 Ideas';
+  if(target.startsWith('p:')){ const k = target.slice(2); const L = LOCATIONS[k.split('::')[0]]; const e = L && L.data[parseInt(k.split('::')[1],10)]; return '👤 ' + (e ? (e.name ? e.name + ' — ' + e.label : e.label) : 'Removed person'); }
+  if(target.startsWith('pl:')) return '📍 ' + maintPropName(target.slice(3));
+  return target;
+}
+function notesOpenFor(target){ return NOTES.items.filter(n => !n.done && n.target === target).sort((a,b) => String(a.ts).localeCompare(String(b.ts))); }
+function notesTargetOptions(sel){
+  const people = activeRosterTargets().map(t => { const L = LOCATIONS[t.locKey]; const e = L && L.data[t.empIdx]; return { v:'p:' + t.locKey + '::' + t.empIdx, l:(e && e.name ? e.name + ' — ' : '') + t.label }; });
+  const places = allMaintProps().map(p => ({ v:'pl:' + p.id, l:p.name }));
+  const o = (v, l) => `<option value="${escapeAttr(v)}" ${v===sel?'selected':''}>${escapeHtml(l)}</option>`;
+  return o('idea', '💡 Idea (no one in particular)')
+    + `<optgroup label="Places">${places.map(x => o(x.v, x.l)).join('')}<option value="__newplace">+ New place…</option></optgroup>`
+    + `<optgroup label="People">${people.map(x => o(x.v, x.l)).join('')}</optgroup>`;
+}
+function renderNotes(){
+  const wrap = document.getElementById('obNotesWrap'); if(!wrap) return;
+  const q = notesSearch.trim().toLowerCase();
+  let items = NOTES.items.slice();
+  if(notesView === 'done') items = items.filter(n => n.done);
+  else {
+    items = items.filter(n => !n.done);
+    if(notesView === 'idea') items = items.filter(n => n.target === 'idea');
+    if(notesView === 'people') items = items.filter(n => String(n.target).startsWith('p:'));
+    if(notesView === 'places') items = items.filter(n => String(n.target).startsWith('pl:'));
+  }
+  if(q) items = items.filter(n => String(n.t).toLowerCase().includes(q) || noteTargetLabel(n.target).toLowerCase().includes(q));
+  const open = NOTES.items.filter(n => !n.done);
+  const cnt = { open: open.length, idea: open.filter(n => n.target === 'idea').length, people: open.filter(n => String(n.target).startsWith('p:')).length, places: open.filter(n => String(n.target).startsWith('pl:')).length, done: NOTES.items.filter(n => n.done).length };
+  const groups = new Map();
+  items.sort((a,b) => String(b.ts).localeCompare(String(a.ts))).forEach(n => { if(!groups.has(n.target)) groups.set(n.target, []); groups.get(n.target).push(n); });
+  const tab = (k, l) => `<button class="mini-btn ${notesView===k?'primary-mini':''} nt-tab" data-v="${k}">${l} <span class="nt-c">${cnt[k]}</span></button>`;
+  let html = `<div class="nt-wrap">
+    <form class="nt-add" id="ntAdd">
+      <input type="text" id="ntText" placeholder="Jot an idea or something to go over…" autocomplete="off">
+      <select id="ntTarget">${notesTargetOptions(notesLastTarget)}</select>
+      <button class="mini-btn primary-mini">Add</button>
+    </form>
+    <div class="nt-tabs">${tab('open','All open')}${tab('idea','💡 Ideas')}${tab('people','👤 People')}${tab('places','📍 Places')}${tab('done','✓ Done')}
+      <input type="search" id="ntSearch" placeholder="Search…" value="${escapeAttr(notesSearch)}"></div>`;
+  if(!groups.size) html += `<div class="nt-empty">${notesView === 'done' ? 'Nothing checked off yet.' : 'Nothing here yet. Type a note above, pick who or where it’s for, and hit Add.'}</div>`;
+  groups.forEach((list, target) => {
+    html += `<div class="nt-group"><div class="nt-gh">${escapeHtml(noteTargetLabel(target))} <span class="nt-c">${list.length}</span></div><ul>${list.map(n => `
+      <li class="nt-li ${n.done?'done':''}" data-nid="${n.id}"><button class="md-tick nt-tick" title="${n.done?'Reopen':'Done / gone over'}">${n.done?'✓':''}</button>
+        <span class="nt-t">${escapeHtml(n.t)}</span><span class="nt-d">${(() => { const s = n.done ? n.doneAt : n.ts; const d = s ? new Date(s) : null; return d && !isNaN(d) ? escapeHtml((n.done ? 'done ' : '') + shortDate(localISODate(d))) : ''; })()}</span>
+        <button class="md-x nt-del" title="Delete">×</button></li>`).join('')}</ul></div>`;
+  });
+  html += `</div>`;
+  wrap.innerHTML = html;
+  const tSel = wrap.querySelector('#ntTarget');
+  tSel.onchange = async () => {
+    if(tSel.value !== '__newplace') return;
+    const name = (window.prompt('New place name (property, job site, vendor…):') || '').trim();
+    if(!name){ tSel.value = notesLastTarget; return; }
+    const pid = await ensureMaintProp(name);
+    notesLastTarget = pid ? 'pl:' + pid : 'idea';
+    renderNotes(); const t = document.getElementById('ntText'); if(t) t.focus();
+  };
+  wrap.querySelector('#ntAdd').onsubmit = async (e) => {
+    e.preventDefault();
+    const inp = wrap.querySelector('#ntText'); const t = inp.value.trim(); if(!t) return;
+    const target = tSel.value === '__newplace' ? 'idea' : tSel.value;
+    notesLastTarget = target;
+    NOTES.items.push({ id:newNoteId(), t, target, done:false, ts:new Date().toISOString(), u:Date.now() });
+    inp.value = '';
+    await saveNotes(); renderNotes();
+    const again = document.getElementById('ntText'); if(again) again.focus();
+    if(typeof renderMyDay === 'function') renderMyDay();
+  };
+  wrap.querySelectorAll('.nt-tab').forEach(b => b.onclick = () => { notesView = b.dataset.v; renderNotes(); });
+  let st; wrap.querySelector('#ntSearch').oninput = e => { clearTimeout(st); st = setTimeout(() => { notesSearch = e.target.value; renderNotes(); const s = document.getElementById('ntSearch'); if(s){ s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 250); };
+  wrap.querySelectorAll('.nt-li').forEach(li => {
+    const n = () => NOTES.items.find(x => x.id === li.dataset.nid);
+    li.querySelector('.nt-tick').onclick = async () => { const x = n(); if(!x) return; x.done = !x.done; x.doneAt = x.done ? new Date().toISOString() : ''; x.u = Date.now(); await saveNotes(); renderNotes(); if(typeof renderMyDay === 'function') renderMyDay(); };
+    li.querySelector('.nt-del').onclick = async () => { if(!await appConfirm('Delete this note?', 'Delete')) return; NOTES.deleted[li.dataset.nid] = Date.now(); NOTES.items = NOTES.items.filter(x => x.id !== li.dataset.nid); await saveNotes(); renderNotes(); if(typeof renderMyDay === 'function') renderMyDay(); };
+  });
+}
+
+// ======================================================================================
 // ---- My Day (update-42). Rob's day from My Schedule (his blocks + Dailys meetings), one card
 // per stop in time order, with what needs him there pulled in automatically:
 //   Bridgeland / Candy Cars stop -> people at that store who need a tune-up (Dailys left blank,
@@ -3844,14 +3967,19 @@ function mdPropMatches(b){
 }
 // Everything pulled in for one stop. Returns { people:[issues], jobs:[], wl:[], actionItems:[] }.
 async function mdStopPull(b, iso){
-  const out = { people: [], jobs: [], wl: [], actionItems: [], person: null };
+  const out = { people: [], jobs: [], wl: [], actionItems: [], person: null, notes: [] };
+  const addNotes = (target, who) => notesOpenFor(target).forEach(n => out.notes.push({ n, who }));
+  if(b.with) addNotes('p:' + b.with, '');
   if(b.with){ out.person = await mdPersonIssues(b.with); }
   if(b.loc === 'bridgeland' || b.loc === 'candycars'){
     const ppl = await Promise.all(mdPeopleAt(b.loc).filter(k => k !== b.with).map(mdPersonIssues));
     out.people = ppl.filter(p => p && p.reasons.length).sort((a,c) => c.score - a.score);
+    addNotes('pl:' + b.loc, '');
+    mdPeopleAt(b.loc).filter(k => k !== b.with).forEach(k => addNotes('p:' + k, assigneeShort(k)));
     out.jobs = mdOpenJobsAt(j => j.propertyId === b.loc);
   } else if(b.loc !== 'phone' && b.loc !== 'home'){
     const ids = mdPropMatches(b);
+    ids.forEach(id => addNotes('pl:' + id, ''));
     out.jobs = mdOpenJobsAt(j => ids.length ? ids.includes(j.propertyId) : (j.propertyId !== 'bridgeland' && j.propertyId !== 'candycars' && j.date === iso));
     out.wl = (WL && WL.items ? WL.items : []).filter(i => !wlDoneInfo(i) && (ids.length ? ids.includes(i.propertyId) : i.date === iso));
   }
@@ -3909,6 +4037,7 @@ async function renderMyDay(){
     const b = x.b, i = stops.indexOf(x), p = pulls[i], ls = mdLocStyle(b);
     const stopItems = plan.items.filter(it => it.stop === b.id);
     const pulled = [];
+    if(p.notes.length) pulled.push(`<div class="md-h2">Things to go over (${p.notes.length})</div><ul>${p.notes.map(({n, who}) => `<li class="md-plan-li md-note" data-nid="${n.id}"><button class="md-tick md-ntick" title="Gone over"></button><span>${escapeHtml(n.t)}${who ? ` <span class="md-dim">· ${escapeHtml(who)}</span>` : ''}</span></li>`).join('')}</ul>`);
     if(p.person) pulled.push(`<div class="md-h2">Who you're meeting</div>` + mdPersonCardHtml(p.person, true));
     if(p.actionItems.length) pulled.push(`<div class="md-h2">Open items from this meeting (${p.actionItems.length})</div><ul class="md-sub">${p.actionItems.slice(0,8).map(ai => `<li>${escapeHtml(ai.text)}${ai.deadline ? ` <span class="md-dim">· due ${escapeHtml(ai.deadline)}</span>` : ''}${(ai.assignedLoc!==undefined && ai.assignedLoc!==null && ai.assignedLoc!=='') ? ` <span class="md-dim">· ${escapeHtml(assigneeShort(ai.assignedLoc + '::' + ai.assignedEmp))}</span>` : ''}</li>`).join('')}</ul>`);
     if(p.people.length) pulled.push(`<div class="md-h2">People who need a tune-up here (${p.people.length})</div>` + p.people.slice(0,5).map(pp => mdPersonCardHtml(pp, false)).join('')
@@ -3939,7 +4068,11 @@ async function renderMyDay(){
     mdPlan(iso).items.push({ id: mdNewId(), t, done: false, stop: f.dataset.stop || '' });
     inp.value = ''; await mdSavePlan(iso); renderMyDay();
   });
-  wrap.querySelectorAll('.md-plan-li').forEach(li => {
+  wrap.querySelectorAll('.md-note').forEach(li => li.querySelector('.md-ntick').onclick = async () => {
+    const x = NOTES.items.find(n => n.id === li.dataset.nid); if(!x) return;
+    x.done = true; x.doneAt = new Date().toISOString(); x.u = Date.now(); await saveNotes(); renderMyDay(); renderNotes();
+  });
+  wrap.querySelectorAll('.md-plan-li:not(.md-note)').forEach(li => {
     const it = () => mdPlan(iso).items.find(x => x.id === li.dataset.pid);
     li.querySelector('.md-tick').onclick = async () => { const x = it(); if(!x) return; x.done = !x.done; await mdSavePlan(iso); renderMyDay(); };
     li.querySelector('.md-x').onclick = async () => { const pl = mdPlan(iso); pl.items = pl.items.filter(x => x.id !== li.dataset.pid); await mdSavePlan(iso); renderMyDay(); };
@@ -3963,6 +4096,7 @@ async function printMyDayPlan(iso){
     body += `<div class="stop" style="border-color:${ls.color}"><div class="sh"><b>${esc(fmt12(b.start))}–${esc(fmt12(b.end))}</b> · ${esc(schedLocLabel(b) || ls.label)}</div><div class="st">${esc(b.title)}${b.with && !String(b.title).toLowerCase().includes(String(assigneeShort(b.with)).toLowerCase()) ? ' — with ' + esc(assigneeShort(b.with)) : ''}</div>`;
     const items = plan.items.filter(i => i.stop === b.id);
     if(items.length) body += `<ul>${items.map(i => box(esc(i.t))).join('')}</ul>`;
+    if(p.notes.length) body += `<div class="h3">Things to go over</div><ul>${p.notes.map(({n, who}) => box(esc(n.t) + (who ? ' <i>(' + esc(who) + ')</i>' : ''))).join('')}</ul>`;
     if(p.person) body += person(p.person) + (p.person.openTasks.length ? `<ul>${p.person.openTasks.slice(0,6).map(t => box(esc(t.text))).join('')}</ul>` : '');
     if(p.actionItems.length) body += `<div class="h3">Open meeting items</div><ul>${p.actionItems.slice(0,8).map(ai => box(esc(ai.text))).join('')}</ul>`;
     if(p.people.length) body += `<div class="h3">Tune-ups</div>` + p.people.slice(0,8).map(person).join('');
@@ -4611,6 +4745,7 @@ async function renderWorkerLivePage(token){
   const draw = async () => {
     try{ SERVER_STATE = await (await fetch('/api/state')).json(); }catch(e){}
     WL = wlParse(SERVER_STATE['owner-worklists']);
+    NOTES = notesParse(SERVER_STATE['owner-notes']);
     try{ PROPERTIES = SERVER_STATE['other-properties'] ? JSON.parse(SERVER_STATE['other-properties']) : []; }catch(e){}
     const w = WL.workers.find(x => x.token === token);
     if(!w){ host.innerHTML = '<div class="wlv-card"><h1>List not found</h1><p>Ask Rob for a new link.</p></div>'; return; }
