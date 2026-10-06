@@ -831,8 +831,8 @@
   .beacon-badge{ position:absolute; top:-4px; right:-4px; background:#ece9e2; color:#15171a; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
     min-width:20px; height:20px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
   .beacon-badge[hidden]{ display:none !important; }
-  .msg-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:69; }
-  .msg-panel{ position:fixed; top:0; right:0; height:100%; width:380px; max-width:92vw; background:#1e2124; color:#ece9e2;
+  .msg-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:900; }
+  .msg-panel{ z-index:901 !important; position:fixed; top:0; right:0; height:100%; width:380px; max-width:92vw; background:#1e2124; color:#ece9e2;
     border-left:1px solid #33383d; box-shadow:-12px 0 32px rgba(0,0,0,0.4); z-index:70; display:flex; flex-direction:column;
     padding-top:env(safe-area-inset-top,0px); font-family:'Work Sans',sans-serif; }
   .msg-scrim[hidden], .msg-panel[hidden]{ display:none !important; }
@@ -2097,21 +2097,37 @@ function ownerRecurringPeriodKey(cadence){
 let MESSAGES = []; // [{ id, from:'loc::idx', to:'loc::idx', text, ts:ISO, read:bool }]
 function newMessageId(){ return 'msg-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function myKey(){ return `${currentLoc}::${currentEmployee}`; }
+// update-41: who Messages sends as. Unlocked with the owner code = Rob himself ('owner'),
+// from any screen; everyone else = whoever is picked in the sidebar.
+const MSG_OWNER_KEY = 'owner';
+function msgMe(){ return isOwnerAdmin() ? MSG_OWNER_KEY : myKey(); }
 function rosterLabelForKey(key){
   if(!key) return 'Unknown';
+  if(key === MSG_OWNER_KEY) return OWNER_NAME + ' (Owner)';
   const [locKey, empIdxStr] = key.split('::');
   const empIdx = parseInt(empIdxStr, 10);
   const loc = LOCATIONS[locKey];
   const emp = loc && loc.data[empIdx];
   return emp ? emp.label : 'Removed employee';
 }
-async function saveMessages(){
-  await storSet('messages', JSON.stringify(MESSAGES));
+// update-41: re-fetch and merge before every save so two people messaging at the same time can't
+// wipe each other's messages (the old version wrote this tab's whole, possibly stale, list).
+async function saveMessages(opts){
+  opts = opts || {};
+  let server = [];
+  try{ const s = await fetch('/api/state?ts=' + Date.now()).then(r => r.json()); server = s.messages ? JSON.parse(s.messages) : []; }catch(e){ server = MESSAGES.slice(); }
+  const byId = new Map(server.map(m => [m.id, m]));
+  (opts.add || []).forEach(m => { if(!byId.has(m.id)) byId.set(m.id, m); });
+  (opts.markRead || []).forEach(id => { const m = byId.get(id); if(m) m.read = true; });
+  MESSAGES = [...byId.values()].sort((a,b) => String(a.ts).localeCompare(String(b.ts)));
+  const ok = await storSet('messages', JSON.stringify(MESSAGES));
+  if(!ok) showToast('Message not sent — check your connection');
+  return ok;
 }
 // Every conversation the currently-viewed employee is part of, newest message first, each with
 // its unread count and a preview of the last line.
 function conversationsForMe(){
-  const me = myKey();
+  const me = msgMe();
   const others = new Map();
   MESSAGES.forEach(m => {
     if(m.from !== me && m.to !== me) return;
@@ -2131,20 +2147,20 @@ function conversationsForMe(){
   return out;
 }
 function unreadMessageCountForMe(){
-  const me = myKey();
+  const me = msgMe();
   return MESSAGES.filter(m => m.to === me && !m.read).length;
 }
 async function markThreadRead(otherKey){
-  const me = myKey();
-  let changed = false;
-  MESSAGES.forEach(m => { if(m.to === me && m.from === otherKey && !m.read){ m.read = true; changed = true; } });
-  if(changed) await saveMessages();
+  const me = msgMe();
+  const ids = MESSAGES.filter(m => m.to === me && m.from === otherKey && !m.read).map(m => m.id);
+  if(ids.length) await saveMessages({ markRead: ids });
 }
 async function sendMessageTo(otherKey, text){
   const t = (text||'').trim();
   if(!t || !otherKey) return;
-  MESSAGES.push({ id: newMessageId(), from: myKey(), to: otherKey, text: t, ts: new Date().toISOString(), read: false });
-  await saveMessages();
+  const msg = { id: newMessageId(), from: msgMe(), to: otherKey, text: t, ts: new Date().toISOString(), read: false };
+  MESSAGES.push(msg);
+  await saveMessages({ add: [msg] });
 }
 
 // ---- Suggestion Box: employee-facing, not admin-gated (any employee needs to send one without
@@ -8880,8 +8896,9 @@ function updatePanelVisibility(){
   // renderMain() below brings the beacon back the moment we return to the employee page.
   if(anyShown){
     const beacon = document.getElementById('beaconBtn');
-    if(beacon) beacon.hidden = true;
-    closeMessagesPanel();
+    // update-41: the owner messages as himself from any screen, so keep his button showing.
+    if(beacon) beacon.hidden = !isOwnerAdmin();
+    if(!isOwnerAdmin()) closeMessagesPanel(); else renderMessagesBeaconBadgeOnly();
   }
   // Coming back from an admin panel (Setup/Meetings/Projects/etc.) to the main checklist view -
   // refresh it so anything just edited (roster changes, a newly-assigned project step, a new
@@ -9410,13 +9427,17 @@ function renderMessagesPanelBody(){
   const newRow = document.getElementById('msgNewRow');
   const backBtn = document.getElementById('msgBackBtn');
   const titleEl = document.getElementById('msgHeadTitle');
-  const me = myKey();
+  const me = msgMe();
+  const subEl = document.getElementById('msgHeadSub');
+  if(subEl) subEl.textContent = 'Sending as ' + rosterLabelForKey(me);
 
   const sel = document.getElementById('msgNewSelect');
-  const prevVal = sel.value;
   const options = activeRosterTargets().filter(t => (t.locKey+'::'+t.empIdx) !== me);
-  sel.innerHTML = '<option value="">Start a conversation with…</option>' + options.map(t => `<option value="${t.locKey}::${t.empIdx}">${escapeHtml(t.label)}</option>`).join('');
-  sel.value = prevVal;
+  const nameOf = t => { const L = LOCATIONS[t.locKey]; const e = L && L.data[t.empIdx]; return (e && e.name ? e.name + ' — ' : '') + t.label; };
+  sel.innerHTML = '<option value="">Message someone…</option>'
+    + (me !== MSG_OWNER_KEY ? `<option value="${MSG_OWNER_KEY}">${escapeHtml(OWNER_NAME)} (Owner)</option>` : '')
+    + options.map(t => `<option value="${t.locKey}::${t.empIdx}">${escapeHtml(nameOf(t))}</option>`).join('');
+  sel.value = '';
 
   if(msgPanelView === 'thread' && msgActiveOther){
     listEl.style.display = 'none';
@@ -9457,6 +9478,7 @@ function openThreadWith(otherKey){
   msgPanelView = 'thread';
   msgActiveOther = otherKey;
   renderMessagesPanelBody();
+  const inp = document.getElementById('msgInput'); if(inp) setTimeout(() => inp.focus(), 50);
 }
 function openMessagesPanel(){
   document.getElementById('msgScrim').hidden = false;
@@ -9479,8 +9501,9 @@ document.getElementById('msgScrim').onclick = closeMessagesPanel;
 document.getElementById('msgBackBtn').onclick = () => { msgPanelView = 'list'; msgActiveOther = null; renderMessagesPanelBody(); };
 document.getElementById('msgNewBtn').onclick = () => {
   const val = document.getElementById('msgNewSelect').value;
-  if(val) openThreadWith(val);
+  if(val) openThreadWith(val); else showToast('Pick who to message first');
 };
+document.getElementById('msgNewSelect').onchange = (e) => { if(e.target.value) openThreadWith(e.target.value); };
 document.getElementById('msgComposeForm').onsubmit = async (e) => {
   e.preventDefault();
   const input = document.getElementById('msgInput');
