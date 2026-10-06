@@ -267,6 +267,59 @@
   .ob-chain-step.push .ob-chain-who{ color:#d4570f; }
   .ob-chain-txt{ font-size:12px; font-weight:600; margin:2px 0; }
   .ob-chain-st{ font-size:10.5px; color:var(--win-text-secondary); }
+
+  /* -- update-37: in-app training -- */
+  .trn-modal{ max-width:760px !important; }
+  .trn-body{ overflow-y:auto; margin:12px 0 8px; padding-right:4px; font-size:13.5px; line-height:1.5; color:#1f2328; }
+  .trn-body h2,.trn-body h3,.trn-body h4{ margin:14px 0 6px; color:#1f2328; }
+  .trn-body h2{ font-size:17px; } .trn-body h3{ font-size:15px; } .trn-body h4{ font-size:13.5px; }
+  .trn-body p{ margin:6px 0; } .trn-body ul,.trn-body ol{ margin:6px 0 6px 20px; padding:0; } .trn-body li{ margin:3px 0; }
+  .trn-body a{ color:#0f6cbd; }
+  .trn-table{ border-collapse:collapse; width:100%; margin:8px 0; font-size:12.5px; }
+  .trn-table th,.trn-table td{ border:1px solid #d1d1d1; padding:5px 7px; text-align:left; vertical-align:top; }
+  .trn-table th{ background:#f3f2f1; }
+  .trn-foot{ display:flex; gap:8px; justify-content:flex-end; align-items:center; font-size:12px; color:#605e5c; flex-wrap:wrap; }
+  .trn-warn{ background:#fff4ce; border-radius:6px; padding:8px 10px; margin-bottom:10px; font-size:12.5px; }
+  .trn-q{ border:1px solid #e1dfdd; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .trn-q.right{ border-color:#107C10; background:#f1faf1; } .trn-q.wrong{ border-color:#d13438; background:#fdf3f4; }
+  .trn-q-t{ font-weight:600; margin-bottom:6px; }
+  .trn-opt{ display:flex; gap:8px; align-items:flex-start; padding:4px 2px; cursor:pointer; font-size:13px; }
+  .trn-opt input{ margin-top:3px; }
+  .trn-score{ border-radius:8px; padding:10px 12px; font-weight:600; margin-top:6px; }
+  .trn-score.pass{ background:#dff6dd; color:#0e5c0e; } .trn-score.fail{ background:#fde7e9; color:#a4262c; }
+  .main .h-training{ font-family:var(--font-display); font-weight:700; font-size:22px; text-transform:uppercase; letter-spacing:0.02em; color:var(--suggest); }
+  .main .trn-panel{ border-color:rgba(124,147,255,0.45); }
+  .main .trn-track{ margin-bottom:14px; }
+  .main .trn-track-head{ display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:6px; }
+  .main .trn-track-head span{ color:var(--win-text-secondary); font-size:12px; }
+  .main .trn-bar{ height:6px; background:var(--d-surface-3); border-radius:4px; overflow:hidden; margin-bottom:6px; }
+  .main .trn-bar div{ height:100%; background:var(--suggest); }
+  .main .trn-row{ display:flex; align-items:center; gap:10px; padding:7px 4px; border-bottom:1px solid var(--win-border); flex-wrap:wrap; }
+  .main .trn-row:last-child{ border-bottom:none; }
+  .main .trn-row.done{ opacity:.6; }
+  .main .trn-check{ width:16px; color:var(--kpi-good); font-weight:700; }
+  .main .trn-row-t{ flex:1; min-width:180px; font-size:13.5px; font-weight:600; }
+  .main .trn-min{ font-weight:400; font-size:11px; color:var(--win-text-secondary); }
+  .main .trn-st{ font-size:11.5px; color:var(--win-text-secondary); }
+  .trn-tabs{ display:flex; gap:6px; margin:0 0 14px; }
+  .trn-help{ font-size:13px; color:var(--win-text-secondary); max-width:820px; margin:0 0 14px; }
+  .trn-new{ margin-bottom:14px; } .trn-line{ display:flex; gap:8px; margin-bottom:6px; flex-wrap:wrap; align-items:center; }
+  .trn-prog-top{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+  .trn-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .trn-assign summary{ cursor:pointer; font-size:12.5px; }
+  .trn-assign-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:4px 12px; margin:8px 0; font-size:12.5px; max-height:300px; overflow-y:auto; }
+  .trn-grid-wrap{ overflow-x:auto; }
+  .trn-grid{ border-collapse:collapse; font-size:12px; }
+  .trn-grid th,.trn-grid td{ border:1px solid var(--win-border); padding:4px 6px; text-align:center; white-space:nowrap; }
+  .trn-grid .trn-person{ text-align:left; min-width:200px; white-space:normal; }
+  .trn-grid td.c-done{ background:#dff6dd; color:#0e5c0e; font-weight:700; }
+  .trn-grid small{ display:block; font-weight:400; font-size:10px; }
+  .trn-cell{ font:inherit; border:none; background:none; cursor:pointer; color:inherit; width:100%; min-width:36px; padding:2px; }
+  .trn-cell:hover{ background:rgba(0,0,0,.06); }
+  .c-tried{ color:#a4262c; font-weight:600; }
+  .trn-mini-bar{ width:60px; height:5px; background:#e1dfdd; border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px; }
+  .trn-mini-bar div{ height:100%; background:#107C10; }
+  .trn-legend{ display:flex; flex-wrap:wrap; gap:4px 16px; font-size:11.5px; color:var(--win-text-secondary); margin-top:10px; }
   .asg-modal-back{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
   .asg-modal-back.show{ display:flex; }
   .asg-modal{ background:#fff; color:#1f2328; border-radius:12px; width:100%; max-width:560px; max-height:88vh; display:flex; flex-direction:column; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,.35); font-family:'Work Sans','Segoe UI',sans-serif; }
@@ -841,6 +894,7 @@
 
       <div id="maintJobsWrap"></div>
       <div id="assignedPanelWrap"></div>
+      <div id="trainingPanelWrap"></div>
 
       <section class="dpanel">
         <div class="dpanel-head">
@@ -1326,6 +1380,7 @@ async function refreshServerState(){
     catch(e){ console.error('Bad property-jobs data, resetting', e); PROPERTY_JOBS = []; }
     try{ TRAINING = SERVER_STATE['training'] ? JSON.parse(SERVER_STATE['training']) : []; }
     catch(e){ console.error('Bad training data, resetting', e); TRAINING = []; }
+    trnLoadExtras();
     try{ TARGETS = SERVER_STATE['targets'] ? JSON.parse(SERVER_STATE['targets']) : []; }
     catch(e){ console.error('Bad targets data, resetting', e); TARGETS = []; }
     try{ ACTION_ITEM_STATUS = SERVER_STATE['action-item-status'] ? JSON.parse(SERVER_STATE['action-item-status']) : {}; }
@@ -4622,7 +4677,7 @@ function openMetricEntryModal(metric, date, onSaved){
   const trainingHtml = linkedTrainings.length ? `
     <div style="background:var(--win-accent-light);border-radius:6px;padding:8px 10px;margin:0 0 12px;">
       <div style="font-size:11.5px;font-weight:700;margin-bottom:4px;">How we fix it:</div>
-      ${linkedTrainings.map(t => `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" style="display:block;font-size:12px;color:var(--win-accent);margin-bottom:2px;">${escapeHtml(t.title)}</a>`).join('')}
+      ${linkedTrainings.map(t => (t.content || (t.quiz && t.quiz.length)) ? `<a href="#" onclick="openTrainingReader('${t.id}', currentLoc + '::' + currentEmployee);return false;" style="display:block;font-size:12px;color:var(--win-accent);margin-bottom:2px;">${escapeHtml(t.title)}</a>` : `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" style="display:block;font-size:12px;color:var(--win-accent);margin-bottom:2px;">${escapeHtml(t.title)}</a>`).join('')}
     </div>` : '';
   body.innerHTML = `
     ${metric.calculation ? `<p style="font-size:12px;color:var(--win-text-secondary);margin:0 0 8px;"><b>How it's calculated:</b> ${escapeHtml(metric.calculation)}</p>` : ''}
@@ -4879,6 +4934,7 @@ async function renderMain(){
 
   renderMaintJobsPanel();
   await renderAssignedPanel();
+  await renderMyTrainingPanel();
   await renderMetricsSection(dates);
   await renderMeetingsPanel(dates);
   await renderActionItemsPanel();
@@ -7799,132 +7855,408 @@ function wireMetricsAdminHandlers(view){
   });
 }
 
-// ---- Training suite admin: organize videos by platform (free-typed, e.g. DealerSocket, vAuto,
-// Guidde walkthroughs Rob records himself) and/or restrict to specific roles by a free-typed
-// tag matched against the role label (e.g. "Service Writer" matches every Service Writer role
-// at both stores). Any staff (owner or manager) can add/edit; only the owner can delete (the
-// Delete button carries owner-only, same trick as elsewhere in this app). ----
-async function renderTraining(){
-  await refreshServerState();
-  const view = document.getElementById('trainingView');
+// ---- Training (update-37). A training entry is either a LINK (url to a vendor video) or an
+// IN-APP LESSON (content written in simple markdown, read inside Dailys - no outside login), or
+// a QUIZ (multiple choice, graded in the app). Entries that share a `track` (e.g. "CallRevu -
+// Sales Rep") form a program; managers assign people to a track and then check each person off
+// module by module. Only staff (owner/manager) can mark a lesson complete - employees can read
+// and take quizzes, and a passed quiz counts as done on its own (the app graded it).
+//   training-assign   {track: ["loc::idx", ...]}                 staff-gated
+//   training-signoff  {entryId: {"loc::idx": {at, by}}}           staff-gated, re-fetch + merge
+//   training-quiz:<entryId>:<loc::idx>  {attempts:[{score,total,at,wrong}]}   open-write
+let TRAINING_ASSIGN = {};
+let TRAINING_SIGNOFF = {};
+let trnAdminTab = 'progress';
+let trnProgressTrack = '';
 
-  let html = `
-    <div class="monthly-header"><h1>Training Admin</h1></div>
-    <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
-      Organize training videos by platform (e.g. DealerSocket, vAuto, Xtime, or "Guidde" for the
-      walkthroughs you record yourself) and, if you want, restrict a video to certain roles by
-      typing a word or two that matches part of their title (e.g. "Service Writer" matches every
-      Service Writer role at both stores) — leave it blank to show a video to everyone.
-      Manager-only videos stay hidden from the public Training Library unless the viewer has
-      unlocked staff access. Link a video to a KPI and it shows up as a "how we fix it" reference
-      right where that metric is entered. Anyone with staff access can add training here —
-      only the owner code can delete something.
-    </p>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-      <input type="text" id="newTrnTitle" placeholder="Title..." style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
-      <input type="text" id="newTrnPlatform" placeholder="Platform (e.g. DealerSocket)..." style="width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
-      <select id="newTrnType" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
-        ${TRAINING_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
-      <input type="text" id="newTrnUrl" placeholder="Video URL..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
-      <input type="text" id="newTrnRoles" placeholder="Role tags, comma separated (blank = everyone)..." style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:8px 10px;font-size:12.5px;">
-      <select id="newTrnMetric" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:8px;font-size:12.5px;">
-        <option value="">Linked KPI: — None —</option>
-        ${METRICS.map(m => `<option value="${m.id}">${escapeAttr(m.name)}</option>`).join('')}
-      </select>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;"><input type="checkbox" id="newTrnManagersOnly"> Managers only</label>
-      <button class="mini-btn primary-mini" id="newTrnBtn">+ Add training</button>
-    </div>
-  `;
-
-  if(TRAINING.length === 0){
-    html += `<div class="empty-note">No training videos added yet.</div>`;
+function trnLoadExtras(){
+  try{ TRAINING_ASSIGN = SERVER_STATE['training-assign'] ? JSON.parse(SERVER_STATE['training-assign']) : {}; }catch(e){ TRAINING_ASSIGN = {}; }
+  try{ TRAINING_SIGNOFF = SERVER_STATE['training-signoff'] ? JSON.parse(SERVER_STATE['training-signoff']) : {}; }catch(e){ TRAINING_SIGNOFF = {}; }
+  if(!TRAINING_ASSIGN || typeof TRAINING_ASSIGN !== 'object') TRAINING_ASSIGN = {};
+  if(!TRAINING_SIGNOFF || typeof TRAINING_SIGNOFF !== 'object') TRAINING_SIGNOFF = {};
+}
+async function trnRefetch(){
+  try{ const r = await fetch('/api/state?ts=' + Date.now()); const s = await r.json(); ['training','training-assign','training-signoff'].forEach(k => { if(k in s) SERVER_STATE[k] = s[k]; else delete SERVER_STATE[k]; });
+    Object.keys(s).forEach(k => { if(k.indexOf('training-quiz:') === 0) SERVER_STATE[k] = s[k]; });
+    try{ TRAINING = s['training'] ? JSON.parse(s['training']) : []; }catch(e){}
+    trnLoadExtras();
+  }catch(e){ console.error('training refetch failed', e); }
+}
+function trnTracks(){
+  const set = [];
+  TRAINING.forEach(t => { if(t.track && !set.includes(t.track)) set.push(t.track); });
+  return set;
+}
+function trnModules(track){
+  return TRAINING.filter(t => t.track === track).sort((a,b) => (a.order||0) - (b.order||0) || String(a.title).localeCompare(String(b.title)));
+}
+function trnQuizKey(entryId, empKey){ return 'training-quiz:' + entryId + ':' + empKey; }
+function trnQuizData(entryId, empKey){
+  try{ const v = SERVER_STATE[trnQuizKey(entryId, empKey)]; const d = v ? JSON.parse(v) : null; return d && Array.isArray(d.attempts) ? d : { attempts: [] }; }catch(e){ return { attempts: [] }; }
+}
+function trnPassScore(t){ const n = (t.quiz||[]).length; return t.passScore || Math.ceil(n * 0.8); }
+function trnBestAttempt(t, empKey){
+  const a = trnQuizData(t.id, empKey).attempts;
+  if(!a.length) return null;
+  return a.slice().sort((x,y) => y.score - x.score || String(x.at).localeCompare(String(y.at)))[0];
+}
+// status: {done, label, kind:'signed'|'quiz'|'tried'|'none', at}
+function trnStatus(t, empKey){
+  const so = (TRAINING_SIGNOFF[t.id] || {})[empKey];
+  if(t.quiz && t.quiz.length){
+    const best = trnBestAttempt(t, empKey);
+    const passed = best && best.score >= trnPassScore(t);
+    if(passed){ const firstPass = trnQuizData(t.id, empKey).attempts.find(x => x.score >= trnPassScore(t)); return { done:true, kind:'quiz', label:`Passed ${best.score}/${best.total}`, at:(firstPass||best).at }; }
+    if(so) return { done:true, kind:'signed', label:'Signed off', at:so.at };
+    if(best) return { done:false, kind:'tried', label:`Best ${best.score}/${best.total} — needs ${trnPassScore(t)}`, at:best.at };
+    return { done:false, kind:'none', label:'Not taken', at:'' };
   }
+  if(so) return { done:true, kind:'signed', label:'Signed off', at:so.at };
+  return { done:false, kind:'none', label:'Not done', at:'' };
+}
+function trnTracksFor(empKey){ return trnTracks().filter(tr => (TRAINING_ASSIGN[tr] || []).includes(empKey)); }
+function trnShortDate(iso){ if(!iso) return ''; try{ const d = new Date(iso); return shortDate(isNaN(d) ? String(iso).slice(0,10) : localISODate(d)); }catch(e){ return String(iso).slice(0,10); } }
 
-  const platforms = [...new Set(TRAINING.map(t => t.platform || 'Uncategorized'))].sort((a,b) => a.localeCompare(b));
-  platforms.forEach(platform => {
-    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(platform)}</div>`;
-    TRAINING.filter(t => (t.platform || 'Uncategorized') === platform).forEach(t => {
-      html += `<div class="setup-task-row" data-tid="${t.id}" style="border-top:1px solid var(--win-border);padding:10px 0;">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input type="text" class="tr-title" value="${escapeAttr(t.title)}" style="flex:1;min-width:180px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12.5px;">
-          <input type="text" class="tr-platform" value="${escapeAttr(t.platform||'')}" placeholder="Platform" style="width:160px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
-          <select class="tr-type" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
-            ${TRAINING_TYPES.map(ty => `<option value="${ty}" ${t.type===ty?'selected':''}>${ty}</option>`).join('')}
-          </select>
-          <button class="mini-btn danger-mini tr-remove owner-only">Delete</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
-          <input type="text" class="tr-url" value="${escapeAttr(t.url||'')}" placeholder="Video URL" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
-          <input type="text" class="tr-roles" value="${escapeAttr((t.roleTags||[]).join(', '))}" placeholder="Role tags (blank = everyone)" style="flex:1;min-width:220px;border:1px solid var(--win-border-strong);border-radius:6px;padding:6px 9px;font-size:12px;">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap;">
-          <select class="tr-metric" style="border:1px solid var(--win-border-strong);border-radius:6px;padding:6px;font-size:12px;">
-            <option value="">Linked KPI: — None —</option>
-            ${METRICS.map(m => `<option value="${m.id}" ${t.linkedMetricId===m.id?'selected':''}>${escapeAttr(m.name)}</option>`).join('')}
-          </select>
-          <label style="display:flex;align-items:center;gap:5px;font-size:12px;"><input type="checkbox" class="tr-managers-only" ${t.managersOnly?'checked':''}> Managers only</label>
-          <a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--win-accent);">Open video →</a>
-        </div>
+// Tiny, safe markdown renderer: everything is escaped first, then a few patterns are turned
+// back into markup. Supports #/##/### headings, - bullets, 1. numbered, | tables |, **bold**,
+// *italic*, [ ] checkbox lines, and blank-line paragraphs.
+function trnMd(src){
+  const lines = String(src||'').replace(/\r/g,'').split('\n');
+  const inline = s => escapeHtml(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*]+)\*/g,'$1<i>$2</i>');
+  let out = '', list = null, para = [], table = null;
+  const flushPara = () => { if(para.length){ out += `<p>${para.map(inline).join(' ')}</p>`; para = []; } };
+  const flushList = () => { if(list){ out += `<${list.tag}>${list.items.map(i => `<li>${i}</li>`).join('')}</${list.tag}>`; list = null; } };
+  const flushTable = () => { if(table){ const [head, ...rows] = table; out += `<table class="trn-table"><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`; table = null; } };
+  const flushAll = () => { flushPara(); flushList(); flushTable(); };
+  lines.forEach(raw => {
+    const line = raw.trimEnd();
+    let m;
+    if(/^\s*\|/.test(line)){
+      flushPara(); flushList();
+      const cells = line.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c => c.trim());
+      if(cells.every(c => /^:?-{2,}:?$/.test(c))) return;
+      (table = table || []).push(cells); return;
+    }
+    flushTable();
+    if(!line.trim()){ flushPara(); flushList(); return; }
+    if((m = line.match(/^(#{1,3})\s+(.*)$/))){ flushAll(); const lv = m[1].length + 1; out += `<h${lv} class="trn-h${lv}">${inline(m[2])}</h${lv}>`; return; }
+    if((m = line.match(/^\s*-\s+\[ \]\s+(.*)$/))){ flushPara(); if(!list || list.tag !== 'ul'){ flushList(); list = { tag:'ul', items:[] }; } list.items.push('☐ ' + inline(m[1])); return; }
+    if((m = line.match(/^\s*[-*]\s+(.*)$/))){ flushPara(); if(!list || list.tag !== 'ul'){ flushList(); list = { tag:'ul', items:[] }; } list.items.push(inline(m[1])); return; }
+    if((m = line.match(/^\s*\d+[.)]\s+(.*)$/))){ flushPara(); if(!list || list.tag !== 'ol'){ flushList(); list = { tag:'ol', items:[] }; } list.items.push(inline(m[1])); return; }
+    flushList(); para.push(line.trim());
+  });
+  flushAll();
+  return out;
+}
+
+// Quiz text format (edited in Training Admin): one question per block.
+//   Q: question text
+//   * correct option
+//   - wrong option
+function trnQuizToText(quiz){
+  return (quiz||[]).map(q => 'Q: ' + q.q + '\n' + q.options.map((o,i) => (i === q.a ? '* ' : '- ') + o).join('\n')).join('\n\n');
+}
+function trnQuizFromText(txt){
+  const out = []; let cur = null;
+  String(txt||'').replace(/\r/g,'').split('\n').forEach(l => {
+    const s = l.trim(); if(!s) return;
+    let m;
+    if((m = s.match(/^Q[:.]\s*(.*)$/i))){ cur = { q: m[1], options: [], a: -1 }; out.push(cur); return; }
+    if(!cur) return;
+    if((m = s.match(/^\*\s*(.*)$/))){ cur.a = cur.options.length; cur.options.push(m[1]); return; }
+    if((m = s.match(/^-\s*(.*)$/))){ cur.options.push(m[1]); return; }
+  });
+  return out.filter(q => q.q && q.options.length >= 2 && q.a >= 0);
+}
+
+// ---- Reader + quiz modal (shares the asg-modal shell) ----
+function trnModalEl(){
+  let el = document.getElementById('trnModal');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'trnModal';
+  el.className = 'asg-modal-back';
+  el.innerHTML = '<div class="asg-modal trn-modal" role="dialog" aria-modal="true"></div>';
+  el.onclick = (e) => { if(e.target === el) trnCloseModal(); };
+  document.body.appendChild(el);
+  return el;
+}
+function trnCloseModal(){ const el = document.getElementById('trnModal'); if(el){ el.classList.remove('show'); const cb = el._onClose; el._onClose = null; if(cb) cb(); } }
+function trnShuffle(arr){ const a = arr.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function openTrainingReader(entryId, empKey, onClose){
+  const t = TRAINING.find(x => x.id === entryId); if(!t) return;
+  if(t.quiz && t.quiz.length) return openTrainingQuiz(entryId, empKey, onClose);
+  const el = trnModalEl(); el._onClose = onClose || null;
+  const st = empKey ? trnStatus(t, empKey) : null;
+  el.querySelector('.trn-modal').innerHTML = `
+    <div class="asg-m-head"><div>
+      <div class="asg-m-title">${escapeHtml(t.title)}</div>
+      <div class="asg-m-sub">${escapeHtml(t.track || t.platform || '')}${t.minutes ? ' · ' + escapeHtml(String(t.minutes)) + ' min of video' : ''}${st ? ' · ' + (st.done ? `<span class="asg-pill" style="background:#107C10;">✓ ${escapeHtml(st.label)} ${escapeHtml(trnShortDate(st.at))}</span>` : `<span class="asg-pill" style="background:#8a8886;">${escapeHtml(st.label)}</span>`) : ''}</div>
+    </div><button class="asg-m-x" id="trnX" aria-label="Close">✕</button></div>
+    <div class="trn-body">${trnMd(t.content || '')}${t.url ? `<p><a href="${escapeAttr(t.url)}" target="_blank" rel="noopener">Open the video →</a></p>` : ''}</div>
+    <div class="trn-foot">${st && !st.done ? 'When you finish, tell your manager — they check you off.' : ''}<button class="mini-btn" id="trnPrint">🖨 Print</button><button class="mini-btn primary-mini" id="trnClose">Close</button></div>`;
+  el.classList.add('show');
+  el.querySelector('#trnX').onclick = trnCloseModal;
+  el.querySelector('#trnClose').onclick = trnCloseModal;
+  el.querySelector('#trnPrint').onclick = () => trnPrint(t);
+}
+function trnPrint(t){
+  const w = window.open('', '_blank'); if(!w){ showToast('Allow pop-ups to print'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(t.title)}</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:24px auto;font-size:13px;color:#111}table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}h1{font-size:20px}</style></head><body><h1>${escapeHtml(t.title)}</h1>${trnMd(t.content||'')}</body></html>`);
+  w.document.close(); setTimeout(() => { try{ w.print(); }catch(e){} }, 300);
+}
+
+function openTrainingQuiz(entryId, empKey, onClose){
+  const t = TRAINING.find(x => x.id === entryId); if(!t) return;
+  const el = trnModalEl(); el._onClose = onClose || null;
+  const qs = t.quiz.map((q, qi) => ({ qi, q: q.q, opts: trnShuffle(q.options.map((o, oi) => ({ o, oi }))) }));
+  const need = trnPassScore(t);
+  const who = empKey ? assigneeShort(empKey) : '';
+  const prev = empKey ? trnQuizData(t.id, empKey).attempts : [];
+  el.querySelector('.trn-modal').innerHTML = `
+    <div class="asg-m-head"><div>
+      <div class="asg-m-title">${escapeHtml(t.title)}</div>
+      <div class="asg-m-sub">${t.quiz.length} questions · pass = ${need}/${t.quiz.length}${who ? ' · taking it as <b>' + escapeHtml(who) + '</b>' : ''}${prev.length ? ' · ' + prev.length + ' earlier attempt' + (prev.length===1?'':'s') : ''}</div>
+    </div><button class="asg-m-x" id="trnX" aria-label="Close">✕</button></div>
+    <div class="trn-body">
+      ${empKey ? '' : '<div class="trn-warn">Pick your name in the left sidebar first, then open the quiz from your own page — otherwise your score can\'t be saved.</div>'}
+      ${qs.map((q, n) => `<div class="trn-q" data-qi="${q.qi}"><div class="trn-q-t">${n+1}. ${escapeHtml(q.q)}</div>
+        ${q.opts.map(o => `<label class="trn-opt"><input type="radio" name="trnq${q.qi}" value="${o.oi}"> ${escapeHtml(o.o)}</label>`).join('')}</div>`).join('')}
+      <div id="trnResult"></div>
+    </div>
+    <div class="trn-foot"><button class="mini-btn" id="trnClose">Close</button><button class="mini-btn primary-mini" id="trnSubmit" ${empKey ? '' : 'disabled'}>Submit answers</button></div>`;
+  el.classList.add('show');
+  el.querySelector('#trnX').onclick = trnCloseModal;
+  el.querySelector('#trnClose').onclick = trnCloseModal;
+  const sub = el.querySelector('#trnSubmit');
+  sub.onclick = async () => {
+    const answers = t.quiz.map((q, qi) => { const c = el.querySelector(`input[name="trnq${qi}"]:checked`); return c ? parseInt(c.value, 10) : -1; });
+    const blank = answers.filter(a => a < 0).length;
+    if(blank){ showToast(`Answer all questions first (${blank} left)`); return; }
+    sub.disabled = true;
+    const wrong = [];
+    let score = 0;
+    t.quiz.forEach((q, qi) => { if(answers[qi] === q.a) score++; else wrong.push(qi); });
+    const key = trnQuizKey(t.id, empKey);
+    let data = { attempts: [] };
+    try{ const r = await fetch('/api/state?ts=' + Date.now()); const s = await r.json(); if(s[key]) data = JSON.parse(s[key]); }catch(e){}
+    if(!Array.isArray(data.attempts)) data.attempts = [];
+    data.attempts.push({ score, total: t.quiz.length, at: new Date().toISOString(), wrong });
+    const ok = await storSet(key, JSON.stringify(data), false);
+    const passed = score >= need;
+    el.querySelectorAll('.trn-q').forEach(div => { const qi = parseInt(div.dataset.qi, 10); div.classList.add(wrong.includes(qi) ? 'wrong' : 'right'); div.querySelectorAll('input').forEach(i => i.disabled = true); });
+    el.querySelector('#trnResult').innerHTML = `<div class="trn-score ${passed ? 'pass' : 'fail'}">${passed ? '✓ Passed' : '✗ Not yet'} — ${score}/${t.quiz.length}${passed ? '' : ` (need ${need}). Questions marked red were wrong — review the lesson and retake it.`}${ok ? '' : '<br><b>Score did not save — check your connection and retake.</b>'}</div>`;
+    sub.textContent = 'Retake';
+    sub.disabled = false;
+    sub.onclick = () => openTrainingQuiz(entryId, empKey, onClose);
+    el.querySelector('.trn-body').scrollTop = el.querySelector('.trn-body').scrollHeight;
+  };
+}
+
+// ---- Employee page: "My training" panel ----
+async function renderMyTrainingPanel(){
+  const wrap = document.getElementById('trainingPanelWrap');
+  if(!wrap) return;
+  trnLoadExtras();
+  const me = currentLoc + '::' + currentEmployee;
+  const tracks = trnTracksFor(me);
+  if(!tracks.length){ wrap.innerHTML = ''; return; }
+  let html = `<section class="dpanel trn-panel"><div class="dpanel-head"><div class="h-training">My training</div><div class="dpanel-sub">Read each module. Your manager checks you off; quizzes grade themselves.</div></div>`;
+  tracks.forEach(tr => {
+    const mods = trnModules(tr);
+    const done = mods.filter(m => trnStatus(m, me).done).length;
+    const pct = mods.length ? Math.round(done / mods.length * 100) : 0;
+    html += `<div class="trn-track"><div class="trn-track-head"><b>${escapeHtml(tr)}</b><span>${done}/${mods.length} done</span></div>
+      <div class="trn-bar"><div style="width:${pct}%"></div></div>`;
+    mods.forEach(m => {
+      const st = trnStatus(m, me);
+      const isQuiz = m.quiz && m.quiz.length;
+      html += `<div class="trn-row ${st.done ? 'done' : ''}">
+        <span class="trn-check">${st.done ? '✓' : '○'}</span>
+        <span class="trn-row-t">${escapeHtml(m.title)}${m.minutes ? ` <span class="trn-min">${escapeHtml(String(m.minutes))} min</span>` : ''}</span>
+        <span class="trn-st">${escapeHtml(st.label)}${st.at ? ' · ' + escapeHtml(trnShortDate(st.at)) : ''}</span>
+        <button class="mini-btn ${isQuiz && !st.done ? 'primary-mini' : ''} trn-open" data-id="${m.id}">${isQuiz ? (st.done ? 'Retake' : 'Take quiz') : 'Open'}</button>
       </div>`;
     });
+    html += `</div>`;
   });
+  html += `</section>`;
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.trn-open').forEach(b => b.onclick = () => openTrainingReader(b.dataset.id, me, async () => { await trnRefetch(); await renderMyTrainingPanel(); }));
+}
 
+// ---- Training Admin: Progress (assign + check off) and Manage content ----
+async function trnSaveAssign(track, keys){
+  await trnRefetch();
+  TRAINING_ASSIGN[track] = keys;
+  const ok = await storSet('training-assign', JSON.stringify(TRAINING_ASSIGN), true);
+  if(!ok) showToast('Not saved — owner or manager code required');
+}
+async function trnSetSignoff(entryId, empKey, on){
+  await trnRefetch();
+  if(!TRAINING_SIGNOFF[entryId]) TRAINING_SIGNOFF[entryId] = {};
+  if(on) TRAINING_SIGNOFF[entryId][empKey] = { at: new Date().toISOString(), by: isOwnerAdmin() ? 'owner' : 'manager' };
+  else delete TRAINING_SIGNOFF[entryId][empKey];
+  const ok = await storSet('training-signoff', JSON.stringify(TRAINING_SIGNOFF), true);
+  if(!ok) showToast('Not saved — owner or manager code required');
+}
+
+async function renderTraining(){
+  await refreshServerState();
+  trnLoadExtras();
+  const view = document.getElementById('trainingView');
+  const tabs = `<div class="trn-tabs"><button class="mini-btn ${trnAdminTab==='progress'?'primary-mini':''}" data-tab="progress">Progress &amp; sign-off</button><button class="mini-btn ${trnAdminTab==='manage'?'primary-mini':''}" data-tab="manage">Manage training</button></div>`;
+  let html = `<div class="monthly-header"><h1>Training Admin</h1></div>` + tabs;
+  html += trnAdminTab === 'progress' ? trnProgressHtml() : trnManageHtml();
   view.innerHTML = html;
-  wireTrainingAdminHandlers(view);
+  view.querySelectorAll('.trn-tabs [data-tab]').forEach(b => b.onclick = async () => { trnAdminTab = b.dataset.tab; await renderTraining(); });
+  if(trnAdminTab === 'progress') wireTrnProgress(view); else wireTrainingAdminHandlers(view);
+}
+
+function trnProgressHtml(){
+  const tracks = trnTracks();
+  if(!tracks.length) return `<div class="empty-note">No training programs yet. Add lessons with a Program name under "Manage training".</div>`;
+  if(!tracks.includes(trnProgressTrack)) trnProgressTrack = tracks[0];
+  const tr = trnProgressTrack;
+  const mods = trnModules(tr);
+  const assigned = TRAINING_ASSIGN[tr] || [];
+  const people = dropdownTargets(assigned);
+  let html = `<p class="trn-help">Pick a program, assign the people who need it, then check each person off as they finish a module. Quizzes are graded by the app and check themselves off at a passing score. Click a ✓ to undo it.</p>
+    <div class="trn-prog-top">
+      <div class="trn-chips">${tracks.map(t => { const a = (TRAINING_ASSIGN[t]||[]).length; return `<button class="mini-btn ${t===tr?'primary-mini':''} trn-track-pick" data-track="${escapeAttr(t)}">${escapeHtml(t)} <span style="opacity:.7">(${a})</span></button>`; }).join('')}</div>
+      <details class="trn-assign"><summary>Assigned: ${assigned.length ? assigned.map(k => escapeHtml(assigneeShort(k))).join(', ') : 'nobody yet — click to add people'}</summary>
+        <div class="trn-assign-list">${people.map(p => { const k = p.locKey + '::' + p.empIdx; const L = LOCATIONS[p.locKey]; const emp = L && L.data[p.empIdx]; const nm = emp && emp.name ? emp.name + ' — ' : ''; return `<label><input type="checkbox" class="trn-assign-cb" value="${escapeAttr(k)}" ${assigned.includes(k)?'checked':''}> ${escapeHtml(nm + p.label)}</label>`; }).join('')}</div>
+        <button class="mini-btn primary-mini" id="trnAssignSave">Save assignments</button>
+      </details>
+    </div>`;
+  if(!assigned.length) return html + `<div class="empty-note">Assign people above to start tracking.</div>`;
+  html += `<div class="trn-grid-wrap"><table class="trn-grid"><thead><tr><th class="trn-person">Person</th><th>Done</th>${mods.map((m,i) => `<th title="${escapeAttr(m.title)}"><span class="trn-colhead">${escapeHtml(m.short || ('#' + (i+1)))}</span></th>`).join('')}</tr></thead><tbody>`;
+  assigned.forEach(k => {
+    const sts = mods.map(m => trnStatus(m, k));
+    const n = sts.filter(s => s.done).length;
+    const pct = mods.length ? Math.round(n / mods.length * 100) : 0;
+    html += `<tr><td class="trn-person">${escapeHtml(assigneeLabel(k))}</td><td><div class="trn-mini-bar"><div style="width:${pct}%"></div></div>${n}/${mods.length}</td>`;
+    mods.forEach((m, i) => {
+      const s = sts[i];
+      const isQuiz = m.quiz && m.quiz.length;
+      if(s.done && s.kind === 'quiz') html += `<td class="c-done" title="${escapeAttr(m.title + ' — ' + s.label + ' ' + trnShortDate(s.at))}">✓<small>${escapeHtml(s.label.replace('Passed ',''))}</small></td>`;
+      else if(s.done) html += `<td class="c-done"><button class="trn-cell on" data-e="${m.id}" data-k="${escapeAttr(k)}" title="${escapeAttr(m.title + ' — signed off ' + trnShortDate(s.at) + '. Click to undo.')}">✓<small>${escapeHtml(trnShortDate(s.at))}</small></button></td>`;
+      else html += `<td><button class="trn-cell" data-e="${m.id}" data-k="${escapeAttr(k)}" title="${escapeAttr(m.title + (isQuiz ? ' — ' + s.label + '. Click to sign off by hand (e.g. took it on paper).' : ' — click to check off'))}">${isQuiz && s.kind === 'tried' ? `<small class="c-tried">${escapeHtml(s.label.split(' — ')[0].replace('Best ',''))}</small>` : '○'}</button></td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div><div class="trn-legend">${mods.map((m,i) => { const s = m.short || ('#' + (i+1)); return `<span>${String(m.title).indexOf(s) === 0 ? '' : `<b>${escapeHtml(s)}</b> `}${escapeHtml(m.title)}</span>`; }).join('')}</div>`;
+  return html;
+}
+function wireTrnProgress(view){
+  view.querySelectorAll('.trn-track-pick').forEach(b => b.onclick = async () => { trnProgressTrack = b.dataset.track; await renderTraining(); });
+  const save = view.querySelector('#trnAssignSave');
+  if(save) save.onclick = async () => { save.disabled = true; const keys = [...view.querySelectorAll('.trn-assign-cb:checked')].map(c => c.value); await trnSaveAssign(trnProgressTrack, keys); await renderTraining(); };
+  view.querySelectorAll('.trn-cell').forEach(b => b.onclick = async () => {
+    const on = !b.classList.contains('on');
+    const m = TRAINING.find(x => x.id === b.dataset.e);
+    if(!on && !await appConfirm(`Undo the check-off for ${assigneeShort(b.dataset.k)} on "${m ? m.title : 'this module'}"?`, 'Undo')) return;
+    b.disabled = true;
+    await trnSetSignoff(b.dataset.e, b.dataset.k, on);
+    await renderTraining();
+  });
+}
+
+const TRN_INPUT = 'border:1px solid var(--win-border-strong);border-radius:6px;padding:7px 9px;font-size:12.5px;';
+function trnManageHtml(){
+  let html = `
+    <p class="trn-help">Two kinds of training: a <b>link</b> to a vendor's video (fill in the URL), or an <b>in-app lesson</b> people read right here (fill in Lesson text — no outside login). Give lessons the same <b>Program</b> name to group them so you can assign and track them. For a <b>quiz</b>, fill in the Quiz box (format below) and the app grades it. Role tags limit who sees a link in the library; Managers only hides it from non-staff. Anyone with staff access can add or edit — only the owner code can delete.</p>
+    <div class="trn-new">
+      <div class="trn-line"><input type="text" id="newTrnTitle" placeholder="Title..." style="flex:1;min-width:180px;${TRN_INPUT}">
+        <input type="text" id="newTrnTrack" placeholder="Program (e.g. CallRevu — Sales Rep)" list="trnTrackList" style="width:240px;${TRN_INPUT}">
+        <input type="text" id="newTrnPlatform" placeholder="Platform (e.g. CallRevu)" style="width:160px;${TRN_INPUT}">
+        <select id="newTrnType" style="${TRN_INPUT}">${TRAINING_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}</select></div>
+      <div class="trn-line"><input type="text" id="newTrnUrl" placeholder="Video URL (optional for lessons)..." style="flex:1;min-width:220px;${TRN_INPUT}">
+        <input type="text" id="newTrnRoles" placeholder="Role tags, comma separated (blank = everyone)..." style="flex:1;min-width:220px;${TRN_INPUT}">
+        <select id="newTrnMetric" style="${TRN_INPUT}"><option value="">Linked KPI: — None —</option>${METRICS.map(m => `<option value="${m.id}">${escapeAttr(m.name)}</option>`).join('')}</select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;"><input type="checkbox" id="newTrnManagersOnly"> Managers only</label></div>
+      <textarea id="newTrnContent" placeholder="Lesson text (optional). ## Heading, - bullet, 1. numbered, **bold**, | table | rows |" style="width:100%;min-height:70px;box-sizing:border-box;${TRN_INPUT}"></textarea>
+      <textarea id="newTrnQuiz" placeholder="Quiz (optional):&#10;Q: Question text&#10;* correct answer&#10;- wrong answer&#10;- wrong answer" style="width:100%;min-height:50px;box-sizing:border-box;margin-top:6px;${TRN_INPUT}"></textarea>
+      <button class="mini-btn primary-mini" id="newTrnBtn" style="margin-top:6px;">+ Add training</button>
+    </div>
+    <datalist id="trnTrackList">${trnTracks().map(t => `<option value="${escapeAttr(t)}">`).join('')}</datalist>`;
+  if(TRAINING.length === 0) html += `<div class="empty-note">No training added yet.</div>`;
+  const groups = [...new Set(TRAINING.map(t => t.track || ('Links — ' + (t.platform || 'Uncategorized'))))];
+  groups.forEach(g => {
+    const items = TRAINING.filter(t => (t.track || ('Links — ' + (t.platform || 'Uncategorized'))) === g).sort((a,b) => (a.order||0) - (b.order||0));
+    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(g)}</div>`;
+    items.forEach(t => {
+      const kind = t.quiz && t.quiz.length ? `Quiz · ${t.quiz.length} questions` : (t.content ? 'In-app lesson' : 'Link');
+      html += `<details class="setup-task-row trn-item" data-tid="${t.id}" style="border-top:1px solid var(--win-border);padding:8px 0;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;">${escapeHtml(t.title)} <span style="font-weight:400;color:var(--win-text-secondary);font-size:11.5px;">· ${escapeHtml(kind)}${t.managersOnly ? ' · Managers only' : ''}</span></summary>
+        <div class="trn-line" style="margin-top:8px;"><input type="text" class="tr-title" value="${escapeAttr(t.title)}" style="flex:1;min-width:180px;${TRN_INPUT}">
+          <input type="text" class="tr-track" value="${escapeAttr(t.track||'')}" placeholder="Program" list="trnTrackList" style="width:220px;${TRN_INPUT}">
+          <input type="number" class="tr-order" value="${escapeAttr(String(t.order||0))}" title="Order in program" style="width:64px;${TRN_INPUT}">
+          <input type="text" class="tr-short" value="${escapeAttr(t.short||'')}" placeholder="Short label" title="Column label on the progress grid" style="width:90px;${TRN_INPUT}">
+          <input type="text" class="tr-platform" value="${escapeAttr(t.platform||'')}" placeholder="Platform" style="width:130px;${TRN_INPUT}">
+          <select class="tr-type" style="${TRN_INPUT}">${TRAINING_TYPES.map(ty => `<option value="${ty}" ${t.type===ty?'selected':''}>${ty}</option>`).join('')}</select>
+          <button class="mini-btn danger-mini tr-remove owner-only">Delete</button></div>
+        <div class="trn-line"><input type="text" class="tr-url" value="${escapeAttr(t.url||'')}" placeholder="Video URL" style="flex:1;min-width:220px;${TRN_INPUT}">
+          <input type="text" class="tr-roles" value="${escapeAttr((t.roleTags||[]).join(', '))}" placeholder="Role tags (blank = everyone)" style="flex:1;min-width:200px;${TRN_INPUT}">
+          <select class="tr-metric" style="${TRN_INPUT}"><option value="">Linked KPI: — None —</option>${METRICS.map(m => `<option value="${m.id}" ${t.linkedMetricId===m.id?'selected':''}>${escapeAttr(m.name)}</option>`).join('')}</select>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;"><input type="checkbox" class="tr-managers-only" ${t.managersOnly?'checked':''}> Managers only</label>
+          <button class="mini-btn tr-preview">Preview</button></div>
+        <textarea class="tr-content" placeholder="Lesson text" style="width:100%;min-height:110px;box-sizing:border-box;font-family:var(--font-data,monospace);${TRN_INPUT}">${escapeHtml(t.content||'')}</textarea>
+        <textarea class="tr-quiz" placeholder="Quiz (Q: / * correct / - wrong)" style="width:100%;min-height:${t.quiz && t.quiz.length ? 160 : 40}px;box-sizing:border-box;margin-top:6px;font-family:var(--font-data,monospace);${TRN_INPUT}">${escapeHtml(trnQuizToText(t.quiz))}</textarea>
+      </details>`;
+    });
+  });
+  return html;
 }
 
 function wireTrainingAdminHandlers(view){
   const newBtn = document.getElementById('newTrnBtn');
   if(newBtn) newBtn.onclick = async () => {
-    const title = (document.getElementById('newTrnTitle').value || '').trim();
-    const platform = (document.getElementById('newTrnPlatform').value || '').trim();
-    const type = document.getElementById('newTrnType').value;
-    const url = (document.getElementById('newTrnUrl').value || '').trim();
-    const roleTags = (document.getElementById('newTrnRoles').value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    const linkedMetricId = document.getElementById('newTrnMetric').value || '';
-    const managersOnly = document.getElementById('newTrnManagersOnly').checked;
-    if(!title || !url){ showToast('Title and URL are required'); return; }
-    TRAINING.push({ id: newTrainingId(), title, platform, type, url, roleTags, linkedMetricId, managersOnly, notes: '', createdAt: isoDate(new Date()) });
+    const v = id => (document.getElementById(id).value || '').trim();
+    const title = v('newTrnTitle'), url = v('newTrnUrl'), content = document.getElementById('newTrnContent').value || '';
+    const quiz = trnQuizFromText(document.getElementById('newTrnQuiz').value);
+    if(!title){ showToast('Title is required'); return; }
+    if(!url && !content.trim() && !quiz.length){ showToast('Add a URL, lesson text, or quiz questions'); return; }
+    const track = v('newTrnTrack');
+    await trnRefetch();
+    const order = track ? Math.max(0, ...trnModules(track).map(m => m.order||0)) + 1 : 0;
+    TRAINING.push({ id: newTrainingId(), title, track, order, short: '', platform: v('newTrnPlatform'), type: document.getElementById('newTrnType').value, url,
+      roleTags: v('newTrnRoles').split(',').map(s => s.trim().toLowerCase()).filter(Boolean), linkedMetricId: document.getElementById('newTrnMetric').value || '',
+      managersOnly: document.getElementById('newTrnManagersOnly').checked, content, quiz, notes: '', createdAt: isoDate(new Date()) });
     await saveTraining();
     await renderTraining();
   };
-
-  view.querySelectorAll('.setup-task-row[data-tid]').forEach(row => {
+  view.querySelectorAll('.trn-item[data-tid]').forEach(row => {
     const tid = row.dataset.tid;
-    const findT = () => TRAINING.find(t => t.id === tid);
-    const bind = (sel, prop, transform) => {
-      const el = row.querySelector(sel);
-      if(!el) return;
-      el.onchange = async (e) => { const t = findT(); if(!t) return; t[prop] = transform ? transform(e.target.value) : e.target.value; await saveTraining(); };
-    };
-    bind('.tr-title', 'title');
-    bind('.tr-platform', 'platform');
-    bind('.tr-type', 'type');
-    bind('.tr-url', 'url');
-    bind('.tr-roles', 'roleTags', v => v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
-    const metricEl = row.querySelector('.tr-metric');
-    if(metricEl) metricEl.onchange = async (e) => { const t = findT(); if(t){ t.linkedMetricId = e.target.value || ''; await saveTraining(); } };
-    const moEl = row.querySelector('.tr-managers-only');
-    if(moEl) moEl.onchange = async (e) => { const t = findT(); if(t){ t.managersOnly = e.target.checked; await saveTraining(); } };
-    const removeBtn = row.querySelector('.tr-remove');
-    if(removeBtn) removeBtn.onclick = async () => {
+    // Edit one field on the freshest copy of the list so a stale tab can't wipe other edits.
+    const patch = async (fn) => { await trnRefetch(); const t = TRAINING.find(x => x.id === tid); if(!t) return; fn(t); await saveTraining(); };
+    const bind = (sel, prop, transform) => { const el = row.querySelector(sel); if(el) el.onchange = (e) => patch(t => { t[prop] = transform ? transform(e.target.value) : e.target.value; }); };
+    bind('.tr-title', 'title'); bind('.tr-track', 'track', s => s.trim()); bind('.tr-order', 'order', s => parseFloat(s) || 0); bind('.tr-short', 'short', s => s.trim());
+    bind('.tr-platform', 'platform'); bind('.tr-type', 'type'); bind('.tr-url', 'url', s => s.trim());
+    bind('.tr-roles', 'roleTags', s => s.split(',').map(x => x.trim().toLowerCase()).filter(Boolean));
+    bind('.tr-metric', 'linkedMetricId', s => s || ''); bind('.tr-content', 'content');
+    const qEl = row.querySelector('.tr-quiz');
+    if(qEl) qEl.onchange = (e) => { const q = trnQuizFromText(e.target.value); if(e.target.value.trim() && !q.length){ showToast('Quiz not saved — each question needs "Q:", one "* correct" and at least one "- wrong"'); return; } patch(t => { t.quiz = q; }); };
+    const mo = row.querySelector('.tr-managers-only'); if(mo) mo.onchange = (e) => patch(t => { t.managersOnly = e.target.checked; });
+    const pv = row.querySelector('.tr-preview'); if(pv) pv.onclick = () => openTrainingReader(tid, null);
+    const rm = row.querySelector('.tr-remove');
+    if(rm) rm.onclick = async () => {
       if(!isOwnerAdmin()){ showToast('Owner access required to delete training'); return; }
-      if(!await appConfirm('Delete this training video?', 'Delete')) return;
-      const i = TRAINING.findIndex(t => t.id === tid);
-      if(i > -1) TRAINING.splice(i,1);
-      await saveTraining();
-      await renderTraining();
+      if(!await appConfirm('Delete this training?', 'Delete')) return;
+      await trnRefetch();
+      const i = TRAINING.findIndex(t => t.id === tid); if(i > -1) TRAINING.splice(i,1);
+      await saveTraining(); await renderTraining();
     };
   });
 }
 
 // ---- Public Training Library: NOT admin-gated (everyone can browse), filtered to whoever is
-// currently selected in the sidebar - same "who's selected" model the daily checklist itself
-// uses. Manager-only videos only show once the viewer has unlocked staff access. ----
+// currently selected in the sidebar. Manager-only items only show once staff access is unlocked
+// OR the selected person is assigned to that item's program. In-app lessons open right here. ----
 function trainingVisibleToCurrentEmployee(t){
+  const me = currentLoc + '::' + currentEmployee;
+  if(t.track && (TRAINING_ASSIGN[t.track] || []).includes(me)) return true;
   if(t.managersOnly && !isStaff()) return false;
   if(!t.roleTags || t.roleTags.length === 0) return true;
   const loc = LOCATIONS[currentLoc];
@@ -7936,40 +8268,45 @@ function trainingVisibleToCurrentEmployee(t){
 
 async function renderTrainingLibrary(){
   await refreshServerState();
+  trnLoadExtras();
   const view = document.getElementById('trainingLibraryView');
   const loc = LOCATIONS[currentLoc];
   const emp = loc && loc.data[currentEmployee];
-  const empLabel = emp ? emp.label : 'the selected role';
-
+  const empLabel = emp ? ((emp.name ? emp.name + ' — ' : '') + emp.label) : 'the selected role';
+  const me = currentLoc + '::' + currentEmployee;
   let html = `
     <div class="monthly-header"><h1>Training Library</h1></div>
     <p style="font-size:13px;color:var(--win-text-secondary);max-width:760px;margin:0 0 16px;">
-      Showing videos relevant to <b>${escapeHtml(empLabel)}</b>${isStaff() ? ' — staff access unlocked, so manager-only videos are included' : ''}.
-      Switch who's selected in the sidebar to see what someone else sees.
-    </p>
-  `;
-
+      Showing training for <b>${escapeHtml(empLabel)}</b>${isStaff() ? ' — staff access unlocked, so manager-only items are included' : ''}.
+      Lessons open right here in Dailys. Switch who's selected in the sidebar to see what someone else sees.
+    </p>`;
   const visible = TRAINING.filter(trainingVisibleToCurrentEmployee);
-  if(visible.length === 0){
-    html += `<div class="empty-note">No training videos for this role yet.</div>`;
-  }
-
-  const platforms = [...new Set(visible.map(t => t.platform || 'Uncategorized'))].sort((a,b) => a.localeCompare(b));
-  platforms.forEach(platform => {
-    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(platform)}</div>`;
-    visible.filter(t => (t.platform || 'Uncategorized') === platform).forEach(t => {
+  if(visible.length === 0) html += `<div class="empty-note">No training for this role yet.</div>`;
+  const groups = [...new Set(visible.map(t => t.track || (t.platform || 'Uncategorized')))];
+  groups.forEach(g => {
+    const items = visible.filter(t => (t.track || (t.platform || 'Uncategorized')) === g).sort((a,b) => (a.order||0) - (b.order||0));
+    html += `<div class="group-title" style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--win-text-secondary);margin:18px 0 8px 2px;">${escapeHtml(g)}</div>`;
+    items.forEach(t => {
       const metric = t.linkedMetricId ? METRICS.find(m => m.id === t.linkedMetricId) : null;
-      html += `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" class="task-card" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">
-        <div style="font-weight:600;font-size:13px;">${escapeHtml(t.title)}
-          <span style="font-weight:400;color:var(--win-text-secondary);font-size:11.5px;"> · ${escapeHtml(t.type||'')}</span>
-          ${t.managersOnly ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Managers only</span>` : ''}
-        </div>
-        ${metric ? `<div style="font-size:11.5px;color:var(--win-text-secondary);margin-top:3px;">KPI: ${escapeHtml(metric.name)}</div>` : ''}
-      </a>`;
+      const inApp = !!(t.content || (t.quiz && t.quiz.length));
+      const st = inApp && t.track && (TRAINING_ASSIGN[t.track] || []).includes(me) ? trnStatus(t, me) : null;
+      const kind = t.quiz && t.quiz.length ? 'Quiz' : (t.content ? 'Lesson' : (t.type || 'Link'));
+      const inner = `<div style="font-weight:600;font-size:13px;">${st ? (st.done ? '<span style="color:var(--kpi-good);">✓</span> ' : '○ ') : ''}${escapeHtml(t.title)}
+          <span style="font-weight:400;color:var(--win-text-secondary);font-size:11.5px;"> · ${escapeHtml(kind)}${t.minutes ? ' · ' + escapeHtml(String(t.minutes)) + ' min' : ''}${st ? ' · ' + escapeHtml(st.label) : ''}</span>
+          ${t.managersOnly ? `<span class="status-pill-sm st-progress" style="margin-left:8px;">Managers only</span>` : ''}</div>
+        ${metric ? `<div style="font-size:11.5px;color:var(--win-text-secondary);margin-top:3px;">KPI: ${escapeHtml(metric.name)}</div>` : ''}`;
+      html += inApp
+        ? `<a href="#" class="task-card trn-lib-open" data-id="${t.id}" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">${inner}</a>`
+        : `<a href="${escapeAttr(t.url||'#')}" target="_blank" rel="noopener" class="task-card" style="display:block;padding:10px 12px;margin-bottom:8px;text-decoration:none;color:inherit;">${inner}</a>`;
     });
   });
-
   view.innerHTML = html;
+  view.querySelectorAll('.trn-lib-open').forEach(a => a.onclick = (e) => {
+    e.preventDefault();
+    const t = TRAINING.find(x => x.id === a.dataset.id);
+    const assigned = t && t.track && (TRAINING_ASSIGN[t.track] || []).includes(me);
+    openTrainingReader(a.dataset.id, (assigned || (t && t.quiz && t.quiz.length)) && emp ? me : null, async () => { await trnRefetch(); await renderTrainingLibrary(); });
+  });
 }
 
 // ---- Team Targets: a manager (or owner) sets a target + tolerance for a specific employee on
